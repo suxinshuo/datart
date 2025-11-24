@@ -19,12 +19,15 @@ package datart.data.provider.jdbc;
 
 import datart.core.base.consts.JavaType;
 import datart.core.base.consts.ValueType;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.sql.Types;
 import java.util.Date;
+import java.util.Objects;
 
+@Slf4j
 public class DataTypeUtils {
 
 //    public static ValueType sqlType2DataType(String sqlType) {
@@ -58,6 +61,13 @@ public class DataTypeUtils {
         } else {
             family = sqlTypeName.getFamily();
         }
+
+        if (Objects.isNull(family)) {
+            // 有一些特有字段, 比如 hll(Doris) Map 等, 这种先直接返回 string
+            log.error("can not convert jdbc type {}", jdbcType);
+            return ValueType.STRING;
+        }
+
         switch (family) {
             case NUMERIC:
                 return ValueType.NUMERIC;
