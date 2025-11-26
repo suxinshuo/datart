@@ -134,10 +134,21 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
           }}
         >
           {({ rowIndex, columnIndex, style }) => {
+            const cellValue = rawData[rowIndex][mergedColumns[columnIndex].dataIndex];
+            let displayValue = cellValue;
+            let cellStyle = {};
+
+            // 对 null 值进行个性化处理
+            if (cellValue === null) {
+              displayValue = 'NULL';
+              cellStyle = { color: '#999' };
+            }
+
             style = {
               padding: `${SPACE_TIMES(2)}`,
               textAlign: mergedColumns[columnIndex].align,
               ...style,
+              ...cellStyle,
             };
             return (
               <TableCell
@@ -148,7 +159,7 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
                 style={style}
                 key={columnIndex}
               >
-                {rawData[rowIndex][mergedColumns[columnIndex].dataIndex]}
+                {displayValue}
               </TableCell>
             );
           }}
