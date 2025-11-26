@@ -18,7 +18,9 @@
 
 package datart.core.data.provider;
 
+import com.google.common.collect.Lists;
 import datart.core.base.PageInfo;
+import datart.core.base.consts.ValueType;
 import datart.core.common.UUIDGenerator;
 import lombok.Data;
 
@@ -59,6 +61,17 @@ public class Dataframe implements Serializable {
         Dataframe dataframe = new Dataframe();
         dataframe.setColumns(Collections.emptyList());
         dataframe.setRows(Collections.emptyList());
+        return dataframe;
+    }
+
+    public static Dataframe execSuccess() {
+        Dataframe dataframe = new Dataframe();
+        dataframe.setColumns(
+                Lists.newArrayList(Column.of(ValueType.STRING, "status"))
+        );
+        List<List<Object>> rows = Lists.newArrayList();
+        rows.add(Lists.newArrayList("success"));
+        dataframe.setRows(rows);
         return dataframe;
     }
 

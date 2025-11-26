@@ -20,6 +20,7 @@ package datart.data.provider.calcite;
 import com.google.common.collect.Sets;
 import datart.core.base.exception.Exceptions;
 import datart.data.provider.base.DataProviderException;
+import datart.data.provider.entity.SqlTypeEnum;
 import datart.data.provider.script.SqlStringUtils;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
@@ -64,6 +65,39 @@ public class SqlValidateUtils {
     private static final Set<String> DISABLED_SQL = Sets.newHashSet(
             "CREATE", "DROP", "ALTER", "COMMIT", "ROLLBACK", "INSERT", "DELETE", "UPDATE", "MERGE"
     );
+
+    private static final Set<String> DDL_SQL = Sets.newHashSet(
+            "SHOW", "CREATE", "DROP", "ALTER"
+    );
+
+    private static final Set<String> DML_SQL = Sets.newHashSet(
+            "INSERT", "DELETE", "UPDATE", "MERGE"
+    );
+
+    private static final Set<String> TCL_SQL = Sets.newHashSet(
+            "COMMIT", "ROLLBACK"
+    );
+
+
+    public static SqlTypeEnum getSqlType(String sql) {
+        if (StringUtils.isBlank(sql)) {
+            return SqlTypeEnum.UNKNOWN;
+        }
+        String firstWord = firstWord(sql);
+        if (QUERY_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
+            return SqlTypeEnum.QUERY;
+        }
+        if (DDL_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
+            return SqlTypeEnum.DDL;
+        }
+        if (DML_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
+            return SqlTypeEnum.DML;
+        }
+        if (TCL_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
+            return SqlTypeEnum.TCL;
+        }
+        return SqlTypeEnum.UNKNOWN;
+    }
 
     /**
      * Validate SqlNode. Only query statements can pass validation

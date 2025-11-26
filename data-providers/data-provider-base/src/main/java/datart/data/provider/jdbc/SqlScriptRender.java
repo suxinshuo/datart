@@ -26,6 +26,7 @@ import datart.core.data.provider.ExecuteParam;
 import datart.core.data.provider.QueryScript;
 import datart.core.data.provider.ScriptVariable;
 import datart.data.provider.calcite.*;
+import datart.data.provider.entity.SqlTypeEnum;
 import datart.data.provider.script.ReplacementPair;
 import datart.data.provider.script.ScriptRender;
 import datart.data.provider.script.SqlStringUtils;
@@ -41,6 +42,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static datart.core.base.consts.Const.VARIABLE_PATTERN;
@@ -77,11 +79,16 @@ public class SqlScriptRender extends ScriptRender {
     }
 
     public String render(boolean withExecuteParam, boolean withPage, boolean onlySelectStatement) throws SqlParseException {
-        //get the original value before processing the script
+        // get the original value before processing the script
         QueryScriptProcessResult result = getScriptProcessor().process(queryScript);
+        String originSql = result.getOriginSql();
+        SqlTypeEnum sqlTypeEnum = SqlValidateUtils.getSqlType(originSql);
         String selectSql;
         // build with execute params
-        if (withExecuteParam) {
+        if (!Objects.equals(sqlTypeEnum, SqlTypeEnum.QUERY)) {
+            log.info("非 QUERY SQL, 直接执行原始 SQL: {}", originSql);
+            selectSql = originSql;
+        } else if (withExecuteParam) {
             selectSql = SqlBuilder.builder()
                     .withExecuteParam(executeParam)
                     .withDialect(sqlDialect)

@@ -100,6 +100,7 @@ public class SqlQueryScriptProcessor implements QueryScriptProcessor {
         result.setFrom(sqlBasicCall);
         result.setTablePrefix(T);
         result.setWithDefaultPrefix(true);
+        result.setOriginSql(selectSql);
         return result;
     }
 
