@@ -120,7 +120,8 @@ export function MainPage() {
           <Route path="/confirminvite" component={ConfirmInvitePage} />
           <Route path="/organizations/:orgId" exact>
             <Redirect
-              to={`/organizations/${organizationMatch?.params.orgId}/vizs`}
+              // to={`/organizations/${organizationMatch?.params.orgId}/vizs`}
+              to={`/organizations/${organizationMatch?.params.orgId}/views`}
             />
           </Route>
           <Route
