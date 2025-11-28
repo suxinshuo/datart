@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+import { message } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import classnames from 'classnames';
 import { CommonFormTypes } from 'globalConstants';
@@ -95,10 +96,12 @@ export const SQLEditor = memo(() => {
   );
 
   const callSave = useCallback(() => {
-    if (
-      status !== ViewStatus.Archived &&
-      stage === ViewViewModelStages.Saveable
-    ) {
+    // if (
+    //   status !== ViewStatus.Archived &&
+    //   stage === ViewViewModelStages.Saveable
+    // ) {
+    // 忽略是否可保存状态, 任何时候都可以保存
+    if (status !== ViewStatus.Archived) {
       if (isNewView(id)) {
         showSaveForm({
           type: CommonFormTypes.Edit,
@@ -119,11 +122,16 @@ export const SQLEditor = memo(() => {
                 index,
               }),
             );
-            save(onClose);
+            save(() => {
+              onClose();
+              message.success(t('saveSuccess'));
+            });
           },
         });
       } else {
-        save();
+        save(() => {
+          message.success(t('saveSuccess'));
+        });
       }
     }
   }, [dispatch, actions, stage, status, id, save, showSaveForm, viewsData, t]);
