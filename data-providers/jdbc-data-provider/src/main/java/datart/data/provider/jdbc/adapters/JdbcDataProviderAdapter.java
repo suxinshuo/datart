@@ -372,24 +372,32 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected Dataframe parseResultSet(ResultSet rs, long count) throws SQLException {
-        Dataframe dataframe = new Dataframe();
-        List<Column> columns = getColumns(rs);
-        ArrayList<List<Object>> rows = new ArrayList<>();
-        int c = 0;
-        while (rs.next()) {
-            ArrayList<Object> row = new ArrayList<>();
-            rows.add(row);
-            for (int i = 1; i < columns.size() + 1; i++) {
-                row.add(getObjFromResultSet(rs, i));
+        try {
+            Dataframe dataframe = new Dataframe();
+            List<Column> columns = getColumns(rs);
+            ArrayList<List<Object>> rows = new ArrayList<>();
+            int c = 0;
+            while (rs.next()) {
+                ArrayList<Object> row = new ArrayList<>();
+                rows.add(row);
+                for (int i = 1; i < columns.size() + 1; i++) {
+                    row.add(getObjFromResultSet(rs, i));
+                }
+                c++;
+                if (c >= count) {
+                    break;
+                }
             }
-            c++;
-            if (c >= count) {
-                break;
+            dataframe.setColumns(columns);
+            dataframe.setRows(rows);
+            return dataframe;
+        } catch (SQLException e) {
+            if (StringUtils.contains(e.getMessage(), "No Data.")) {
+                log.info("Parse ResultSet error. Error message: {}", e.getMessage());
+                return Dataframe.execSuccess();
             }
+            throw e;
         }
-        dataframe.setColumns(columns);
-        dataframe.setRows(rows);
-        return dataframe;
     }
 
     protected List<Column> getColumns(ResultSet rs) throws SQLException {
