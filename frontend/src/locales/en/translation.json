@@ -1262,7 +1262,8 @@
       "info": "Info",
       "saveAs": "Save As",
       "saveFragment": "Save Fragment",
-      "readonlyTip": "Not editable in recycle"
+      "readonlyTip": "Not editable in recycle",
+      "saveSuccess": "Save Success"
     },
     "properties": {
       "reference": "Source Reference",

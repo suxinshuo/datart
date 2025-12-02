@@ -1261,7 +1261,8 @@
       "info": "详情设置",
       "saveAs": "另存为",
       "saveFragment": "保存片段",
-      "readonlyTip": "回收站中不可编辑"
+      "readonlyTip": "回收站中不可编辑",
+      "saveSuccess": "保存成功"
     },
     "properties": {
       "reference": "数据源信息",

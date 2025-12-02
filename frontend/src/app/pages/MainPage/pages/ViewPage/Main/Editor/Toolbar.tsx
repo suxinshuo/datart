@@ -287,7 +287,7 @@ export const Toolbar = memo(
                 <ToolbarButton
                   icon={<SaveFilled />}
                   disabled={
-                    isArchived || stage !== ViewViewModelStages.Saveable
+                    isArchived // || stage !== ViewViewModelStages.Saveable // 忽略是否可保存状态, 任何时候都可以保存
                   }
                   color={INFO}
                   onClick={onSave}
