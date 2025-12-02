@@ -85,12 +85,22 @@ public class JdbcDataProviderAdapter implements Closeable {
         try {
             this.jdbcProperties = jdbcProperties;
             this.driverInfo = driverInfo;
-            this.dataSource = JdbcDataProvider.getDataSourceFactory().createDataSource(jdbcProperties);
+            this.dataSource = postProcessDs(JdbcDataProvider.getDataSourceFactory().createDataSource(jdbcProperties));
         } catch (Exception e) {
             log.error("data provider init error", e);
             Exceptions.e(e);
         }
         this.init = true;
+    }
+
+    /**
+     * 对 datasource 的后处理
+     *
+     * @param dataSource DataSource
+     * @return DataSource
+     */
+    protected DataSource postProcessDs(DataSource dataSource) {
+        return dataSource;
     }
 
     public boolean test(JdbcProperties properties) {
