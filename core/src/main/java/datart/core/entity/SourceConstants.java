@@ -10,4 +10,6 @@ public interface SourceConstants {
 
     String PROP_DEFAULT_CATALOG = "_DEFAULT_CATALOG";
 
+    String PROP_DYNAMIC_USER_ENABLE = "_DYNAMIC_USER_ENABLE";
+
 }

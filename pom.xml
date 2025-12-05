@@ -19,7 +19,7 @@
     <groupId>datart</groupId>
     <artifactId>datart-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0-rc.3</version>
+    <version>1.0.1</version>
 
     <dependencies>
         <dependency>
@@ -71,6 +71,12 @@
 <!--                <type>pom</type>-->
 <!--                <scope>import</scope>-->
 <!--            </dependency>-->
+
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>5.8.39</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

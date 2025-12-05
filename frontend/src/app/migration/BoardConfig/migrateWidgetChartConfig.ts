@@ -29,7 +29,7 @@ const migrateWidgetChartConfig = (widgets: Widget[]): Widget[] => {
   return widgets
     .map(widget => {
       // ------------------------------------------------
-      // FIXME 1.0.0-rc.3 hotfix, will remove in next version.
+      // FIXME 1.0.1 hotfix, will remove in next version.
       if (typeof widget?.config?.content?.dataChart?.config === 'string') {
         widget.config.content.dataChart.config = JSON.parse(
           widget.config.content.dataChart.config,

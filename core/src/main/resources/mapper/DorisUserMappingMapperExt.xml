@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="datart.core.mappers.ext.DorisUserMappingMapperExt">
+    <resultMap id="BaseResultMap" type="datart.core.entity.DorisUserMapping">
+        <id column="id" jdbcType="VARCHAR" property="id" />
+        <result column="sys_username" jdbcType="VARCHAR" property="sysUsername"/>
+        <result column="source_id" jdbcType="VARCHAR" property="sourceId"/>
+        <result column="doris_username" jdbcType="VARCHAR" property="dorisUsername"/>
+        <result column="encrypted_password" jdbcType="VARCHAR" property="encryptedPassword"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into doris_user_mapping (id, sys_username, source_id, doris_username, encrypted_password, create_by, create_time, update_by, update_time)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id,jdbcType=VARCHAR}, #{item.sysUsername,jdbcType=VARCHAR},#{item.sourceId,jdbcType=VARCHAR},
+             #{item.dorisUsername,jdbcType=VARCHAR}, #{item.encryptedPassword,jdbcType=VARCHAR}, #{item.createBy,jdbcType=VARCHAR},
+             #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateBy,jdbcType=VARCHAR}, #{item.updateTime,jdbcType=TIMESTAMP})
+        </foreach>
+    </insert>
+</mapper>
+
+

@@ -18,6 +18,8 @@
 
 package datart.server.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.jayway.jsonpath.JsonPath;
 import datart.core.base.consts.Const;
@@ -28,10 +30,9 @@ import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.ParamException;
 import datart.core.base.exception.ServerException;
 import datart.core.common.Application;
+import datart.core.common.SecureUtils;
 import datart.core.common.UUIDGenerator;
-import datart.core.entity.Organization;
-import datart.core.entity.Role;
-import datart.core.entity.User;
+import datart.core.entity.*;
 import datart.core.entity.ext.UserBaseInfo;
 import datart.core.mappers.ext.OrganizationMapperExt;
 import datart.core.mappers.ext.RelRoleUserMapperExt;
@@ -45,7 +46,9 @@ import datart.security.util.SecurityUtils;
 import datart.server.base.dto.OrganizationBaseInfo;
 import datart.server.base.dto.UserProfile;
 import datart.server.base.params.*;
+import datart.server.base.params.doris.DorisUserMappingCreateParam;
 import datart.server.service.*;
+import datart.server.service.doris.DorisUserMappingService;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -59,44 +62,42 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import javax.mail.MessagingException;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static datart.core.common.Application.getProperty;
 
-@Service
 @Slf4j
+@Service
 public class UserServiceImpl extends BaseService implements UserService {
 
-    private final UserMapperExt userMapper;
+    @Resource
+    private UserMapperExt userMapper;
 
-    private final OrganizationMapperExt orgMapper;
+    @Resource
+    private OrganizationMapperExt orgMapper;
 
-    private final OrgService orgService;
+    @Resource
+    private OrgService orgService;
 
-    private final RoleService roleService;
+    @Resource
+    private RoleService roleService;
 
-    private final MailService mailService;
+    @Resource
+    private MailService mailService;
+
+    @Resource
+    private SourceService sourceService;
+
+    @Resource
+    private DorisUserMappingService dorisUserMappingService;
 
     @Value("${datart.user.active.send-mail:false}")
     private boolean sendEmail;
-
-    public UserServiceImpl(UserMapperExt userMapper,
-                           OrganizationMapperExt orgMapper,
-                           OrgService orgService,
-                           RoleService roleService,
-                           MailService mailService) {
-        this.userMapper = userMapper;
-        this.orgMapper = orgMapper;
-        this.orgService = orgService;
-        this.roleService = roleService;
-        this.mailService = mailService;
-    }
 
     @Override
     public UserProfile getUserProfile() {
@@ -249,6 +250,11 @@ public class UserServiceImpl extends BaseService implements UserService {
                 Organization organization = organizationList.get(0);
                 orgService.addUserToOrg(user.getId(), organization.getId());
                 log.info("The user({}) is joined the default organization({}).", user.getUsername(), organization.getName());
+
+                // TODO: 如果是 team 模式, 在 view 创建当前用户的文件夹
+
+                // 检测有没有开启动态数据源的 source, 如果开启了, 需要自动创建对应的用户
+                initDynamicDataSourceUser(organization.getId(), user.getUsername());
                 return;
             } else if (organizationList.size() > 1) {
                 Exceptions.msg("There is more than one organization in team tenant-management-mode.");
@@ -256,7 +262,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                 Exceptions.msg("There is no organization to join.");
             }
         }
-        //创建默认组织
+        // 创建默认组织
         log.info("Create default organization for user({})", user.getUsername());
         Organization organization = new Organization();
         organization.setId(UUIDGenerator.generate());
@@ -266,6 +272,42 @@ public class UserServiceImpl extends BaseService implements UserService {
         orgMapper.insert(organization);
         log.info("Init organization({})", organization.getName());
         orgService.initOrganization(organization, user);
+    }
+
+    private void initDynamicDataSourceUser(String orgId, String username) {
+        // 找到该组织下所有有效的 source
+        List<Source> sources = sourceService.listSources(orgId, true);
+        List<Source> dynamicUserSource = sources.stream().filter(source -> {
+            String config = source.getConfig();
+            if (StringUtils.isBlank(config)) {
+                return false;
+            }
+            Map<String, Object> jdbcConfig = JSONUtil.parseObj(config);
+            Object propObj = jdbcConfig.get("properties");
+            if (Objects.isNull(propObj)) {
+                return false;
+            }
+            Map<String, Object> prop = JSONUtil.parseObj(propObj.toString());
+            Object dynamicUserEnable = prop.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE);
+            return Objects.nonNull(dynamicUserEnable) && Boolean.parseBoolean(dynamicUserEnable.toString());
+        }).collect(Collectors.toList());
+        if (CollUtil.isEmpty(dynamicUserSource)) {
+            log.info("没有开启动态用户的 source");
+            return;
+        }
+        log.info("开启动态用户的 source: {}", dynamicUserSource);
+        List<DorisUserMappingCreateParam> createParams = dynamicUserSource.stream().map(source -> {
+            String sourceId = source.getId();
+            return DorisUserMappingCreateParam.builder()
+                    .sysUsername(username)
+                    .sourceId(sourceId)
+                    .dorisUsername(username)
+                    // 暂时固定密码
+                    .encryptedPassword(SecureUtils.encrypt("S@TktH2j5*"))
+                    .build();
+        }).collect(Collectors.toList());
+        dorisUserMappingService.batchCreateDorisUserMapping(createParams);
+        log.info("动态用户 source 创建 doris 映射用户成功. createParams: {}", createParams);
     }
 
     @Override

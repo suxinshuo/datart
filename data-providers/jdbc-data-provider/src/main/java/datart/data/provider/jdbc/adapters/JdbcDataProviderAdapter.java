@@ -83,7 +83,7 @@ public class JdbcDataProviderAdapter implements Closeable {
 
     public final void init(JdbcProperties jdbcProperties, JdbcDriverInfo driverInfo) {
         try {
-            this.jdbcProperties = jdbcProperties;
+            this.jdbcProperties = processJdbcProp(jdbcProperties);
             this.driverInfo = driverInfo;
             this.dataSource = postProcessDs(JdbcDataProvider.getDataSourceFactory().createDataSource(jdbcProperties));
         } catch (Exception e) {
@@ -91,6 +91,16 @@ public class JdbcDataProviderAdapter implements Closeable {
             Exceptions.e(e);
         }
         this.init = true;
+    }
+
+    /**
+     * jdbcProperties 处理
+     *
+     * @param jdbcProperties JdbcProperties
+     * @return JdbcProperties
+     */
+    protected JdbcProperties processJdbcProp(JdbcProperties jdbcProperties) {
+        return jdbcProperties;
     }
 
     /**

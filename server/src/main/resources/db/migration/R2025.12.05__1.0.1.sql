@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS `doris_user_mapping`;
