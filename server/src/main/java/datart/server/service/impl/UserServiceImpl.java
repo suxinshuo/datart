@@ -30,7 +30,7 @@ import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.ParamException;
 import datart.core.base.exception.ServerException;
 import datart.core.common.Application;
-import datart.core.common.SecureUtils;
+import datart.core.common.SecureAesUtils;
 import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
 import datart.core.entity.ext.UserBaseInfo;
@@ -303,7 +303,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                     .sourceId(sourceId)
                     .dorisUsername(username)
                     // 暂时固定密码
-                    .encryptedPassword(SecureUtils.encrypt("S@TktH2j5*"))
+                    .encryptedPassword(SecureAesUtils.encrypt("S@TktH2j5*"))
                     .build();
         }).collect(Collectors.toList());
         dorisUserMappingService.batchCreateDorisUserMapping(createParams);

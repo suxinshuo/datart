@@ -12,4 +12,9 @@ public interface SourceConstants {
 
     String PROP_DYNAMIC_USER_ENABLE = "_DYNAMIC_USER_ENABLE";
 
+    /**
+     * doris 默认计算组
+     */
+    String DORIS_DEFAULT_COMPUTE_GROUP = "defaultComputeGroup";
+
 }

@@ -3,12 +3,15 @@ package datart.server.service.doris.impl;
 import cn.hutool.core.collection.CollUtil;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.ParamException;
+import datart.core.common.SecureAesUtils;
 import datart.core.common.UUIDGenerator;
 import datart.core.entity.DorisUserMapping;
 import datart.core.entity.DorisUserMappingExample;
+import datart.core.entity.SourceConstants;
 import datart.core.mappers.ext.DorisUserMappingMapperExt;
 import datart.server.base.params.doris.DorisUserMappingCreateParam;
 import datart.server.service.BaseService;
+import datart.server.service.doris.DorisExecService;
 import datart.server.service.doris.DorisUserMappingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -31,6 +34,9 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
     @Resource
     private DorisUserMappingMapperExt dorisUserMappingMapper;
 
+    @Resource
+    private DorisExecService dorisExecService;
+
     /**
      * 批量创建 doris 用户映射
      *
@@ -39,7 +45,7 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
     @Override
     @Transactional
     public void batchCreateDorisUserMapping(List<DorisUserMappingCreateParam> createParams) {
-        log.info("批量创建 Doris System Username 映射用户. createParams: {}", createParams);
+        log.info("批量创建 Doris System 映射用户. createParams: {}", createParams);
         if (CollUtil.isEmpty(createParams)) {
             return;
         }
@@ -60,6 +66,17 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
         }).collect(Collectors.toList());
 
         dorisUserMappingMapper.insertBatch(dorisUserMappings);
+        log.info("Doris System 映射用户保存到元数据成功");
+
+        // 执行 doris sql 创建用户并分配计算组
+        for (DorisUserMapping dorisUserMapping : dorisUserMappings) {
+            String dorisUsername = dorisUserMapping.getDorisUsername();
+            String encryptedPassword = dorisUserMapping.getEncryptedPassword();
+            String dorisPassword = SecureAesUtils.decrypt(encryptedPassword);
+            String dorisDefaultComputeGroup = SourceConstants.DORIS_DEFAULT_COMPUTE_GROUP;
+            dorisExecService.createUser(dorisUsername, dorisPassword, dorisDefaultComputeGroup);
+            log.info("创建 Doris 用户({}) 成功, 并分配默认计算组: {}", dorisUsername, dorisDefaultComputeGroup);
+        }
     }
 
     /**

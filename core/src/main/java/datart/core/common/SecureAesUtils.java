@@ -10,7 +10,7 @@ import cn.hutool.crypto.symmetric.AES;
  * @author suxinshuo
  * @date 2025/12/5 20:17
  */
-public class SecureUtils {
+public class SecureAesUtils {
 
     /**
      * 16 字符 = 128 位密钥
