@@ -1,18 +1,29 @@
 package datart.core.mappers;
 
 import datart.core.entity.Source;
+import datart.core.entity.SourceExample;
 import datart.core.mappers.ext.CRUDMapper;
+import java.util.List;
 import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.DeleteProvider;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.InsertProvider;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.SelectProvider;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.UpdateProvider;
 import org.apache.ibatis.type.JdbcType;
 
 public interface SourceMapper extends CRUDMapper {
+    @SelectProvider(type=SourceSqlProvider.class, method="countByExample")
+    long countByExample(SourceExample example);
+
+    @DeleteProvider(type=SourceSqlProvider.class, method="deleteByExample")
+    int deleteByExample(SourceExample example);
+
     @Delete({
         "delete from source",
         "where id = #{id,jdbcType=VARCHAR}"
@@ -38,6 +49,24 @@ public interface SourceMapper extends CRUDMapper {
     @InsertProvider(type=SourceSqlProvider.class, method="insertSelective")
     int insertSelective(Source record);
 
+    @SelectProvider(type=SourceSqlProvider.class, method="selectByExample")
+    @Results({
+        @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
+        @Result(column="name", property="name", jdbcType=JdbcType.VARCHAR),
+        @Result(column="config", property="config", jdbcType=JdbcType.VARCHAR),
+        @Result(column="type", property="type", jdbcType=JdbcType.VARCHAR),
+        @Result(column="org_id", property="orgId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="parent_id", property="parentId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="is_folder", property="isFolder", jdbcType=JdbcType.TINYINT),
+        @Result(column="index", property="index", jdbcType=JdbcType.DOUBLE),
+        @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
+        @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
+        @Result(column="update_by", property="updateBy", jdbcType=JdbcType.VARCHAR),
+        @Result(column="update_time", property="updateTime", jdbcType=JdbcType.TIMESTAMP),
+        @Result(column="status", property="status", jdbcType=JdbcType.TINYINT)
+    })
+    List<Source> selectByExample(SourceExample example);
+
     @Select({
         "select",
         "id, `name`, config, `type`, org_id, parent_id, is_folder, `index`, create_by, ",
@@ -61,6 +90,12 @@ public interface SourceMapper extends CRUDMapper {
         @Result(column="status", property="status", jdbcType=JdbcType.TINYINT)
     })
     Source selectByPrimaryKey(String id);
+
+    @UpdateProvider(type=SourceSqlProvider.class, method="updateByExampleSelective")
+    int updateByExampleSelective(@Param("record") Source record, @Param("example") SourceExample example);
+
+    @UpdateProvider(type=SourceSqlProvider.class, method="updateByExample")
+    int updateByExample(@Param("record") Source record, @Param("example") SourceExample example);
 
     @UpdateProvider(type=SourceSqlProvider.class, method="updateByPrimaryKeySelective")
     int updateByPrimaryKeySelective(Source record);

@@ -1,5 +1,10 @@
 package datart.server.service.doris;
 
+import datart.core.entity.bo.DorisCreateUserBo;
+import datart.core.entity.bo.DorisExecSourceParamBo;
+
+import java.util.List;
+
 /**
  * 直接跟 Doris 交互的逻辑
  *
@@ -9,20 +14,11 @@ package datart.server.service.doris;
 public interface DorisExecService {
 
     /**
-     * 创建用户
-     *
-     * @param userName 用户名
-     * @param password 密码
-     */
-    void createUser(String userName, String password);
-
-    /**
      * 创建用户, 并分配默认计算组
      *
-     * @param userName            用户名
-     * @param password            密码
-     * @param defaultComputeGroup 默认计算组
+     * @param sourceParam   Doris 执行, source 相关参数
+     * @param createUserBos 用户参数
      */
-    void createUser(String userName, String password, String defaultComputeGroup);
+    void createUser(DorisExecSourceParamBo sourceParam, List<DorisCreateUserBo> createUserBos);
 
 }

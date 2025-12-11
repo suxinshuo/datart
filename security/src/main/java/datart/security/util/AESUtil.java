@@ -61,6 +61,14 @@ public class AESUtil {
         return decrypt(src, Application.getTokenSecret());
     }
 
+    public static String decryptSafe(String src) {
+        try {
+            return decrypt(src, Application.getTokenSecret());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static String encrypt(Object obj, String securityKey) {
         return encrypt(JSON.toJSONString(obj), securityKey);
     }

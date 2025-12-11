@@ -1,7 +1,11 @@
 
 # IDE
 .idea
+.queries
 .DS_Store
+.vscode
+
+logs/**
 
 /static
 

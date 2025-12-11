@@ -30,8 +30,8 @@ import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.ParamException;
 import datart.core.base.exception.ServerException;
 import datart.core.common.Application;
-import datart.core.common.SecureAesUtils;
 import datart.core.common.UUIDGenerator;
+import datart.core.data.provider.DataProviderSource;
 import datart.core.entity.*;
 import datart.core.entity.ext.UserBaseInfo;
 import datart.core.mappers.ext.OrganizationMapperExt;
@@ -41,6 +41,7 @@ import datart.security.base.JwtToken;
 import datart.security.base.PasswordToken;
 import datart.security.base.RoleType;
 import datart.security.exception.AuthException;
+import datart.security.util.AESUtil;
 import datart.security.util.JwtUtils;
 import datart.security.util.SecurityUtils;
 import datart.server.base.dto.OrganizationBaseInfo;
@@ -92,6 +93,9 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Resource
     private SourceService sourceService;
+
+    @Resource
+    private DataProviderService dataProviderService;
 
     @Resource
     private DorisUserMappingService dorisUserMappingService;
@@ -278,16 +282,11 @@ public class UserServiceImpl extends BaseService implements UserService {
         // 找到该组织下所有有效的 source
         List<Source> sources = sourceService.listSources(orgId, true);
         List<Source> dynamicUserSource = sources.stream().filter(source -> {
-            String config = source.getConfig();
-            if (StringUtils.isBlank(config)) {
+            DataProviderSource dataProviderSource = dataProviderService.parseDataProviderConfig(source);
+            Map<String, Object> prop = dataProviderSource.getPropPro();
+            if (CollUtil.isEmpty(prop)) {
                 return false;
             }
-            Map<String, Object> jdbcConfig = JSONUtil.parseObj(config);
-            Object propObj = jdbcConfig.get("properties");
-            if (Objects.isNull(propObj)) {
-                return false;
-            }
-            Map<String, Object> prop = JSONUtil.parseObj(propObj.toString());
             Object dynamicUserEnable = prop.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE);
             return Objects.nonNull(dynamicUserEnable) && Boolean.parseBoolean(dynamicUserEnable.toString());
         }).collect(Collectors.toList());
@@ -303,7 +302,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                     .sourceId(sourceId)
                     .dorisUsername(username)
                     // 暂时固定密码
-                    .encryptedPassword(SecureAesUtils.encrypt("S@TktH2j5*"))
+                    .encryptedPassword(AESUtil.encrypt(SourceConstants.DORIS_DEFAULT_PASSWORD))
                     .build();
         }).collect(Collectors.toList());
         dorisUserMappingService.batchCreateDorisUserMapping(createParams);

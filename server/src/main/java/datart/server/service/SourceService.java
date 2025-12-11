@@ -36,6 +36,14 @@ public interface SourceService extends BaseCRUDService<Source, SourceMapperExt>,
 
     List<Source> listSources(String orgId, boolean active);
 
+    /**
+     * 通过 source id 列表查询 source 列表
+     *
+     * @param sourceIds source id 列表
+     * @return source 列表
+     */
+    List<Source> listByIds(List<String> sourceIds);
+
     SchemaInfo getSourceSchemaInfo(String sourceId);
 
     SchemaInfo syncSourceSchema(String sourceId) throws Exception;

@@ -64,7 +64,6 @@ public class SourceController extends BaseController {
     @ApiOperation(value = "create source")
     @PostMapping()
     public ResponseData<Source> createSource(@Validated @RequestBody SourceCreateParam createParam) {
-        // TODO: _DYNAMIC_USER_ENABLE 逻辑
         return ResponseData.success(sourceService.createSource(createParam));
     }
 
@@ -72,7 +71,7 @@ public class SourceController extends BaseController {
     @PutMapping(value = "/{sourceId}")
     public ResponseData<Boolean> updateSource(@PathVariable String sourceId,
                                               @Validated @RequestBody SourceUpdateParam updateParam) {
-        // TODO: _DYNAMIC_USER_ENABLE 逻辑
+        // TODO: _DYNAMIC_USER_ENABLE 逻辑, 检测只有 team 模式可以启动该配置, 并且只能从关闭到打开, 不能再次关闭
         return ResponseData.success(sourceService.updateSource(updateParam));
     }
 
