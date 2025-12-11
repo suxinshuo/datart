@@ -347,14 +347,17 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
     @Override
     public boolean updateSource(SourceUpdateParam updateParam) {
+        Source oldSource = super.retrieve(updateParam.getId(), Source.class);
         boolean success = update(updateParam);
         if (success) {
             Source source = retrieve(updateParam.getId());
             getDataProviderService().updateSource(source);
             updateJdbcSourceSyncJob(source);
 
-            // TODO: 更新数据源
+            Source newSource = super.retrieve(updateParam.getId(), Source.class);
 
+            // 更新数据源
+            initUpdateSource(oldSource, newSource);
         }
         return false;
     }
@@ -382,9 +385,12 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
         // 从关闭到开启
         boolean dynamicUserInit = getBooleanValue(newProp.get(SourceConstants.PROP_DYNAMIC_USER_INIT));
+        if (!dynamicUserInit) {
+            return;
+        }
 
-        // TODO: 补充逻辑
-
+        // 初始化用户
+        initDynamicUsers(newSource);
     }
 
     @Override
