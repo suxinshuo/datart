@@ -23,7 +23,7 @@ import {
   MonitorOutlined,
   MoreOutlined,
 } from '@ant-design/icons';
-import { Menu, message, Popconfirm, TreeDataNode } from 'antd';
+import { Menu, message, Popconfirm } from 'antd';
 import { MenuListItem, Popup, Tree, TreeTitle } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { getCascadeAccess, useAccess } from 'app/pages/MainPage/Access';
@@ -32,6 +32,7 @@ import {
   selectOrgId,
   selectPermissionMap,
 } from 'app/pages/MainPage/slice/selectors';
+import { selectLoggedInUser } from 'app/slice/selectors';
 import { CommonFormTypes } from 'globalConstants';
 import React, {
   memo,
@@ -62,9 +63,10 @@ import {
   removeEditingView,
   updateViewBase,
 } from '../slice/thunks';
+import { ViewTreeNode } from '../slice/types';
 
 interface FolderTreeProps {
-  treeData?: TreeDataNode[];
+  treeData?: ViewTreeNode[];
 }
 
 export const FolderTree = memo(({ treeData }: FolderTreeProps) => {
@@ -78,6 +80,7 @@ export const FolderTree = memo(({ treeData }: FolderTreeProps) => {
   const viewsData = useSelector(selectViews);
   const isOwner = useSelector(selectIsOrgOwner);
   const permissionMap = useSelector(selectPermissionMap);
+  const currentUser = useSelector(selectLoggedInUser);
   const t = useI18NPrefix('view');
   const tg = useI18NPrefix('global');
   const saveAsView = useSaveAsView();
@@ -92,6 +95,33 @@ export const FolderTree = memo(({ treeData }: FolderTreeProps) => {
   useEffect(() => {
     dispatch(getViews(orgId));
   }, [dispatch, orgId]);
+
+  useEffect(() => {
+    if (treeData && treeData.length > 0 && currentUser) {
+      // 1. 提取第一层级节点的 key
+      const firstLevelKeys = treeData
+        .filter(node => node.isFolder) // 只展开文件夹节点
+        .map(node => String(node.key)) as string[];
+
+      // 2. 查找当前用户名对应的二级目录节点
+      const userLevelKeys: string[] = [];
+      treeData.forEach(firstLevelNode => {
+        if (firstLevelNode.children && Array.isArray(firstLevelNode.children)) {
+          const children = firstLevelNode.children as ViewTreeNode[];
+          const userNode = children.find(
+            child => child.isFolder && child.title === currentUser.username,
+          );
+          if (userNode) {
+            userLevelKeys.push(String(userNode.key));
+          }
+        }
+      });
+
+      // 3. 合并并设置 expandedKeys
+      const allExpandedKeys = [...firstLevelKeys, ...userLevelKeys];
+      setExpandedKeys(allExpandedKeys);
+    }
+  }, [treeData, currentUser]);
 
   const redirect = useCallback(
     currentEditingViewKey => {
