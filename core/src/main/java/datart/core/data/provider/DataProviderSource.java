@@ -18,7 +18,6 @@
 package datart.core.data.provider;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Maps;
 import lombok.Data;
 import lombok.ToString;
@@ -51,7 +50,10 @@ public class DataProviderSource {
             return Maps.newHashMap();
         }
 
-        return JSONUtil.parseObj(propObj.toString());
+        Map<String, Object> proPro = Maps.newHashMap();
+        proPro.putAll((Map<String, Object>) properties.get("properties"));
+
+        return proPro;
     }
 
 }

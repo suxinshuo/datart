@@ -370,10 +370,16 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
         Map<String, Object> oldProp = oldDataProviderSource.getPropPro();
         Map<String, Object> newProp = newDataProviderSource.getPropPro();
-        boolean oldDynamicUserEnable = getBooleanValue(oldProp.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
-        boolean newDynamicUserEnable = getBooleanValue(newProp.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
+        boolean oldDynamicUserEnable = ObjUtils.getBooleanValue(oldProp.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
+        boolean newDynamicUserEnable = ObjUtils.getBooleanValue(newProp.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
+        boolean oldDynamicUserInit = ObjUtils.getBooleanValue(oldProp.get(SourceConstants.PROP_DYNAMIC_USER_INIT));
+        boolean newDynamicUserInit = ObjUtils.getBooleanValue(newProp.get(SourceConstants.PROP_DYNAMIC_USER_INIT));
 
         if (Objects.equals(oldDynamicUserEnable, newDynamicUserEnable)) {
+            if (oldDynamicUserEnable && !oldDynamicUserInit && newDynamicUserInit) {
+                // 一直都是开启状态, 初始化配置从 false 改为 true
+                initDynamicUsers(newSource);
+            }
             // 配置相同, 不需要更新
             return;
         }
@@ -383,9 +389,8 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             Exceptions.tr(ParamException.class, "message.source.dynamic-user-enable-cannot-close");
         }
 
-        // 从关闭到开启
-        boolean dynamicUserInit = getBooleanValue(newProp.get(SourceConstants.PROP_DYNAMIC_USER_INIT));
-        if (!dynamicUserInit) {
+        // 从关闭到开启, 配置了不需要初始化就直接跳过
+        if (!newDynamicUserInit) {
             return;
         }
 
@@ -646,7 +651,7 @@ public class SourceServiceImpl extends BaseService implements SourceService {
         DataProviderSource dataProviderSource = getDataProviderService().parseDataProviderConfig(source);
         Map<String, Object> properties = dataProviderSource.getPropPro();
         Object dynamicUserEnable = properties.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE);
-        if (!getBooleanValue(dynamicUserEnable)) {
+        if (!ObjUtils.getBooleanValue(dynamicUserEnable)) {
             log.info("没有开启动态数据源, 不需要初始化用户");
             return;
         }
@@ -657,7 +662,7 @@ public class SourceServiceImpl extends BaseService implements SourceService {
         }
 
         Object dynamicUserInit = properties.get(SourceConstants.PROP_DYNAMIC_USER_INIT);
-        if (!getBooleanValue(dynamicUserInit)) {
+        if (!ObjUtils.getBooleanValue(dynamicUserInit)) {
             log.info("没有开启动态数据源初始化用户, 不需要初始化用户");
             return;
         }
@@ -682,13 +687,6 @@ public class SourceServiceImpl extends BaseService implements SourceService {
                         .encryptedPassword(AESUtil.encrypt(SourceConstants.DORIS_DEFAULT_PASSWORD))
                         .build()).collect(Collectors.toList());
         dorisUserMappingService.batchCreateDorisUserMapping(dorisUserMappingCreateParams);
-    }
-
-    private boolean getBooleanValue(Object value) {
-        if (Objects.isNull(value)) {
-            return false;
-        }
-        return Boolean.parseBoolean(value.toString());
     }
 
 }

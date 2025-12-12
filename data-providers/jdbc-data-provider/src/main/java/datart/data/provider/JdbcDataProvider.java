@@ -1,13 +1,23 @@
 package datart.data.provider;
 
+import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
 import datart.core.base.exception.Exceptions;
+import datart.core.common.Application;
 import datart.core.common.FileUtils;
 import datart.core.common.MessageResolver;
+import datart.core.common.ObjUtils;
 import datart.core.data.provider.*;
+import datart.core.entity.DorisUserMapping;
+import datart.core.entity.SourceConstants;
+import datart.core.entity.User;
 import datart.data.provider.base.DataProviderException;
+import datart.data.provider.base.IProviderContext;
 import datart.data.provider.calcite.SqlParserUtils;
 import datart.data.provider.calcite.dialect.SqlStdOperatorSupport;
 import datart.data.provider.jdbc.DataSourceFactory;
@@ -29,6 +39,7 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -60,6 +71,24 @@ public class JdbcDataProvider extends DataProvider {
     public static final Integer DEFAULT_MAX_WAIT = 5000;
 
     private final Map<String, JdbcDataProviderAdapter> cachedProviders = new ConcurrentSkipListMap<>();
+
+    private final Cache<String, JdbcDataProviderAdapter> cachedDynamicProviders = CacheBuilder.newBuilder()
+            .expireAfterAccess(20, TimeUnit.MINUTES)
+            .maximumSize(1000)
+            .removalListener((RemovalListener<String, JdbcDataProviderAdapter>) removalNotification -> {
+                try {
+                    String key = removalNotification.getKey();
+                    JdbcDataProviderAdapter adapter = removalNotification.getValue();
+                    if (Objects.nonNull(adapter)) {
+                        adapter.close();
+                    }
+                    log.info("jdbc adapter has not been accessed for a long time and is automatically destroyed, key: {}", key);
+                } catch (Exception e) {
+                    log.error("jdbc adapter destroyed error.", e);
+                }
+            })
+            .build();
+
 
     @Override
     public Object test(DataProviderSource source) {
@@ -142,12 +171,39 @@ public class JdbcDataProvider extends DataProvider {
 
     private JdbcDataProviderAdapter matchProviderAdapter(DataProviderSource source) {
         JdbcDataProviderAdapter adapter;
-        adapter = cachedProviders.get(source.getSourceId());
-        if (adapter != null) {
-            return adapter;
+
+        IProviderContext providerContext = Application.getBean(IProviderContext.class);
+        Map<String, Object> propPro = source.getPropPro();
+        boolean dynamicUserEnable = ObjUtils.getBooleanValue(propPro.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
+        if (dynamicUserEnable) {
+            // 如果是动态数据源, 这里需要每个 用户+source_id 存一个 adapter
+            // 动态更改连接的用户名和密码
+            User currentUser = providerContext.getCurrentUser();
+            DorisUserMapping currentDorisUserMapping = providerContext.getCurrentDorisUserMappingBySourceId(source.getSourceId());
+            if (Objects.isNull(currentDorisUserMapping)) {
+                throw new RuntimeException("Dynamic user mapping not found for sourceId: " + source.getSourceId() + ", currentUser: " + currentUser.getUsername());
+            }
+            Map<String, Object> properties = source.getProperties();
+            properties.put(USER, currentDorisUserMapping.getDorisUsername());
+            properties.put(PASSWORD, providerContext.decrypt(currentDorisUserMapping.getEncryptedPassword()));
+
+            String uniqKey = source.getSourceId() + "_" + currentUser.getUsername();
+
+            adapter = cachedDynamicProviders.getIfPresent(uniqKey);
+            if (Objects.nonNull(adapter)) {
+                return adapter;
+            }
+            adapter = ProviderFactory.createDataProvider(conv2JdbcProperties(source), true);
+            cachedDynamicProviders.put(uniqKey, adapter);
+        } else {
+            adapter = cachedProviders.get(source.getSourceId());
+            if (Objects.nonNull(adapter)) {
+                return adapter;
+            }
+            adapter = ProviderFactory.createDataProvider(conv2JdbcProperties(source), true);
+            cachedProviders.put(source.getSourceId(), adapter);
         }
-        adapter = ProviderFactory.createDataProvider(conv2JdbcProperties(source), true);
-        cachedProviders.put(source.getSourceId(), adapter);
+
         return adapter;
     }
 
@@ -233,7 +289,7 @@ public class JdbcDataProvider extends DataProvider {
             List<JdbcDriverInfo> driverInfos = jdbcDriverInfos.stream().filter(item -> prop.getDbType().equals(item.getDbType()))
                     .collect(Collectors.toList());
 
-            if (driverInfos.size() == 0) {
+            if (CollUtil.isEmpty(driverInfos)) {
                 Exceptions.tr(DataProviderException.class, "message.provider.jdbc.dbtype", prop.getDbType());
             }
             if (driverInfos.size() > 1) {

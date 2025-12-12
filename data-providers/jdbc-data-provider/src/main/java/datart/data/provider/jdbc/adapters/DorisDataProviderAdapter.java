@@ -79,32 +79,4 @@ public class DorisDataProviderAdapter extends JdbcDataProviderAdapter {
         return dataSource;
     }
 
-    /**
-     * jdbcProperties 处理
-     *
-     * @param jdbcProperties JdbcProperties
-     * @return JdbcProperties
-     */
-    @Override
-    protected JdbcProperties processJdbcProp(JdbcProperties jdbcProperties) {
-        if (Objects.isNull(jdbcProperties)) {
-            return null;
-        }
-        Properties prop = jdbcProperties.getProperties();
-        if (Objects.isNull(prop)) {
-            return jdbcProperties;
-        }
-        String dynamicUserEnable = prop.getProperty(SourceConstants.PROP_DYNAMIC_USER_ENABLE);
-        if (Boolean.parseBoolean(dynamicUserEnable)) {
-            return jdbcProperties;
-        }
-
-        // TODO: 从表中获取用户名和密码
-
-
-
-        // TODO: 待补全
-        return jdbcProperties;
-    }
-
 }

@@ -10,6 +10,7 @@ import datart.core.entity.Source;
 import datart.core.entity.SourceConstants;
 import datart.core.entity.bo.DorisCreateUserBo;
 import datart.core.entity.bo.DorisExecSourceParamBo;
+import datart.core.entity.bo.DorisUserMappingQueryConditionBo;
 import datart.core.mappers.ext.DorisUserMappingMapperExt;
 import datart.security.util.AESUtil;
 import datart.server.base.params.doris.DorisUserMappingCreateParam;
@@ -20,6 +21,7 @@ import datart.server.service.doris.DorisExecService;
 import datart.server.service.doris.DorisUserMappingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +46,7 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
     @Resource
     private DorisExecService dorisExecService;
 
+    @Lazy
     @Resource
     private SourceService sourceService;
 
@@ -113,6 +116,25 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
             dorisExecService.createUser(sourceParam, dorisCreateUserBos);
             log.info("在数据源({})创建 Doris 用户成功, 并分配默认计算组: {}", sourceParam, dorisCreateUserBos);
         }
+    }
+
+    /**
+     * 根据查询条件获取 doris 用户映射
+     *
+     * @param condition 查询条件
+     * @return Doris 用户映射
+     */
+    @Override
+    public DorisUserMapping getByCondition(DorisUserMappingQueryConditionBo condition) {
+        DorisUserMappingExample example = new DorisUserMappingExample();
+        example.createCriteria()
+                .andSysUsernameEqualTo(condition.getUsername())
+                .andSourceIdEqualTo(condition.getSourceId());
+        List<DorisUserMapping> dorisUserMappings = dorisUserMappingMapper.selectByExample(example);
+        if (CollUtil.isEmpty(dorisUserMappings)) {
+            return null;
+        }
+        return dorisUserMappings.get(0);
     }
 
     /**
