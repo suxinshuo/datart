@@ -47,6 +47,7 @@ import datart.server.base.dto.OrganizationBaseInfo;
 import datart.server.base.dto.UserProfile;
 import datart.server.base.params.*;
 import datart.server.base.params.doris.DorisUserMappingCreateParam;
+import datart.server.base.params.view.ViewCreateDirectlyParam;
 import datart.server.service.*;
 import datart.server.service.doris.DorisUserMappingService;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -92,6 +93,9 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Resource
     private SourceService sourceService;
+
+    @Resource
+    private ViewService viewService;
 
     @Resource
     private DataProviderService dataProviderService;
@@ -254,7 +258,8 @@ public class UserServiceImpl extends BaseService implements UserService {
                 orgService.addUserToOrg(user.getId(), organization.getId());
                 log.info("The user({}) is joined the default organization({}).", user.getUsername(), organization.getName());
 
-                // TODO: 如果是 team 模式, 在 view 创建当前用户的文件夹
+                // 如果是 team 模式, 在 view 创建当前用户的文件夹
+                initUserDir(organization.getId(), user.getUsername());
 
                 // 检测有没有开启动态数据源的 source, 如果开启了, 需要自动创建对应的用户
                 initDynamicDataSourceUser(organization.getId(), user.getUsername());
@@ -275,6 +280,56 @@ public class UserServiceImpl extends BaseService implements UserService {
         orgMapper.insert(organization);
         log.info("Init organization({})", organization.getName());
         orgService.initOrganization(organization, user);
+    }
+
+    /**
+     * 初始化用户目录
+     *
+     * @param orgId    组织 ID
+     * @param username 用户名
+     */
+    private void initUserDir(String orgId, String username) {
+        String adHocDirName = Application.adHocDirName();
+        log.info("ad-hoc 查询父目录: {}", adHocDirName);
+
+        // 在当前组织下查找是否有这个父目录
+        List<View> adHocDirViews = viewService.getTopFolderViewsByName(orgId, adHocDirName);
+        View adHocDirView;
+        if (CollUtil.isEmpty(adHocDirViews)) {
+            // 如果没有就创建
+            ViewCreateDirectlyParam createParam = ViewCreateDirectlyParam.builder()
+                    .name(adHocDirName)
+                    .orgId(orgId)
+                    .parentId(null)
+                    .isFolder(true)
+                    .index(-999D)
+                    .status(Const.DATA_STATUS_ACTIVE)
+                    .build();
+            adHocDirView = viewService.createDirectly(createParam);
+        } else {
+            adHocDirView = adHocDirViews.get(0);
+        }
+
+        // 在当前父目录下查找当前 username 的文件夹
+        String parentId = adHocDirView.getId();
+        List<View> userDirViews = viewService.getFolderViewsByParentIdAndName(orgId, parentId, username);
+        if (CollUtil.isEmpty(userDirViews)) {
+            // 如果没有就创建
+            View lastView = viewService.getLastViewByParentId(orgId, parentId);
+            double maxIndex = Objects.isNull(lastView) ? -1 : lastView.getIndex();
+            ViewCreateDirectlyParam createParam = ViewCreateDirectlyParam.builder()
+                    .name(username)
+                    .orgId(orgId)
+                    .parentId(parentId)
+                    .isFolder(true)
+                    .index(maxIndex + 1)
+                    .status(Const.DATA_STATUS_ACTIVE)
+                    .build();
+            View userView = viewService.createDirectly(createParam);
+            log.info("创建个人 ad-hoc 目录成功, 目录路径: {}/{}, userView: {}", adHocDirName, username, userView);
+        } else {
+            log.info("个人 ad-hoc 目录已存在, 目录路径: {}/{}", adHocDirName, username);
+        }
     }
 
     private void initDynamicDataSourceUser(String orgId, String username) {

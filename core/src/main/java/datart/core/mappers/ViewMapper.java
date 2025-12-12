@@ -1,18 +1,29 @@
 package datart.core.mappers;
 
 import datart.core.entity.View;
+import datart.core.entity.ViewExample;
 import datart.core.mappers.ext.CRUDMapper;
+import java.util.List;
 import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.DeleteProvider;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.InsertProvider;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.SelectProvider;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.UpdateProvider;
 import org.apache.ibatis.type.JdbcType;
 
 public interface ViewMapper extends CRUDMapper {
+    @SelectProvider(type=ViewSqlProvider.class, method="countByExample")
+    long countByExample(ViewExample example);
+
+    @DeleteProvider(type=ViewSqlProvider.class, method="deleteByExample")
+    int deleteByExample(ViewExample example);
+
     @Delete({
         "delete from view",
         "where id = #{id,jdbcType=VARCHAR}"
@@ -22,25 +33,47 @@ public interface ViewMapper extends CRUDMapper {
     @Insert({
         "insert into view (id, `name`, ",
         "description, org_id, ",
-        "source_id, script, `type`, ",
-        "model, config, create_by, ",
-        "create_time, update_by, ",
-        "update_time, parent_id, ",
-        "is_folder, `index`, ",
-        "`status`)",
+        "source_id, script, ",
+        "`type`, model, config, ",
+        "create_by, create_time, ",
+        "update_by, update_time, ",
+        "parent_id, is_folder, ",
+        "`index`, `status`)",
         "values (#{id,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, ",
         "#{description,jdbcType=VARCHAR}, #{orgId,jdbcType=VARCHAR}, ",
-        "#{sourceId,jdbcType=VARCHAR}, #{script,jdbcType=VARCHAR}, #{type,jdbcType=VARCHAR}, ",
-        "#{model,jdbcType=VARCHAR}, #{config,jdbcType=VARCHAR}, #{createBy,jdbcType=VARCHAR}, ",
-        "#{createTime,jdbcType=TIMESTAMP}, #{updateBy,jdbcType=VARCHAR}, ",
-        "#{updateTime,jdbcType=TIMESTAMP}, #{parentId,jdbcType=VARCHAR}, ",
-        "#{isFolder,jdbcType=TINYINT}, #{index,jdbcType=DOUBLE}, ",
-        "#{status,jdbcType=TINYINT})"
+        "#{sourceId,jdbcType=VARCHAR}, #{script,jdbcType=VARCHAR}, ",
+        "#{type,jdbcType=VARCHAR}, #{model,jdbcType=VARCHAR}, #{config,jdbcType=VARCHAR}, ",
+        "#{createBy,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, ",
+        "#{updateBy,jdbcType=VARCHAR}, #{updateTime,jdbcType=TIMESTAMP}, ",
+        "#{parentId,jdbcType=VARCHAR}, #{isFolder,jdbcType=TINYINT}, ",
+        "#{index,jdbcType=DOUBLE}, #{status,jdbcType=TINYINT})"
     })
     int insert(View record);
 
     @InsertProvider(type=ViewSqlProvider.class, method="insertSelective")
     int insertSelective(View record);
+
+    @SelectProvider(type=ViewSqlProvider.class, method="selectByExample")
+    @Results({
+        @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
+        @Result(column="name", property="name", jdbcType=JdbcType.VARCHAR),
+        @Result(column="description", property="description", jdbcType=JdbcType.VARCHAR),
+        @Result(column="org_id", property="orgId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="source_id", property="sourceId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="script", property="script", jdbcType=JdbcType.VARCHAR),
+        @Result(column="type", property="type", jdbcType=JdbcType.VARCHAR),
+        @Result(column="model", property="model", jdbcType=JdbcType.VARCHAR),
+        @Result(column="config", property="config", jdbcType=JdbcType.VARCHAR),
+        @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
+        @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
+        @Result(column="update_by", property="updateBy", jdbcType=JdbcType.VARCHAR),
+        @Result(column="update_time", property="updateTime", jdbcType=JdbcType.TIMESTAMP),
+        @Result(column="parent_id", property="parentId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="is_folder", property="isFolder", jdbcType=JdbcType.TINYINT),
+        @Result(column="index", property="index", jdbcType=JdbcType.DOUBLE),
+        @Result(column="status", property="status", jdbcType=JdbcType.TINYINT)
+    })
+    List<View> selectByExample(ViewExample example);
 
     @Select({
         "select",
@@ -69,6 +102,12 @@ public interface ViewMapper extends CRUDMapper {
         @Result(column="status", property="status", jdbcType=JdbcType.TINYINT)
     })
     View selectByPrimaryKey(String id);
+
+    @UpdateProvider(type=ViewSqlProvider.class, method="updateByExampleSelective")
+    int updateByExampleSelective(@Param("record") View record, @Param("example") ViewExample example);
+
+    @UpdateProvider(type=ViewSqlProvider.class, method="updateByExample")
+    int updateByExample(@Param("record") View record, @Param("example") ViewExample example);
 
     @UpdateProvider(type=ViewSqlProvider.class, method="updateByPrimaryKeySelective")
     int updateByPrimaryKeySelective(View record);

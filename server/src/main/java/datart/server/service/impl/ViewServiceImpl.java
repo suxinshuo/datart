@@ -18,6 +18,7 @@
 
 package datart.server.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import datart.core.base.consts.Const;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotFoundException;
@@ -33,6 +34,7 @@ import datart.security.manager.shiro.ShiroSecurityManager;
 import datart.security.util.PermissionHelper;
 import datart.server.base.dto.ViewDetailDTO;
 import datart.server.base.params.*;
+import datart.server.base.params.view.ViewCreateDirectlyParam;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.ViewResourceModel;
@@ -147,6 +149,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             }
         }).collect(Collectors.toList());
 
+        // 把这些有权限的目录的父目录也加进去
         while (!filtered.isEmpty()) {
             boolean updated = false;
             for (View view : permitted) {
@@ -163,6 +166,67 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         }
         return permitted;
 
+    }
+
+    /**
+     * 查找组织下指定名称的顶层文件夹
+     *
+     * @param orgId 组织 ID
+     * @param name  文件夹名称
+     * @return 组织下指定名称的顶层文件夹列表
+     */
+    @Override
+    public List<View> getTopFolderViewsByName(String orgId, String name) {
+        ViewExample example = new ViewExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andIsFolderEqualTo(true)
+                .andParentIdIsNull()
+                .andNameEqualTo(name)
+                .andStatusEqualTo(Const.DATA_STATUS_ACTIVE);
+        example.setOrderByClause("`id`");
+        List<View> views = viewMapper.selectByExample(example);
+
+        // 根据权限过滤
+        return views.stream().filter(view -> {
+            try {
+                requirePermission(view, Const.READ);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 查找指定父目录下指定名称的文件夹
+     *
+     * @param orgId    组织 ID
+     * @param parentId 父目录 ID
+     * @param name     文件夹名称
+     * @return 指定父目录下指定名称的文件夹列表
+     */
+    @Override
+    public List<View> getFolderViewsByParentIdAndName(String orgId, String parentId, String name) {
+        ViewExample example = new ViewExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andIsFolderEqualTo(true)
+                .andParentIdEqualTo(parentId)
+                .andNameEqualTo(name)
+                .andStatusEqualTo(Const.DATA_STATUS_ACTIVE);
+        example.setOrderByClause("`id`");
+        List<View> views = viewMapper.selectByExample(example);
+
+        // 根据权限过滤
+        return views.stream().filter(view -> {
+            try {
+                requirePermission(view, Const.READ);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -324,6 +388,52 @@ public class ViewServiceImpl extends BaseService implements ViewService {
             Exceptions.tr(ParamException.class, "error.param.exists.name");
         }
         return true;
+    }
+
+    /**
+     * 直接创建视图
+     *
+     * @param createParam 创建视图参数
+     * @return 创建的视图
+     */
+    @Override
+    public View createDirectly(ViewCreateDirectlyParam createParam) {
+        String userId = getCurrentUser().getId();
+
+        View view = new View();
+        BeanUtils.copyProperties(createParam, view);
+
+        view.setId(UUIDGenerator.generate());
+        view.setCreateBy(userId);
+        view.setCreateTime(new Date());
+        view.setUpdateBy(userId);
+        view.setUpdateTime(new Date());
+
+        viewMapper.insertSelective(view);
+
+        return view;
+    }
+
+    /**
+     * 获取指定父目录下最后一个视图
+     *
+     * @param orgId    组织 ID
+     * @param parentId 父目录 ID
+     * @return 指定父目录下最后一个视图
+     */
+    @Override
+    public View getLastViewByParentId(String orgId, String parentId) {
+        ViewExample example = new ViewExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andParentIdEqualTo(parentId)
+                .andStatusEqualTo(Const.DATA_STATUS_ACTIVE);
+        example.setOrderByClause("`index` desc");
+        List<View> views = viewMapper.selectByExample(example);
+        if (CollUtil.isNotEmpty(views)) {
+            return views.get(0);
+        }
+        return null;
     }
 
     @Override
