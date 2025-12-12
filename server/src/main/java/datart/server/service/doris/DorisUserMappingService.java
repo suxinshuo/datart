@@ -1,7 +1,7 @@
 package datart.server.service.doris;
 
 import datart.core.entity.DorisUserMapping;
-import datart.core.entity.bo.DorisUserMappingQueryConditionBo;
+import datart.core.bo.DorisUserMappingQueryConditionBo;
 import datart.core.mappers.ext.DorisUserMappingMapperExt;
 import datart.server.base.params.doris.DorisUserMappingCreateParam;
 import datart.server.service.BaseCRUDService;

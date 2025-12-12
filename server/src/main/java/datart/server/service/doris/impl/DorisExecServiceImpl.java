@@ -3,9 +3,8 @@ package datart.server.service.doris.impl;
 import cn.hutool.db.Db;
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.json.JSONUtil;
-import datart.core.entity.bo.DorisCreateUserBo;
-import datart.core.entity.bo.DorisExecSourceParamBo;
+import datart.core.bo.DorisCreateUserBo;
+import datart.core.bo.DorisExecSourceParamBo;
 import datart.data.provider.JdbcDataProvider;
 import datart.server.service.doris.DorisExecService;
 import lombok.extern.slf4j.Slf4j;
@@ -40,19 +39,8 @@ public class DorisExecServiceImpl implements DorisExecService {
                 String userName = createUserBo.getDorisUsername();
                 String password = createUserBo.getDorisPassword();
                 String defaultComputeGroup = createUserBo.getDorisDefaultComputeGroup();
-
-                int executeFlag = db.execute("CREATE USER IF NOT EXISTS " + userName + " IDENTIFIED BY '" + password + "'");
-                if (executeFlag == 0) {
-                    log.error("创建用户失败, userName: {}, sourceParam: {}", userName, sourceParam);
-                    throw new RuntimeException("创建用户失败");
-                }
-
-                int executeFlag2 = db.execute("GRANT USAGE_PRIV ON COMPUTE GROUP " + defaultComputeGroup + " TO " + userName);
-                if (executeFlag2 == 0) {
-                    log.error("分配计算组失败, userName: {}, defaultComputeGroup: {}, sourceParam: {}", userName, defaultComputeGroup, sourceParam);
-                    throw new RuntimeException("分配计算组失败");
-                }
-
+                db.execute("CREATE USER IF NOT EXISTS " + userName + " IDENTIFIED BY '" + password + "'");
+                db.execute("GRANT USAGE_PRIV ON COMPUTE GROUP " + defaultComputeGroup + " TO " + userName);
                 log.info("创建用户并分配计算组成功, userName: {}, defaultComputeGroup: {}", userName, defaultComputeGroup);
             }
         } catch (SQLException e) {

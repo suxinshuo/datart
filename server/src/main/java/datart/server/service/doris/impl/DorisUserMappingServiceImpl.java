@@ -3,14 +3,13 @@ package datart.server.service.doris.impl;
 import cn.hutool.core.collection.CollUtil;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.ParamException;
-import datart.core.common.UUIDGenerator;
 import datart.core.entity.DorisUserMapping;
 import datart.core.entity.DorisUserMappingExample;
 import datart.core.entity.Source;
 import datart.core.entity.SourceConstants;
-import datart.core.entity.bo.DorisCreateUserBo;
-import datart.core.entity.bo.DorisExecSourceParamBo;
-import datart.core.entity.bo.DorisUserMappingQueryConditionBo;
+import datart.core.bo.DorisCreateUserBo;
+import datart.core.bo.DorisExecSourceParamBo;
+import datart.core.bo.DorisUserMappingQueryConditionBo;
 import datart.core.mappers.ext.DorisUserMappingMapperExt;
 import datart.security.util.AESUtil;
 import datart.server.base.params.doris.DorisUserMappingCreateParam;
@@ -19,14 +18,13 @@ import datart.server.service.DataProviderService;
 import datart.server.service.SourceService;
 import datart.server.service.doris.DorisExecService;
 import datart.server.service.doris.DorisUserMappingService;
+import datart.server.service.doris.factory.DorisUserMappingFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +51,9 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
     @Resource
     private DataProviderService dataProviderService;
 
+    @Resource
+    private DorisUserMappingFactory dorisUserMappingFactory;
+
     /**
      * 批量创建 doris 用户映射
      *
@@ -70,16 +71,10 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
             log.error("这一批用户中有已经存在的 sysUsername 和 sourceId. createParams: {}", createParams);
             Exceptions.tr(ParamException.class, "error.param.occupied", "resource.user-or-source");
         }
-        List<DorisUserMapping> dorisUserMappings = createParams.stream().map(createParam -> {
-            DorisUserMapping dorisUserMapping = new DorisUserMapping();
-            BeanUtils.copyProperties(createParam, dorisUserMapping);
-
-            dorisUserMapping.setCreateBy(getCurrentUser().getId());
-            dorisUserMapping.setCreateTime(new Date());
-            dorisUserMapping.setId(UUIDGenerator.generate());
-
-            return dorisUserMapping;
-        }).collect(Collectors.toList());
+        String userId = getCurrentUser().getId();
+        List<DorisUserMapping> dorisUserMappings = createParams.stream()
+                .map(createParam -> dorisUserMappingFactory.getDorisUserMapping(createParam, userId))
+                .collect(Collectors.toList());
 
         dorisUserMappingMapper.insertBatch(dorisUserMappings);
         log.info("Doris System 映射用户保存到元数据成功");

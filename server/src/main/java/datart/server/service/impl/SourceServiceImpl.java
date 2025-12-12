@@ -352,12 +352,13 @@ public class SourceServiceImpl extends BaseService implements SourceService {
         if (success) {
             Source source = retrieve(updateParam.getId());
             getDataProviderService().updateSource(source);
-            updateJdbcSourceSyncJob(source);
 
+            // 初始化更新数据源
             Source newSource = super.retrieve(updateParam.getId(), Source.class);
-
-            // 更新数据源
             initUpdateSource(oldSource, newSource);
+
+            // 最后更新同步任务
+            updateJdbcSourceSyncJob(source);
         }
         return false;
     }

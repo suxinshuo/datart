@@ -1,4 +1,4 @@
-package datart.core.entity.bo;
+package datart.core.bo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

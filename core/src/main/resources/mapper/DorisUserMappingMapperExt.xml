@@ -14,12 +14,12 @@
     </resultMap>
 
     <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
-        insert into doris_user_mapping (id, sys_username, source_id, doris_username, encrypted_password, create_by, create_time, update_by, update_time)
+        insert into doris_user_mapping (id, sys_username, source_id, doris_username, encrypted_password, create_by, update_by)
         values
         <foreach collection="list" item="item" separator=",">
             (#{item.id,jdbcType=VARCHAR}, #{item.sysUsername,jdbcType=VARCHAR},#{item.sourceId,jdbcType=VARCHAR},
              #{item.dorisUsername,jdbcType=VARCHAR}, #{item.encryptedPassword,jdbcType=VARCHAR}, #{item.createBy,jdbcType=VARCHAR},
-             #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateBy,jdbcType=VARCHAR}, #{item.updateTime,jdbcType=TIMESTAMP})
+             #{item.updateBy,jdbcType=VARCHAR})
         </foreach>
     </insert>
 </mapper>

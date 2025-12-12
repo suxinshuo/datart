@@ -98,19 +98,19 @@ public class JdbcDataProvider extends DataProvider {
 
     @Override
     public Set<String> readAllDatabases(DataProviderSource source) throws SQLException {
-        JdbcDataProviderAdapter adapter = matchProviderAdapter(source);
+        JdbcDataProviderAdapter adapter = matchProviderAdapter(source, true);
         return adapter.readAllDatabases();
     }
 
     @Override
     public Set<String> readTables(DataProviderSource source, String database) throws SQLException {
-        JdbcDataProviderAdapter adapter = matchProviderAdapter(source);
+        JdbcDataProviderAdapter adapter = matchProviderAdapter(source, true);
         return adapter.readAllTables(database);
     }
 
     @Override
     public Set<Column> readTableColumns(DataProviderSource source, String database, String table) throws SQLException {
-        JdbcDataProviderAdapter adapter = matchProviderAdapter(source);
+        JdbcDataProviderAdapter adapter = matchProviderAdapter(source, true);
         return adapter.readTableColumn(database, table);
     }
 
@@ -170,12 +170,17 @@ public class JdbcDataProvider extends DataProvider {
     }
 
     private JdbcDataProviderAdapter matchProviderAdapter(DataProviderSource source) {
+        return matchProviderAdapter(source, false);
+    }
+
+    private JdbcDataProviderAdapter matchProviderAdapter(DataProviderSource source, Boolean systemFlag) {
         JdbcDataProviderAdapter adapter;
 
         IProviderContext providerContext = Application.getBean(IProviderContext.class);
         Map<String, Object> propPro = source.getPropPro();
         boolean dynamicUserEnable = ObjUtils.getBooleanValue(propPro.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
-        if (dynamicUserEnable) {
+        // 如果是系统操作, 不走动态数据源配置
+        if (!systemFlag && dynamicUserEnable) {
             // 如果是动态数据源, 这里需要每个 用户+source_id 存一个 adapter
             // 动态更改连接的用户名和密码
             User currentUser = providerContext.getCurrentUser();
