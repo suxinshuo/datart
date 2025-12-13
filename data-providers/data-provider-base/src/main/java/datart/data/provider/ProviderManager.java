@@ -99,6 +99,18 @@ public class ProviderManager extends DataProviderExecuteOptimizer implements Dat
         return getDataProviderService(source.getType()).test(source);
     }
 
+    /**
+     * 读取 DataProvider 的所有Schema
+     *
+     * @param source DataProviderSource
+     * @return 所有 Schema 的列表
+     * @throws SQLException 如果读取 Schema 失败, 抛出SQLException
+     */
+    @Override
+    public List<SchemaItem> readAllSchemas(DataProviderSource source) throws SQLException {
+        return getDataProviderService(source.getType()).readAllSchemas(source);
+    }
+
     @Override
     public Set<String> readAllDatabases(DataProviderSource source) throws SQLException {
         return getDataProviderService(source.getType()).readAllDatabases(source);

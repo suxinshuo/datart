@@ -20,6 +20,15 @@ public interface DataProviderService {
 
     Object testConnection(DataProviderSource source) throws Exception;
 
+    /**
+     * 读取所有 Schema 信息
+     *
+     * @param sourceId 数据源 ID
+     * @return Schema 列表
+     * @throws SQLException 数据库操作异常
+     */
+    List<SchemaItem> readAllSchemas(String sourceId) throws SQLException;
+
     Set<String> readAllDatabases(String sourceId) throws SQLException;
 
     Set<String> readTables(String sourceId, String database) throws SQLException;

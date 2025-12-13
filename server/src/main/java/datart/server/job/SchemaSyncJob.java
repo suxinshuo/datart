@@ -23,14 +23,12 @@ import datart.core.common.Application;
 import datart.core.common.TransactionHelper;
 import datart.core.common.UUIDGenerator;
 import datart.core.data.provider.SchemaItem;
-import datart.core.data.provider.TableInfo;
 import datart.core.entity.Source;
 import datart.core.entity.SourceSchemas;
 import datart.core.mappers.ext.SourceSchemasMapperExt;
 import datart.server.service.DataProviderService;
 import datart.server.service.SourceService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.quartz.*;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -38,9 +36,7 @@ import org.springframework.transaction.TransactionStatus;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 public class SchemaSyncJob implements Job, Closeable {
@@ -76,26 +72,8 @@ public class SchemaSyncJob implements Job, Closeable {
     }
 
     public boolean execute(String sourceId) throws Exception {
-        List<SchemaItem> schemaItems = new LinkedList<>();
         DataProviderService dataProviderService = Application.getBean(DataProviderService.class);
-        Set<String> databases = dataProviderService.readAllDatabases(sourceId);
-        if (CollectionUtils.isNotEmpty(databases)) {
-            for (String database : databases) {
-                SchemaItem schemaItem = new SchemaItem();
-                schemaItems.add(schemaItem);
-                schemaItem.setDbName(database);
-                schemaItem.setTables(new LinkedList<>());
-                Set<String> tables = dataProviderService.readTables(sourceId, database);
-                if (CollectionUtils.isNotEmpty(tables)) {
-                    for (String table : tables) {
-                        TableInfo tableInfo = new TableInfo();
-                        schemaItem.getTables().add(tableInfo);
-                        tableInfo.setTableName(table);
-                        tableInfo.setColumns(dataProviderService.readTableColumns(sourceId, database, table));
-                    }
-                }
-            }
-        }
+        List<SchemaItem> schemaItems = dataProviderService.readAllSchemas(sourceId);
         return upsertSchemaInfo(sourceId, schemaItems);
     }
 
