@@ -71,6 +71,10 @@ public class DorisDataProviderAdapter extends JdbcDataProviderAdapter {
 
     @Override
     public List<SchemaItem> readAllSchemas() throws SQLException {
+        // TODO: 后续优化方案
+        // 如果是默认 catalog(即没有指定 catalog), 或者指定了 catalog = internal, 那么直接从数据库 information_schema.columns 查询
+        // 如果是 hive catalog, 那么从 hive metastore 源数据库查询
+        // 如果是其他的, 暂时还走原先的逻
         List<SchemaItem> schemaItems = Lists.newLinkedList();
         try (Connection conn = getConn()) {
             DatabaseMetaData metaData = conn.getMetaData();
