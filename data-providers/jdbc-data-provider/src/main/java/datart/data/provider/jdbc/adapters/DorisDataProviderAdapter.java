@@ -18,14 +18,24 @@
 
 package datart.data.provider.jdbc.adapters;
 
+import com.alibaba.druid.pool.DruidDataSource;
+import com.google.common.collect.Lists;
 import datart.core.data.provider.Dataframe;
 import datart.core.data.provider.ExecuteParam;
 import datart.core.data.provider.QueryScript;
 import datart.core.data.provider.sql.OrderOperator;
+import datart.core.entity.SourceConstants;
+import datart.data.provider.jdbc.JdbcProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import javax.sql.DataSource;
 import java.util.Collections;
+import java.util.Objects;
+import java.util.Properties;
 
+@Slf4j
 public class DorisDataProviderAdapter extends JdbcDataProviderAdapter {
 
     @Override
@@ -35,4 +45,32 @@ public class DorisDataProviderAdapter extends JdbcDataProviderAdapter {
         }
         return super.executeOnSource(script, executeParam);
     }
+
+    @Override
+    protected DataSource postProcessDs(DataSource dataSource) {
+        // 切换默认 catalog
+        JdbcProperties jdbcProp = this.jdbcProperties;
+        if (Objects.isNull(jdbcProp)) {
+            return dataSource;
+        }
+        Properties prop = jdbcProp.getProperties();
+        if (Objects.isNull(prop)) {
+            return dataSource;
+        }
+
+        String defaultCatalog = prop.getProperty(SourceConstants.PROP_DEFAULT_CATALOG);
+        if (StringUtils.isBlank(defaultCatalog)) {
+            return dataSource;
+        }
+
+        if (dataSource instanceof DruidDataSource) {
+            DruidDataSource druidDataSource = (DruidDataSource) dataSource;
+            druidDataSource.setConnectionInitSqls(Lists.newArrayList(
+                    String.format("switch %s", defaultCatalog)
+            ));
+            return druidDataSource;
+        }
+        return dataSource;
+    }
+
 }
