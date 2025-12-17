@@ -477,11 +477,11 @@ public class JdbcDataProviderAdapter implements Closeable {
 
         if (supportPaging()) {
             sql = render.render(true, true, false);
-            log.debug(sql);
+            log.info(sql);
             dataframe = execute(sql);
         } else {
             sql = render.render(true, false, false);
-            log.debug(sql);
+            log.info(sql);
             dataframe = execute(sql, executeParam.getPageInfo());
         }
         // fix page info

@@ -24,6 +24,7 @@ import datart.core.common.MessageResolver;
 import datart.core.common.RequestContext;
 import datart.core.data.provider.ExecuteParam;
 import datart.core.data.provider.QueryScript;
+import datart.core.data.provider.ScriptType;
 import datart.core.data.provider.ScriptVariable;
 import datart.data.provider.calcite.*;
 import datart.data.provider.entity.SqlTypeEnum;
@@ -85,7 +86,8 @@ public class SqlScriptRender extends ScriptRender {
         SqlTypeEnum sqlTypeEnum = SqlValidateUtils.getSqlType(originSql);
         String selectSql;
         // build with execute params
-        if (!Objects.equals(sqlTypeEnum, SqlTypeEnum.QUERY)) {
+        if (Objects.equals(queryScript.getScriptType(), ScriptType.SQL)
+                && !Objects.equals(sqlTypeEnum, SqlTypeEnum.QUERY)) {
             log.info("非 QUERY SQL, 直接执行原始 SQL: {}", originSql);
             selectSql = originSql;
         } else if (withExecuteParam) {
