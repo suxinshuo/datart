@@ -51,9 +51,11 @@ spring:
 
 mybatis:
   type-aliases-package: datart.core.entity
+  mapper-locations: classpath*:mapper/**/*.xml
   configuration:
     use-generated-keys: true
     map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 logging:
   level:

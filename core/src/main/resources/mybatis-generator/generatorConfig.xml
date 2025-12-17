@@ -17,8 +17,8 @@
         </commentGenerator>
 
         <jdbcConnection driverClass="com.mysql.jdbc.Driver"
-                        connectionURL="jdbc:mysql://127.0.0.1:3306/datart" userId="root"
-                        password="">
+                        connectionURL="jdbc:mysql://10.68.37.186:3306/datart" userId="admin"
+                        password="JLKDSJAASJGIHIQ23CVGF">
             <property name="nullCatalogMeansCurrent" value="true"/>
             <property name="useInformationSchema" value="true"/>
         </jdbcConnection>
@@ -161,9 +161,9 @@
         </table>
 
         <table tableName="source"
-               enableCountByExample="false" enableUpdateByExample="false"
-               enableDeleteByExample="false" enableSelectByExample="false"
-               selectByExampleQueryId="false">
+               enableCountByExample="true" enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true"
+               selectByExampleQueryId="true">
             <property name="ignoreQualifiersAtRuntime" value="true"/>
             <columnOverride column="config" javaType="java.lang.String" jdbcType="VARCHAR"/>
         </table>
@@ -245,6 +245,13 @@
                selectByExampleQueryId="false">
             <property name="ignoreQualifiersAtRuntime" value="true"/>
             <columnOverride column="use_default_value" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        </table>
+
+        <table tableName="doris_user_mapping"
+               enableCountByExample="true" enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true"
+               selectByExampleQueryId="true">
+            <property name="ignoreQualifiersAtRuntime" value="true"/>
         </table>
 
     </context>

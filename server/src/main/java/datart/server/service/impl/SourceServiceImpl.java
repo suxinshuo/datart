@@ -18,11 +18,13 @@
 
 package datart.server.service.impl;
 
-
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 import datart.core.base.consts.Const;
 import datart.core.base.consts.FileOwner;
+import datart.core.base.consts.TenantManagementMode;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotFoundException;
 import datart.core.base.exception.ParamException;
@@ -31,10 +33,9 @@ import datart.core.data.provider.DataProviderConfigTemplate;
 import datart.core.data.provider.DataProviderSource;
 import datart.core.data.provider.SchemaInfo;
 import datart.core.data.provider.SchemaItem;
-import datart.core.entity.Role;
-import datart.core.entity.Source;
-import datart.core.entity.SourceSchemas;
+import datart.core.entity.*;
 import datart.core.entity.ext.SourceDetail;
+import datart.core.entity.ext.UserBaseInfo;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
 import datart.core.mappers.ext.SourceMapperExt;
 import datart.core.mappers.ext.SourceSchemasMapperExt;
@@ -46,11 +47,13 @@ import datart.security.manager.shiro.ShiroSecurityManager;
 import datart.security.util.AESUtil;
 import datart.security.util.PermissionHelper;
 import datart.server.base.params.*;
+import datart.server.base.params.doris.DorisUserMappingCreateParam;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.SourceResourceModel;
 import datart.server.job.SchemaSyncJob;
 import datart.server.service.*;
+import datart.server.service.doris.DorisUserMappingService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -59,6 +62,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -71,31 +75,29 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
     private static final String SYNC_INTERVAL = "syncInterval";
 
-    private final SourceMapperExt sourceMapper;
+    @Resource
+    private SourceMapperExt sourceMapper;
 
-    private final RoleService roleService;
+    @Resource
+    private RoleService roleService;
 
-    private final FileService fileService;
+    @Resource
+    private FileService fileService;
 
-    private final Scheduler scheduler;
+    @Resource
+    private OrgService orgService;
 
-    private final SourceSchemasMapperExt sourceSchemasMapper;
+    @Resource
+    private DorisUserMappingService dorisUserMappingService;
 
-    private final RelRoleResourceMapperExt rrrMapper;
+    @Resource
+    private Scheduler scheduler;
 
-    public SourceServiceImpl(SourceMapperExt sourceMapper,
-                             RoleService roleService,
-                             FileService fileService,
-                             Scheduler scheduler,
-                             SourceSchemasMapperExt sourceSchemasMapper,
-                             RelRoleResourceMapperExt rrrMapper) {
-        this.sourceMapper = sourceMapper;
-        this.roleService = roleService;
-        this.fileService = fileService;
-        this.scheduler = scheduler;
-        this.sourceSchemasMapper = sourceSchemasMapper;
-        this.rrrMapper = rrrMapper;
-    }
+    @Resource
+    private SourceSchemasMapperExt sourceSchemasMapper;
+
+    @Resource
+    private RelRoleResourceMapperExt rrrMapper;
 
     @Override
     public boolean checkUnique(String orgId, String parentId, String name) {
@@ -137,6 +139,22 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             }
         }
         return permitted;
+    }
+
+    /**
+     * 通过 source id 列表查询 source 列表
+     *
+     * @param sourceIds source id 列表
+     * @return source 列表
+     */
+    @Override
+    public List<Source> listByIds(List<String> sourceIds) {
+        if (CollUtil.isEmpty(sourceIds)) {
+            return Lists.newArrayList();
+        }
+        SourceExample example = new SourceExample();
+        example.createCriteria().andIdIn(sourceIds);
+        return sourceMapper.selectByExample(example);
     }
 
     @Override
@@ -297,6 +315,10 @@ public class SourceServiceImpl extends BaseService implements SourceService {
         if (!source.getIsFolder()) {
             updateJdbcSourceSyncJob(source);
         }
+
+        // 初始化
+        initSource(source);
+
         return source;
     }
 
@@ -325,13 +347,56 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
     @Override
     public boolean updateSource(SourceUpdateParam updateParam) {
+        Source oldSource = super.retrieve(updateParam.getId(), Source.class);
         boolean success = update(updateParam);
         if (success) {
             Source source = retrieve(updateParam.getId());
             getDataProviderService().updateSource(source);
+
+            // 初始化更新数据源
+            Source newSource = super.retrieve(updateParam.getId(), Source.class);
+            initUpdateSource(oldSource, newSource);
+
+            // 最后更新同步任务
             updateJdbcSourceSyncJob(source);
         }
         return false;
+    }
+
+    private void initUpdateSource(Source oldSource, Source newSource) {
+        // 判断动态数据源配置只能从关闭到开启, 不能从开启到关闭
+        DataProviderService dataProviderService = getDataProviderService();
+        DataProviderSource oldDataProviderSource = dataProviderService.parseDataProviderConfig(oldSource);
+        DataProviderSource newDataProviderSource = dataProviderService.parseDataProviderConfig(newSource);
+
+        Map<String, Object> oldProp = oldDataProviderSource.getPropPro();
+        Map<String, Object> newProp = newDataProviderSource.getPropPro();
+        boolean oldDynamicUserEnable = ObjUtils.getBooleanValue(oldProp.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
+        boolean newDynamicUserEnable = ObjUtils.getBooleanValue(newProp.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE));
+        boolean oldDynamicUserInit = ObjUtils.getBooleanValue(oldProp.get(SourceConstants.PROP_DYNAMIC_USER_INIT));
+        boolean newDynamicUserInit = ObjUtils.getBooleanValue(newProp.get(SourceConstants.PROP_DYNAMIC_USER_INIT));
+
+        if (Objects.equals(oldDynamicUserEnable, newDynamicUserEnable)) {
+            if (oldDynamicUserEnable && !oldDynamicUserInit && newDynamicUserInit) {
+                // 一直都是开启状态, 初始化配置从 false 改为 true
+                initDynamicUsers(newSource);
+            }
+            // 配置相同, 不需要更新
+            return;
+        }
+
+        // 只能从关闭到开启
+        if (oldDynamicUserEnable) {
+            Exceptions.tr(ParamException.class, "message.source.dynamic-user-enable-cannot-close");
+        }
+
+        // 从关闭到开启, 配置了不需要初始化就直接跳过
+        if (!newDynamicUserInit) {
+            return;
+        }
+
+        // 初始化用户
+        initDynamicUsers(newSource);
     }
 
     @Override
@@ -580,6 +645,49 @@ public class SourceServiceImpl extends BaseService implements SourceService {
 
     private DataProviderService getDataProviderService() {
         return Application.getBean(DataProviderService.class);
+    }
+
+    private void initSource(Source source) {
+        // 如果是动态数据源, 并且配置了需要初始化, 需要获取该组织下所有用户, 自动创建用户
+        DataProviderSource dataProviderSource = getDataProviderService().parseDataProviderConfig(source);
+        Map<String, Object> properties = dataProviderSource.getPropPro();
+        Object dynamicUserEnable = properties.get(SourceConstants.PROP_DYNAMIC_USER_ENABLE);
+        if (!ObjUtils.getBooleanValue(dynamicUserEnable)) {
+            log.info("没有开启动态数据源, 不需要初始化用户");
+            return;
+        }
+
+        // 检测 PLATFORM 模式不允许启动 dynamic 配置
+        if (Application.getCurrMode().equals(TenantManagementMode.PLATFORM)) {
+            Exceptions.tr(ParamException.class, "message.source.dynamic-user-not-allowed-in-platform-mode");
+        }
+
+        Object dynamicUserInit = properties.get(SourceConstants.PROP_DYNAMIC_USER_INIT);
+        if (!ObjUtils.getBooleanValue(dynamicUserInit)) {
+            log.info("没有开启动态数据源初始化用户, 不需要初始化用户");
+            return;
+        }
+        // 初始化用户
+        initDynamicUsers(source);
+    }
+
+    private void initDynamicUsers(Source source) {
+        // 获取该组织下所有用户
+        List<UserBaseInfo> users = orgService.listOrgMembers(source.getOrgId());
+        if (CollUtil.isEmpty(users)) {
+            log.warn("该组织({})下没有用户, 不需要初始化用户", source.getOrgId());
+            return;
+        }
+        // 自动创建用户
+        List<DorisUserMappingCreateParam> dorisUserMappingCreateParams = users.stream()
+                .map(user -> DorisUserMappingCreateParam.builder()
+                        .sysUsername(user.getUsername())
+                        .sourceId(source.getId())
+                        .dorisUsername(user.getUsername())
+                        // 暂时固定密码
+                        .encryptedPassword(AESUtil.encrypt(SourceConstants.DORIS_DEFAULT_PASSWORD))
+                        .build()).collect(Collectors.toList());
+        dorisUserMappingService.batchCreateDorisUserMapping(dorisUserMappingCreateParams);
     }
 
 }

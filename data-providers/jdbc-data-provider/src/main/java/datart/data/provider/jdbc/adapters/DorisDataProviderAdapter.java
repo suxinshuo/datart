@@ -46,6 +46,12 @@ public class DorisDataProviderAdapter extends JdbcDataProviderAdapter {
         return super.executeOnSource(script, executeParam);
     }
 
+    /**
+     * 对 datasource 的后处理
+     *
+     * @param dataSource DataSource
+     * @return DataSource
+     */
     @Override
     protected DataSource postProcessDs(DataSource dataSource) {
         // 切换默认 catalog

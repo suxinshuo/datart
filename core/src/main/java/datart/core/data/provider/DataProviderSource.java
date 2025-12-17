@@ -17,11 +17,14 @@
  */
 package datart.core.data.provider;
 
+import cn.hutool.core.collection.CollUtil;
+import com.google.common.collect.Maps;
 import lombok.Data;
 import lombok.ToString;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Data
 @ToString
@@ -36,5 +39,21 @@ public class DataProviderSource {
     private Map<String, Object> properties;
 
     private List<ScriptVariable> variables;
+
+    public Map<String, Object> getPropPro() {
+        if (CollUtil.isEmpty(properties)) {
+            return Maps.newHashMap();
+        }
+
+        Object propObj = properties.get("properties");
+        if (Objects.isNull(propObj)) {
+            return Maps.newHashMap();
+        }
+
+        Map<String, Object> proPro = Maps.newHashMap();
+        proPro.putAll((Map<String, Object>) properties.get("properties"));
+
+        return proPro;
+    }
 
 }

@@ -1,62 +1,50 @@
 package datart.core.mappers;
 
-import datart.core.entity.Source;
-import datart.core.entity.SourceExample.Criteria;
-import datart.core.entity.SourceExample.Criterion;
-import datart.core.entity.SourceExample;
+import datart.core.entity.DorisUserMapping;
+import datart.core.entity.DorisUserMappingExample.Criteria;
+import datart.core.entity.DorisUserMappingExample.Criterion;
+import datart.core.entity.DorisUserMappingExample;
 import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.jdbc.SQL;
 
-public class SourceSqlProvider {
-    public String countByExample(SourceExample example) {
+public class DorisUserMappingSqlProvider {
+    public String countByExample(DorisUserMappingExample example) {
         SQL sql = new SQL();
-        sql.SELECT("count(*)").FROM("source");
+        sql.SELECT("count(*)").FROM("doris_user_mapping");
         applyWhere(sql, example, false);
         return sql.toString();
     }
 
-    public String deleteByExample(SourceExample example) {
+    public String deleteByExample(DorisUserMappingExample example) {
         SQL sql = new SQL();
-        sql.DELETE_FROM("source");
+        sql.DELETE_FROM("doris_user_mapping");
         applyWhere(sql, example, false);
         return sql.toString();
     }
 
-    public String insertSelective(Source record) {
+    public String insertSelective(DorisUserMapping record) {
         SQL sql = new SQL();
-        sql.INSERT_INTO("source");
+        sql.INSERT_INTO("doris_user_mapping");
         
         if (record.getId() != null) {
             sql.VALUES("id", "#{id,jdbcType=VARCHAR}");
         }
         
-        if (record.getName() != null) {
-            sql.VALUES("`name`", "#{name,jdbcType=VARCHAR}");
+        if (record.getSysUsername() != null) {
+            sql.VALUES("sys_username", "#{sysUsername,jdbcType=VARCHAR}");
         }
         
-        if (record.getConfig() != null) {
-            sql.VALUES("config", "#{config,jdbcType=VARCHAR}");
+        if (record.getSourceId() != null) {
+            sql.VALUES("source_id", "#{sourceId,jdbcType=VARCHAR}");
         }
         
-        if (record.getType() != null) {
-            sql.VALUES("`type`", "#{type,jdbcType=VARCHAR}");
+        if (record.getDorisUsername() != null) {
+            sql.VALUES("doris_username", "#{dorisUsername,jdbcType=VARCHAR}");
         }
         
-        if (record.getOrgId() != null) {
-            sql.VALUES("org_id", "#{orgId,jdbcType=VARCHAR}");
-        }
-        
-        if (record.getParentId() != null) {
-            sql.VALUES("parent_id", "#{parentId,jdbcType=VARCHAR}");
-        }
-        
-        if (record.getIsFolder() != null) {
-            sql.VALUES("is_folder", "#{isFolder,jdbcType=TINYINT}");
-        }
-        
-        if (record.getIndex() != null) {
-            sql.VALUES("`index`", "#{index,jdbcType=DOUBLE}");
+        if (record.getEncryptedPassword() != null) {
+            sql.VALUES("encrypted_password", "#{encryptedPassword,jdbcType=VARCHAR}");
         }
         
         if (record.getCreateBy() != null) {
@@ -75,33 +63,25 @@ public class SourceSqlProvider {
             sql.VALUES("update_time", "#{updateTime,jdbcType=TIMESTAMP}");
         }
         
-        if (record.getStatus() != null) {
-            sql.VALUES("`status`", "#{status,jdbcType=TINYINT}");
-        }
-        
         return sql.toString();
     }
 
-    public String selectByExample(SourceExample example) {
+    public String selectByExample(DorisUserMappingExample example) {
         SQL sql = new SQL();
         if (example != null && example.isDistinct()) {
             sql.SELECT_DISTINCT("id");
         } else {
             sql.SELECT("id");
         }
-        sql.SELECT("`name`");
-        sql.SELECT("config");
-        sql.SELECT("`type`");
-        sql.SELECT("org_id");
-        sql.SELECT("parent_id");
-        sql.SELECT("is_folder");
-        sql.SELECT("`index`");
+        sql.SELECT("sys_username");
+        sql.SELECT("source_id");
+        sql.SELECT("doris_username");
+        sql.SELECT("encrypted_password");
         sql.SELECT("create_by");
         sql.SELECT("create_time");
         sql.SELECT("update_by");
         sql.SELECT("update_time");
-        sql.SELECT("`status`");
-        sql.FROM("source");
+        sql.FROM("doris_user_mapping");
         applyWhere(sql, example, false);
         
         if (example != null && example.getOrderByClause() != null) {
@@ -112,42 +92,30 @@ public class SourceSqlProvider {
     }
 
     public String updateByExampleSelective(Map<String, Object> parameter) {
-        Source record = (Source) parameter.get("record");
-        SourceExample example = (SourceExample) parameter.get("example");
+        DorisUserMapping record = (DorisUserMapping) parameter.get("record");
+        DorisUserMappingExample example = (DorisUserMappingExample) parameter.get("example");
         
         SQL sql = new SQL();
-        sql.UPDATE("source");
+        sql.UPDATE("doris_user_mapping");
         
         if (record.getId() != null) {
             sql.SET("id = #{record.id,jdbcType=VARCHAR}");
         }
         
-        if (record.getName() != null) {
-            sql.SET("`name` = #{record.name,jdbcType=VARCHAR}");
+        if (record.getSysUsername() != null) {
+            sql.SET("sys_username = #{record.sysUsername,jdbcType=VARCHAR}");
         }
         
-        if (record.getConfig() != null) {
-            sql.SET("config = #{record.config,jdbcType=VARCHAR}");
+        if (record.getSourceId() != null) {
+            sql.SET("source_id = #{record.sourceId,jdbcType=VARCHAR}");
         }
         
-        if (record.getType() != null) {
-            sql.SET("`type` = #{record.type,jdbcType=VARCHAR}");
+        if (record.getDorisUsername() != null) {
+            sql.SET("doris_username = #{record.dorisUsername,jdbcType=VARCHAR}");
         }
         
-        if (record.getOrgId() != null) {
-            sql.SET("org_id = #{record.orgId,jdbcType=VARCHAR}");
-        }
-        
-        if (record.getParentId() != null) {
-            sql.SET("parent_id = #{record.parentId,jdbcType=VARCHAR}");
-        }
-        
-        if (record.getIsFolder() != null) {
-            sql.SET("is_folder = #{record.isFolder,jdbcType=TINYINT}");
-        }
-        
-        if (record.getIndex() != null) {
-            sql.SET("`index` = #{record.index,jdbcType=DOUBLE}");
+        if (record.getEncryptedPassword() != null) {
+            sql.SET("encrypted_password = #{record.encryptedPassword,jdbcType=VARCHAR}");
         }
         
         if (record.getCreateBy() != null) {
@@ -166,67 +134,47 @@ public class SourceSqlProvider {
             sql.SET("update_time = #{record.updateTime,jdbcType=TIMESTAMP}");
         }
         
-        if (record.getStatus() != null) {
-            sql.SET("`status` = #{record.status,jdbcType=TINYINT}");
-        }
-        
         applyWhere(sql, example, true);
         return sql.toString();
     }
 
     public String updateByExample(Map<String, Object> parameter) {
         SQL sql = new SQL();
-        sql.UPDATE("source");
+        sql.UPDATE("doris_user_mapping");
         
         sql.SET("id = #{record.id,jdbcType=VARCHAR}");
-        sql.SET("`name` = #{record.name,jdbcType=VARCHAR}");
-        sql.SET("config = #{record.config,jdbcType=VARCHAR}");
-        sql.SET("`type` = #{record.type,jdbcType=VARCHAR}");
-        sql.SET("org_id = #{record.orgId,jdbcType=VARCHAR}");
-        sql.SET("parent_id = #{record.parentId,jdbcType=VARCHAR}");
-        sql.SET("is_folder = #{record.isFolder,jdbcType=TINYINT}");
-        sql.SET("`index` = #{record.index,jdbcType=DOUBLE}");
+        sql.SET("sys_username = #{record.sysUsername,jdbcType=VARCHAR}");
+        sql.SET("source_id = #{record.sourceId,jdbcType=VARCHAR}");
+        sql.SET("doris_username = #{record.dorisUsername,jdbcType=VARCHAR}");
+        sql.SET("encrypted_password = #{record.encryptedPassword,jdbcType=VARCHAR}");
         sql.SET("create_by = #{record.createBy,jdbcType=VARCHAR}");
         sql.SET("create_time = #{record.createTime,jdbcType=TIMESTAMP}");
         sql.SET("update_by = #{record.updateBy,jdbcType=VARCHAR}");
         sql.SET("update_time = #{record.updateTime,jdbcType=TIMESTAMP}");
-        sql.SET("`status` = #{record.status,jdbcType=TINYINT}");
         
-        SourceExample example = (SourceExample) parameter.get("example");
+        DorisUserMappingExample example = (DorisUserMappingExample) parameter.get("example");
         applyWhere(sql, example, true);
         return sql.toString();
     }
 
-    public String updateByPrimaryKeySelective(Source record) {
+    public String updateByPrimaryKeySelective(DorisUserMapping record) {
         SQL sql = new SQL();
-        sql.UPDATE("source");
+        sql.UPDATE("doris_user_mapping");
         
-        if (record.getName() != null) {
-            sql.SET("`name` = #{name,jdbcType=VARCHAR}");
+        if (record.getSysUsername() != null) {
+            sql.SET("sys_username = #{sysUsername,jdbcType=VARCHAR}");
         }
         
-        if (record.getConfig() != null) {
-            sql.SET("config = #{config,jdbcType=VARCHAR}");
+        if (record.getSourceId() != null) {
+            sql.SET("source_id = #{sourceId,jdbcType=VARCHAR}");
         }
         
-        if (record.getType() != null) {
-            sql.SET("`type` = #{type,jdbcType=VARCHAR}");
+        if (record.getDorisUsername() != null) {
+            sql.SET("doris_username = #{dorisUsername,jdbcType=VARCHAR}");
         }
         
-        if (record.getOrgId() != null) {
-            sql.SET("org_id = #{orgId,jdbcType=VARCHAR}");
-        }
-        
-        if (record.getParentId() != null) {
-            sql.SET("parent_id = #{parentId,jdbcType=VARCHAR}");
-        }
-        
-        if (record.getIsFolder() != null) {
-            sql.SET("is_folder = #{isFolder,jdbcType=TINYINT}");
-        }
-        
-        if (record.getIndex() != null) {
-            sql.SET("`index` = #{index,jdbcType=DOUBLE}");
+        if (record.getEncryptedPassword() != null) {
+            sql.SET("encrypted_password = #{encryptedPassword,jdbcType=VARCHAR}");
         }
         
         if (record.getCreateBy() != null) {
@@ -245,16 +193,12 @@ public class SourceSqlProvider {
             sql.SET("update_time = #{updateTime,jdbcType=TIMESTAMP}");
         }
         
-        if (record.getStatus() != null) {
-            sql.SET("`status` = #{status,jdbcType=TINYINT}");
-        }
-        
         sql.WHERE("id = #{id,jdbcType=VARCHAR}");
         
         return sql.toString();
     }
 
-    protected void applyWhere(SQL sql, SourceExample example, boolean includeExamplePhrase) {
+    protected void applyWhere(SQL sql, DorisUserMappingExample example, boolean includeExamplePhrase) {
         if (example == null) {
             return;
         }
