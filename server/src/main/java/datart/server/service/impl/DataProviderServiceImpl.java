@@ -122,6 +122,20 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
         return dataProviderManager.testConnection(source);
     }
 
+    /**
+     * 读取所有 Schema 信息
+     *
+     * @param sourceId 数据源 ID
+     * @return Schema 列表
+     * @throws SQLException 数据库操作异常
+     */
+    @Override
+    public List<SchemaItem> readAllSchemas(String sourceId) throws SQLException {
+        Source source = retrieve(sourceId, Source.class, false);
+        DataProviderSource dataProviderSource = parseDataProviderConfig(source);
+        return dataProviderManager.readAllSchemas(dataProviderSource);
+    }
+
     @Override
     public Set<String> readAllDatabases(String sourceId) throws SQLException {
         Source source = retrieve(sourceId, Source.class, false);
