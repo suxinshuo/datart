@@ -31,6 +31,15 @@ public interface DataProviderManager {
 
     Object testConnection(DataProviderSource source) throws Exception;
 
+    /**
+     * 读取 DataProvider 的所有 Schema
+     *
+     * @param source DataProviderSource
+     * @return 所有 Schema 的列表
+     * @throws SQLException 如果读取 Schema 失败, 抛出SQLException
+     */
+    List<SchemaItem> readAllSchemas(DataProviderSource source) throws SQLException;
+
     Set<String> readAllDatabases(DataProviderSource source) throws SQLException;
 
     Set<String> readTables(DataProviderSource source, String database) throws SQLException;

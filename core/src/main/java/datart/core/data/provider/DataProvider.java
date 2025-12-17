@@ -18,14 +18,18 @@
 
 package datart.core.data.provider;
 
+import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import datart.core.base.AutoCloseBean;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 public abstract class DataProvider extends AutoCloseBean {
@@ -53,6 +57,36 @@ public abstract class DataProvider extends AutoCloseBean {
      * @return Returns true on success of the connection or false on failure.
      */
     public abstract Object test(DataProviderSource source) throws Exception;
+
+    /**
+     * 读取 DataProvider 的所有Schema
+     *
+     * @param source DataProviderSource
+     * @return 所有 Schema 的列表
+     * @throws SQLException 如果读取 Schema 失败, 抛出SQLException
+     */
+    public List<SchemaItem> readAllSchemas(DataProviderSource source) throws SQLException {
+        List<SchemaItem> schemaItems = Lists.newLinkedList();
+        Set<String> databases = this.readAllDatabases(source);
+        if (CollUtil.isNotEmpty(databases)) {
+            for (String database : databases) {
+                SchemaItem schemaItem = new SchemaItem();
+                schemaItems.add(schemaItem);
+                schemaItem.setDbName(database);
+                schemaItem.setTables(new LinkedList<>());
+                Set<String> tables = this.readTables(source, database);
+                if (CollUtil.isNotEmpty(tables)) {
+                    for (String table : tables) {
+                        TableInfo tableInfo = new TableInfo();
+                        schemaItem.getTables().add(tableInfo);
+                        tableInfo.setTableName(table);
+                        tableInfo.setColumns(this.readTableColumns(source, database, table));
+                    }
+                }
+            }
+        }
+        return schemaItems;
+    }
 
     public abstract Set<String> readAllDatabases(DataProviderSource source) throws SQLException;
 

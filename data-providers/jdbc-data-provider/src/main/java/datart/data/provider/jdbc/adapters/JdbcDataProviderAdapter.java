@@ -18,7 +18,9 @@
 
 package datart.data.provider.jdbc.adapters;
 
+import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
+import com.google.common.collect.Lists;
 import datart.core.base.PageInfo;
 import datart.core.base.consts.ValueType;
 import datart.core.base.exception.Exceptions;
@@ -118,6 +120,29 @@ public class JdbcDataProviderAdapter implements Closeable {
             Exceptions.e(sqlException);
         }
         return true;
+    }
+
+    public List<SchemaItem> readAllSchemas() throws SQLException {
+        List<SchemaItem> schemaItems = Lists.newLinkedList();
+        Set<String> databases = this.readAllDatabases();
+        if (CollUtil.isNotEmpty(databases)) {
+            for (String database : databases) {
+                SchemaItem schemaItem = new SchemaItem();
+                schemaItems.add(schemaItem);
+                schemaItem.setDbName(database);
+                schemaItem.setTables(new LinkedList<>());
+                Set<String> tables = this.readAllTables(database);
+                if (CollUtil.isNotEmpty(tables)) {
+                    for (String table : tables) {
+                        TableInfo tableInfo = new TableInfo();
+                        schemaItem.getTables().add(tableInfo);
+                        tableInfo.setTableName(table);
+                        tableInfo.setColumns(this.readTableColumn(database, table));
+                    }
+                }
+            }
+        }
+        return schemaItems;
     }
 
     public Set<String> readAllDatabases() throws SQLException {

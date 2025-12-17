@@ -97,6 +97,12 @@ public class JdbcDataProvider extends DataProvider {
     }
 
     @Override
+    public List<SchemaItem> readAllSchemas(DataProviderSource source) throws SQLException {
+        JdbcDataProviderAdapter adapter = matchProviderAdapter(source, true);
+        return adapter.readAllSchemas();
+    }
+
+    @Override
     public Set<String> readAllDatabases(DataProviderSource source) throws SQLException {
         JdbcDataProviderAdapter adapter = matchProviderAdapter(source, true);
         return adapter.readAllDatabases();
