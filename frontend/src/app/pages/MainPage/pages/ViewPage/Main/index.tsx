@@ -27,6 +27,7 @@ import { useMemberSlice } from '../../MemberPage/slice';
 import { useSourceSlice } from '../../SourcePage/slice';
 import { getSources } from '../../SourcePage/slice/thunks';
 import { useVariableSlice } from '../../VariablePage/slice';
+import { UNPERSISTED_ID_PREFIX } from '../constants';
 import { selectEditingViews } from '../slice/selectors';
 import { getViewDetail } from '../slice/thunks';
 import { Tabs } from './Tabs';
@@ -54,8 +55,12 @@ export const Main = memo(({ sliderVisible }: { sliderVisible: boolean }) => {
   useEffect(() => {
     if (viewId) {
       dispatch(getViewDetail({ viewId }));
+    } else if (editingViews.length === 0) {
+      // No viewId and no editing views, create a new SQL view automatically
+      const newViewId = `${UNPERSISTED_ID_PREFIX}${Date.now()}`;
+      dispatch(getViewDetail({ viewId: newViewId }));
     }
-  }, [dispatch, viewId, orgId]);
+  }, [dispatch, viewId, orgId, editingViews.length]);
 
   return (
     <Container className={sliderVisible ? 'close' : ''}>
