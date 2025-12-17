@@ -79,6 +79,11 @@ export interface ViewSimpleViewModel extends ViewSimple {
   deleteLoading: boolean;
 }
 
+export type ViewTreeNode = ViewSimpleViewModel & TreeDataNode & {
+  path: string[];
+  children?: ViewTreeNode[];
+};
+
 export interface ViewViewModel<T = object>
   extends Pick<View, 'name' | 'script' | 'type'> {
   id: string;

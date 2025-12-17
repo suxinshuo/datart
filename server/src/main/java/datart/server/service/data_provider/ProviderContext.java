@@ -2,7 +2,7 @@ package datart.server.service.data_provider;
 
 import datart.core.entity.DorisUserMapping;
 import datart.core.entity.User;
-import datart.core.bo.DorisUserMappingQueryConditionBo;
+import datart.core.bo.doris.DorisUserMappingQueryConditionBo;
 import datart.data.provider.base.IProviderContext;
 import datart.security.manager.DatartSecurityManager;
 import datart.security.util.AESUtil;

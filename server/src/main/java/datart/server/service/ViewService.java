@@ -23,6 +23,7 @@ import datart.core.entity.View;
 import datart.core.mappers.ext.ViewMapperExt;
 import datart.server.base.dto.ViewDetailDTO;
 import datart.server.base.params.BaseUpdateParam;
+import datart.server.base.params.view.ViewCreateDirectlyParam;
 import datart.server.base.transfer.model.TransferModel;
 import datart.server.base.transfer.model.ViewResourceModel;
 import datart.server.base.params.ViewBaseUpdateParam;
@@ -35,6 +36,25 @@ public interface ViewService extends VizCRUDService<View, ViewMapperExt>, Resour
 
     List<View> getViews(String orgId);
 
+    /**
+     * 查找组织下指定名称的顶层文件夹
+     *
+     * @param orgId 组织 ID
+     * @param name  文件夹名称
+     * @return 组织下指定名称的顶层文件夹列表
+     */
+    List<View> getTopFolderViewsByName(String orgId, String name);
+
+    /**
+     * 查找指定父目录下指定名称的文件夹
+     *
+     * @param orgId    组织 ID
+     * @param parentId 父目录 ID
+     * @param name     文件夹名称
+     * @return 指定父目录下指定名称的文件夹列表
+     */
+    List<View> getFolderViewsByParentIdAndName(String orgId, String parentId, String name);
+
     View updateView(BaseUpdateParam updateParam);
 
     boolean unarchive(String id, String newName, String parentId, double index);
@@ -42,5 +62,22 @@ public interface ViewService extends VizCRUDService<View, ViewMapperExt>, Resour
     boolean updateBase(ViewBaseUpdateParam updateParam);
 
     boolean checkUnique(String orgId, String parentId, String name);
+
+    /**
+     * 直接创建视图
+     *
+     * @param createParam 创建视图参数
+     * @return 创建的视图
+     */
+    View createDirectly(ViewCreateDirectlyParam createParam);
+
+    /**
+     * 获取指定父目录下最后一个视图
+     *
+     * @param orgId    组织 ID
+     * @param parentId 父目录 ID
+     * @return 指定父目录下最后一个视图
+     */
+    View getLastViewByParentId(String orgId, String parentId);
 
 }

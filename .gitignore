@@ -4,6 +4,7 @@
 .queries
 .DS_Store
 .vscode
+.trae
 
 logs/**
 
