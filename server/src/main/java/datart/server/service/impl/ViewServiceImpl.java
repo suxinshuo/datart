@@ -39,6 +39,7 @@ import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.ViewResourceModel;
 import datart.server.service.*;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -473,7 +474,9 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                 rscMapper.batchInsert(columnPermission);
             }
         }
-        Application.getBean(DataProviderService.class).updateSource(retrieve(view.getSourceId(), Source.class, false));
+        if (StringUtils.isNotBlank(view.getSourceId())) {
+            Application.getBean(DataProviderService.class).updateSource(retrieve(view.getSourceId(), Source.class, false));
+        }
         BeanUtils.copyProperties(updateParam, view);
         view.setType(viewUpdateParam.getType().name());
         view.setUpdateBy(getCurrentUser().getId());

@@ -25,12 +25,14 @@ import datart.core.entity.BaseEntity;
 import datart.core.entity.User;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
 import datart.security.manager.DatartSecurityManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class BaseService extends MessageResolver {
 
     protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -85,7 +87,12 @@ public class BaseService extends MessageResolver {
     }
 
     public <T> T retrieve(String id, Class<T> clz, boolean checkPermission) {
-        return (T) getEntityService(clz).retrieve(id, checkPermission);
+        try {
+            return (T) getEntityService(clz).retrieve(id, checkPermission);
+        } catch (Exception e) {
+            log.error("retrieve entity error, id: {}, clz: {}, checkPermission: {}", id, clz, checkPermission, e);
+            throw e;
+        }
     }
 
     private BaseCRUDService<?, ?> getEntityService(Class<?> clz) {
