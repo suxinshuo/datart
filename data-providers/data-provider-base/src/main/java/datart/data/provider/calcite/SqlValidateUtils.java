@@ -127,6 +127,10 @@ public class SqlValidateUtils {
         if (StringUtils.isBlank(sql)) {
             return false;
         }
+        if (enableSpecialSQL) {
+            return false;
+        }
+
         String firstWord = firstWord(sql);
         // check select sql
         if (QUERY_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
