@@ -20,6 +20,7 @@ package datart.server.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 import com.jayway.jsonpath.JsonPath;
 import datart.core.base.consts.Const;
 import datart.core.base.consts.TenantManagementMode;
@@ -36,9 +37,7 @@ import datart.core.entity.ext.UserBaseInfo;
 import datart.core.mappers.ext.OrganizationMapperExt;
 import datart.core.mappers.ext.RelRoleUserMapperExt;
 import datart.core.mappers.ext.UserMapperExt;
-import datart.security.base.JwtToken;
-import datart.security.base.PasswordToken;
-import datart.security.base.RoleType;
+import datart.security.base.*;
 import datart.security.exception.AuthException;
 import datart.security.util.AESUtil;
 import datart.security.util.JwtUtils;
@@ -259,7 +258,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                 log.info("The user({}) is joined the default organization({}).", user.getUsername(), organization.getName());
 
                 // 如果是 team 模式, 在 view 创建当前用户的文件夹
-                initUserDir(organization.getId(), user.getUsername());
+                initUserDir(organization.getId(), user);
 
                 // 检测有没有开启动态数据源的 source, 如果开启了, 需要自动创建对应的用户
                 initDynamicDataSourceUser(organization.getId(), user.getUsername());
@@ -285,15 +284,19 @@ public class UserServiceImpl extends BaseService implements UserService {
     /**
      * 初始化用户目录
      *
-     * @param orgId    组织 ID
-     * @param username 用户名
+     * @param orgId 组织 ID
+     * @param user  用户
      */
-    private void initUserDir(String orgId, String username) {
+    private void initUserDir(String orgId, User user) {
         String adHocDirName = Application.adHocDirName();
-        log.info("ad-hoc 查询父目录: {}", adHocDirName);
+        String adHocExampleDirName = Application.adHocExampleDirName();
+        log.info("ad-hoc 查询父目录: {}, 示例查询父目录: {}", adHocDirName, adHocExampleDirName);
+
+        String userId = user.getId();
+        String username = user.getUsername();
 
         // 在当前组织下查找是否有这个父目录
-        List<View> adHocDirViews = viewService.getTopFolderViewsByName(orgId, adHocDirName);
+        List<View> adHocDirViews = viewService.getTopFolderViewsByName(orgId, adHocDirName, false);
         View adHocDirView;
         if (CollUtil.isEmpty(adHocDirViews)) {
             // 如果没有就创建
@@ -304,32 +307,139 @@ public class UserServiceImpl extends BaseService implements UserService {
                     .isFolder(true)
                     .index(-999D)
                     .status(Const.DATA_STATUS_ACTIVE)
+                    .operatorUserId(userId)
                     .build();
             adHocDirView = viewService.createDirectly(createParam);
         } else {
             adHocDirView = adHocDirViews.get(0);
         }
+        String parentViewDirId = adHocDirView.getId();
+
+        // 给用户赋默认权限: 所有 source 使用权限 + view(Ad-hoc Query SQLs) 的使用和管理权限
+        String adHocViewPermId = initSourceAndViewPerm(orgId, userId, parentViewDirId);
+        log.info("初始化用户({})默认权限第一阶段完成", username);
 
         // 在当前父目录下查找当前 username 的文件夹
-        String parentId = adHocDirView.getId();
-        List<View> userDirViews = viewService.getFolderViewsByParentIdAndName(orgId, parentId, username);
+        List<View> userDirViews = viewService.getFolderViewsByParentIdAndName(orgId, parentViewDirId, username, false);
+        View userDirView;
         if (CollUtil.isEmpty(userDirViews)) {
             // 如果没有就创建
-            View lastView = viewService.getLastViewByParentId(orgId, parentId);
+            View lastView = viewService.getLastViewByParentId(orgId, parentViewDirId);
             double maxIndex = Objects.isNull(lastView) ? -1 : lastView.getIndex();
             ViewCreateDirectlyParam createParam = ViewCreateDirectlyParam.builder()
                     .name(username)
                     .orgId(orgId)
-                    .parentId(parentId)
+                    .parentId(parentViewDirId)
                     .isFolder(true)
                     .index(maxIndex + 1)
                     .status(Const.DATA_STATUS_ACTIVE)
+                    .operatorUserId(userId)
                     .build();
-            View userView = viewService.createDirectly(createParam);
-            log.info("创建个人 ad-hoc 目录成功, 目录路径: {}/{}, userView: {}", adHocDirName, username, userView);
+            userDirView = viewService.createDirectly(createParam);
+            log.info("创建个人 ad-hoc 目录成功, 目录路径: {}/{}, userDirView: {}", adHocDirName, username, userDirView);
         } else {
             log.info("个人 ad-hoc 目录已存在, 目录路径: {}/{}", adHocDirName, username);
+            userDirView = userDirViews.get(0);
         }
+
+        // 用户赋权, 移除 view(Ad-hoc Query SQLs) 的使用和管理权限, 增加当前用户文件夹的使用和管理权限 和查询示例的使用权限
+        initUserDirViewPer(orgId, userId, adHocViewPermId, userDirView, adHocExampleDirName);
+        log.info("初始化用户({})默认权限第二阶段完成", username);
+    }
+
+    private void initUserDirViewPer(String orgId, String userId, String adHocViewPermId, View userDirView, String adHocExampleDirName) {
+        // 移除 View(Ad-hoc Query SQLs) 的使用和管理权限
+        GrantPermissionParam delViewGrantPermissionParam = new GrantPermissionParam();
+        delViewGrantPermissionParam.setPermissionToDelete(Lists.newArrayList(
+                PermissionInfo.builder()
+                        .id(adHocViewPermId)
+                        .build()
+        ));
+        roleService.grantPermission(delViewGrantPermissionParam, false);
+
+        // 增加当前用户文件夹的使用和管理权限 和查询示例的使用权限
+        GrantPermissionParam grantPermissionParam = new GrantPermissionParam();
+        grantPermissionParam.setPermissionToCreate(Lists.newArrayList(
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIEW)
+                        .resourceId(userDirView.getId())
+                        .permission(Const.CREATE)
+                        .build()
+        ));
+
+        // 在当前组织下查找是否有这个父目录, 如果有的话就给权限
+        List<View> adHocExampleDirViews = viewService.getTopFolderViewsByName(orgId, adHocExampleDirName, false);
+        if (CollUtil.isNotEmpty(adHocExampleDirViews)) {
+            String adHocExampleDirViewId = adHocExampleDirViews.get(0).getId();
+            grantPermissionParam.getPermissionToCreate().add(
+                    PermissionInfo.builder()
+                            .orgId(orgId)
+                            .subjectType(SubjectType.USER_ROLE)
+                            .subjectId(userId)
+                            .resourceType(ResourceType.VIEW)
+                            .resourceId(adHocExampleDirViewId)
+                            .permission(Const.READ)
+                            .build()
+            );
+        }
+
+        roleService.grantPermission(grantPermissionParam, false);
+    }
+
+    private String initSourceAndViewPerm(String orgId, String userId, String parentViewDirId) {
+        // 启用 Source & View 功能权限 & 所有 Source 的使用权限
+        GrantPermissionParam enableSourceGrantPermissionParam = new GrantPermissionParam();
+        enableSourceGrantPermissionParam.setPermissionToCreate(Lists.newArrayList(
+                // Source
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.SOURCE)
+                        .resourceId("*")
+                        .permission(Const.ENABLE)
+                        .build(),
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.SOURCE)
+                        .resourceId(ResourceType.SOURCE.toString())
+                        .permission(Const.READ)
+                        .build(),
+                // View
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIEW)
+                        .resourceId("*")
+                        .permission(Const.ENABLE)
+                        .build(),
+                // 禁用所有 View 权限
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIEW)
+                        .resourceId(ResourceType.VIEW.toString())
+                        .permission(Const.DISABLE)
+                        .build(),
+                // View(Ad-hoc Query SQLs) 管理权限
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIEW)
+                        .resourceId(parentViewDirId)
+                        .permission(Const.CREATE)
+                        .build()
+        ));
+        List<PermissionInfo> permissionInfos = roleService.grantPermission(enableSourceGrantPermissionParam, false);
+        return permissionInfos.get(4).getId();
     }
 
     private void initDynamicDataSourceUser(String orgId, String username) {

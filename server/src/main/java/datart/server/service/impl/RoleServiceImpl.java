@@ -179,7 +179,14 @@ public class RoleServiceImpl extends BaseService implements RoleService {
     private RelRoleUser createRelRoleUser(String userId, String roleId) {
         RelRoleUser relRoleUser = new RelRoleUser();
         relRoleUser.setId(UUIDGenerator.generate());
-        relRoleUser.setCreateBy(getCurrentUser().getId());
+
+        User currentUser = getCurrentUser();
+        if (Objects.nonNull(currentUser)) {
+            relRoleUser.setCreateBy(currentUser.getId());
+        } else {
+            relRoleUser.setCreateBy(SystemConstant.SYSTEM_USER_ID);
+        }
+
         relRoleUser.setCreateTime(new Date());
         relRoleUser.setUserId(userId);
         relRoleUser.setRoleId(roleId);
@@ -231,14 +238,20 @@ public class RoleServiceImpl extends BaseService implements RoleService {
             rrrMapper.deleteByResource(relRoleResource.getResourceType(), relRoleResource.getResourceId());
             return null;
         }
+        User currentUser = getCurrentUser();
+        String currentUserId = SystemConstant.SYSTEM_USER_ID;
+        if (Objects.nonNull(currentUser)) {
+            currentUserId = currentUser.getId();
+        }
+
         if (StringUtils.isBlank(relRoleResource.getId())) {
             relRoleResource.setId(UUIDGenerator.generate());
-            relRoleResource.setCreateBy(getCurrentUser().getId());
+            relRoleResource.setCreateBy(currentUserId);
             relRoleResource.setCreateTime(new Date());
             rrrMapper.insert(relRoleResource);
         } else {
             relRoleResource.setUpdateTime(new Date());
-            relRoleResource.setUpdateBy(getCurrentUser().getId());
+            relRoleResource.setUpdateBy(currentUserId);
             rrrMapper.updateByPrimaryKeySelective(relRoleResource);
         }
         return relRoleResource;
@@ -325,6 +338,12 @@ public class RoleServiceImpl extends BaseService implements RoleService {
     @Override
     @Transactional
     public List<PermissionInfo> grantPermission(GrantPermissionParam grantPermissionParam) {
+        return grantPermission(grantPermissionParam, true);
+    }
+
+    @Override
+    @Transactional
+    public List<PermissionInfo> grantPermission(GrantPermissionParam grantPermissionParam, Boolean checkPermission) {
 
         Set<String> orgId = new HashSet<>();
 
@@ -346,7 +365,11 @@ public class RoleServiceImpl extends BaseService implements RoleService {
         if (orgId.size() > 1) {
             Exceptions.base("The org id has to be unique");
         }
-        securityManager.requireOrgOwner(orgId.stream().findFirst().get());
+
+        if (Objects.nonNull(checkPermission) && checkPermission) {
+            securityManager.requireOrgOwner(orgId.stream().findFirst().get());
+        }
+
         // delete permission
         if (!CollectionUtils.isEmpty(grantPermissionParam.getPermissionToDelete())) {
             List<String> ids = grantPermissionParam.getPermissionToDelete()

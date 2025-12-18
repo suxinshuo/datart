@@ -172,12 +172,13 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     /**
      * 查找组织下指定名称的顶层文件夹
      *
-     * @param orgId 组织 ID
-     * @param name  文件夹名称
+     * @param orgId            组织 ID
+     * @param name             文件夹名称
+     * @param filterPermission 是否过滤权限
      * @return 组织下指定名称的顶层文件夹列表
      */
     @Override
-    public List<View> getTopFolderViewsByName(String orgId, String name) {
+    public List<View> getTopFolderViewsByName(String orgId, String name, Boolean filterPermission) {
         ViewExample example = new ViewExample();
         example.createCriteria()
                 .andOrgIdEqualTo(orgId)
@@ -187,6 +188,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                 .andStatusEqualTo(Const.DATA_STATUS_ACTIVE);
         example.setOrderByClause("`id`");
         List<View> views = viewMapper.selectByExample(example);
+
+        if (Objects.isNull(filterPermission) || !filterPermission) {
+            return views;
+        }
 
         // 根据权限过滤
         return views.stream().filter(view -> {
@@ -202,13 +207,14 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     /**
      * 查找指定父目录下指定名称的文件夹
      *
-     * @param orgId    组织 ID
-     * @param parentId 父目录 ID
-     * @param name     文件夹名称
+     * @param orgId            组织 ID
+     * @param parentId         父目录 ID
+     * @param name             文件夹名称
+     * @param filterPermission 是否过滤权限
      * @return 指定父目录下指定名称的文件夹列表
      */
     @Override
-    public List<View> getFolderViewsByParentIdAndName(String orgId, String parentId, String name) {
+    public List<View> getFolderViewsByParentIdAndName(String orgId, String parentId, String name, Boolean filterPermission) {
         ViewExample example = new ViewExample();
         example.createCriteria()
                 .andOrgIdEqualTo(orgId)
@@ -218,6 +224,10 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                 .andStatusEqualTo(Const.DATA_STATUS_ACTIVE);
         example.setOrderByClause("`id`");
         List<View> views = viewMapper.selectByExample(example);
+
+        if (Objects.isNull(filterPermission) || !filterPermission) {
+            return views;
+        }
 
         // 根据权限过滤
         return views.stream().filter(view -> {
@@ -399,15 +409,13 @@ public class ViewServiceImpl extends BaseService implements ViewService {
      */
     @Override
     public View createDirectly(ViewCreateDirectlyParam createParam) {
-        String userId = getCurrentUser().getId();
-
         View view = new View();
         BeanUtils.copyProperties(createParam, view);
 
         view.setId(UUIDGenerator.generate());
-        view.setCreateBy(userId);
+        view.setCreateBy(createParam.getOperatorUserId());
         view.setCreateTime(new Date());
-        view.setUpdateBy(userId);
+        view.setUpdateBy(createParam.getOperatorUserId());
         view.setUpdateTime(new Date());
 
         viewMapper.insertSelective(view);

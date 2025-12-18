@@ -48,7 +48,7 @@ public class Oauth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
             String token = externalRegisterService.oauth2Register((OAuth2AuthenticationToken) authentication);
             registerRedirectStrategy.redirect(request, response, token);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Oauth2AuthenticationSuccessHandler onAuthenticationSuccess error", e);
             registerRedirectStrategy.redirectError(request, response, e.getMessage());
         }
     }

@@ -42,6 +42,7 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
 import java.io.UnsupportedEncodingException;
+import java.util.Objects;
 
 import static datart.core.common.Application.getProperty;
 
@@ -111,6 +112,7 @@ public class ExternalRegisterServiceImpl implements ExternalRegisterService {
 
     @Override
     public String oauth2Register(OAuth2AuthenticationToken oauthAuthToken) throws MessagingException, UnsupportedEncodingException {
+        log.info("oauth2Register: {}", oauthAuthToken);
         OAuth2User oauthUser = oauthAuthToken.getPrincipal();
 
         User user = userMapper.selectByNameOrEmail(oauthUser.getName());
@@ -121,15 +123,24 @@ public class ExternalRegisterServiceImpl implements ExternalRegisterService {
             return JwtUtils.toJwtString(passwordToken);
         }
 
-        String emailMapping = getProperty(String.format("spring.security.oauth2.client.provider.%s.userMapping.email", oauthAuthToken.getAuthorizedClientRegistrationId()));
-        JSONObject jsonObj = new JSONObject(oauthUser.getAttributes());
+        String registrationId = oauthAuthToken.getAuthorizedClientRegistrationId();
+        log.info("oauth2Register: {}", registrationId);
+        String emailMapping = getProperty(String.format("spring.security.oauth2.client.provider.%s.userMapping.email", registrationId));
+        String displayName = getProperty(String.format("spring.security.oauth2.client.provider.%s.userMapping.displayName", registrationId));
 
         UserRegisterParam userRegisterParam = new UserRegisterParam();
         userRegisterParam.setUsername(oauthUser.getName());
         userRegisterParam.setPassword(RandomStringUtils.randomAscii(32));
-        if (emailMapping != null) {
+
+        JSONObject jsonObj = new JSONObject(oauthUser.getAttributes());
+        if (Objects.nonNull(emailMapping)) {
             userRegisterParam.setEmail(JsonPath.read(jsonObj, emailMapping));
         }
+        if (Objects.nonNull(displayName)) {
+            userRegisterParam.setName(JsonPath.read(jsonObj, displayName));
+        }
+
+        // 注册用户, 并登录
         if (userService.register(userRegisterParam, false)) {
             PasswordToken passwordToken = new PasswordToken(userRegisterParam.getUsername(),
                     userRegisterParam.getPassword(),
