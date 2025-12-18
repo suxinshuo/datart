@@ -443,8 +443,9 @@ public class UserServiceImpl extends BaseService implements UserService {
     }
 
     private void initDynamicDataSourceUser(String orgId, String username) {
-        // 找到该组织下所有有效的 source
-        List<Source> sources = sourceService.listSources(orgId, true);
+        // 找到该组织下所有有效的 source, 不校验权限
+        List<Source> sources = sourceService.listSources(orgId, true, false);
+        log.info("所有 source: {}", sources);
         List<Source> dynamicUserSource = sources.stream().filter(source -> {
             DataProviderSource dataProviderSource = dataProviderService.parseDataProviderConfig(source);
             Map<String, Object> prop = dataProviderSource.getPropPro();

@@ -133,7 +133,8 @@ export function transformQueryResultToModelAndDataSource(
     arr.reduce((obj, val, index) => {
       const key = columns[index].name;
       // Handle empty objects gracefully to prevent rendering crashes
-      const value = isEmptyArray(Object.keys(val)) ? null : val;
+      // Only convert to null if val is an object and empty
+      const value = typeof val === 'object' && val !== null && isEmptyArray(Object.keys(val)) ? null : val;
       return {
         ...obj,
         [key]: value,
