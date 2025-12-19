@@ -101,13 +101,19 @@ const slice = createSlice({
         // Check if stage is being explicitly set in payload
         const hasStageInPayload = entries.some(([key]) => key === 'stage');
         
+        // Check if we're just cleaning up async task status fields
+        const isTaskStatusCleanup = entries.every(([key]) => 
+          ['currentTaskId', 'currentTaskStatus', 'currentTaskProgress', 'currentTaskErrorMessage'].includes(key)
+        );
+        
         entries.forEach(([key, value]) => {
           currentEditingView[key] = value;
         });
         
         // Don't reset stage if it was explicitly set in payload
         if (
-          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0]))
+          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])) &&
+          !isTaskStatusCleanup  // Don't mark as touched when just cleaning up task status
         ) {
           currentEditingView.touched = true;
           if (

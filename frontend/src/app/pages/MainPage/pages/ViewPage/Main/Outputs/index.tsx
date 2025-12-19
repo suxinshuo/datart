@@ -66,20 +66,22 @@ export const Outputs = memo(() => {
 
   // Monitor task status with optimized polling strategy
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
     let retryCount = 0;
-    const MAX_RETRIES = 60; // Maximum of 120 seconds of polling (60 * 2s)
+    const MAX_RETRIES = 1800; // Maximum of 60 minutes of polling (1800 * 2s)
 
-    if (currentTaskId) {
+    // Stop polling if task is already completed
+    if (currentTaskId && currentTaskStatus !== SqlTaskStatus.SUCCESS && currentTaskStatus !== SqlTaskStatus.FAILURE) {
       // Function to get polling interval based on task status and retry count
       const getPollingInterval = () => {
         // Adjust interval based on task status
         if (currentTaskStatus === SqlTaskStatus.QUEUED) {
-          // Longer interval for queuing status (3 seconds)
-          return 3000;
+          // Longer interval for queuing status (1 seconds)
+          return 1000;
         } else if (currentTaskStatus === SqlTaskStatus.RUNNING) {
           // Dynamic interval for running status: start with 2s, increase to 5s after 10 retries
-          return retryCount < 10 ? 2000 : 5000;
+          // retryCount < 10, 从 650 递增到 2000
+          return retryCount <= 10 ? 500 + 150 * (retryCount + 1) : 5000;
         }
         return 2000; // Default fallback for cancelled or other statuses
       };

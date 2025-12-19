@@ -380,24 +380,27 @@ export const getSqlTaskStatus = createAsyncThunk<
       updateTaskStatus(dispatch, taskId, response.data.status, response.data.progress, response.data.errorMessage || undefined);
 
       // If task is complete, update the results
-      if (response.data.status === SqlTaskStatus.SUCCESS && response.data.taskResult) {
-        // Transform query result to model and data source, similar to synchronous execution
-        const { model, dataSource } = transformQueryResultToModelAndDataSource(
-          response.data.taskResult,
-          currentEditingView.model,
-          currentEditingView.type,
-        );
+        if (response.data.status === SqlTaskStatus.SUCCESS && response.data.taskResult) {
+          // Transform query result to model and data source, similar to synchronous execution
+          const { model, dataSource } = transformQueryResultToModelAndDataSource(
+            response.data.taskResult,
+            currentEditingView.model,
+            currentEditingView.type,
+          );
 
-        // Update model and preview results
-        dispatch(
-          viewActions.changeCurrentEditingView({
-            stage: ViewViewModelStages.Saveable,
-            model: diffMergeHierarchyModel(model, currentEditingView.type!),
-            previewResults: dataSource,
-            warnings: response.data.taskResult.warnings,
-          }),
-        );
-      } else if (response.data.status === SqlTaskStatus.FAILURE) {
+          // Update model and preview results
+          // Don't set stage to Saveable - we'll let saveView handle setting to Saved
+          dispatch(
+            viewActions.changeCurrentEditingView({
+              model: diffMergeHierarchyModel(model, currentEditingView.type!),
+              previewResults: dataSource,
+              warnings: response.data.taskResult.warnings,
+            }),
+          );
+
+          // Auto save the view after successful execution
+          dispatch(saveView({}));
+        } else if (response.data.status === SqlTaskStatus.FAILURE) {
         dispatch(
           viewActions.changeCurrentEditingView({
             stage: ViewViewModelStages.Initialized,

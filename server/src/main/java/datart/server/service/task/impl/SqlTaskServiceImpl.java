@@ -200,7 +200,6 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
     @Override
     public SqlTaskStatusResponse getSqlTaskStatus(String taskId) {
-        log.info("getSqlTaskStatus, taskId: {}", taskId);
         // 从数据库查询任务信息
         SqlTaskWithBLOBs task = sqlTaskMapper.selectByPrimaryKey(taskId);
 
