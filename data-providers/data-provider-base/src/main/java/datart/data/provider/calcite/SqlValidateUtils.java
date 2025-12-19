@@ -67,7 +67,11 @@ public class SqlValidateUtils {
     );
 
     private static final Set<String> DDL_SQL = Sets.newHashSet(
-            "SHOW", "CREATE", "DROP", "ALTER"
+            "CREATE", "DROP", "ALTER"
+    );
+
+    private static final Set<String> DDL_QUERY_SQL = Sets.newHashSet(
+            "SHOW"
     );
 
     private static final Set<String> DML_SQL = Sets.newHashSet(
@@ -86,6 +90,9 @@ public class SqlValidateUtils {
         String firstWord = firstWord(sql);
         if (QUERY_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
             return SqlTypeEnum.QUERY;
+        }
+        if (DDL_QUERY_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
+            return SqlTypeEnum.DDL_QUERY;
         }
         if (DDL_SQL.stream().anyMatch(item -> item.equalsIgnoreCase(firstWord))) {
             return SqlTypeEnum.DDL;
@@ -141,9 +148,7 @@ public class SqlValidateUtils {
             Exceptions.tr(DataProviderException.class, "message.sql.op.forbidden", sql);
         }
         // special sql
-        if (!enableSpecialSQL) {
-            Exceptions.tr(DataProviderException.class, "message.sql.op.forbidden", sql);
-        }
+        Exceptions.tr(DataProviderException.class, "message.sql.op.forbidden", sql);
         return false;
 
     }
