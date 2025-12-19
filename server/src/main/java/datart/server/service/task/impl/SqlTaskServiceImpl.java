@@ -19,6 +19,7 @@ package datart.server.service.task.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
+import cn.hutool.json.JSON;
 import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -232,7 +233,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
             if (CollUtil.isNotEmpty(sqlTaskResults)) {
                 String resultData = sqlTaskResults.get(0).getData();
-                response.setTaskResult(JSONUtil.toBean(resultData, Dataframe.class));
+                response.setTaskResult(JSONUtil.toBean(resultData, JSON.class));
             }
         } else if (SqlTaskStatus.FAILED.equals(status)) {
             // 如果任务执行失败, 返回错误信息
@@ -330,6 +331,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             // 更新任务状态为执行中
             Date runDate = new Date();
             task.setStatus(SqlTaskStatus.RUNNING.toString());
+            task.setProgress(20);
             task.setStartTime(runDate);
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
             task.setUpdateTime(runDate);

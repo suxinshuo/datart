@@ -30,6 +30,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
 import { FONT_FAMILY, FONT_SIZE_BASE } from 'styles/StyleConstants';
+import { Spin } from 'antd';
 import { CloneValueDeep, isEmptyArray } from 'utils/object';
 import { uuidv4 } from 'utils/utils';
 import { selectRoles } from '../../../MemberPage/slice/selectors';
@@ -44,6 +45,7 @@ import {
   HierarchyModel,
   ViewViewModel,
 } from '../../slice/types';
+import { transparentize } from 'polished';
 
 const ROW_KEY = 'DATART_ROW_KEY';
 
@@ -265,6 +267,11 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
         onSchemaTypeChange={modelChange}
         hasCategory
       />
+      {stage === ViewViewModelStages.Running && (
+        <LoadingMask>
+          <Spin />
+        </LoadingMask>
+      )}
     </TableWrapper>
   ) : (
     <InitialDesc>
@@ -289,8 +296,22 @@ const InitialDesc = styled.div`
 `;
 
 const TableWrapper = styled.div`
+  position: relative;
   flex: 1;
   overflow: hidden;
   font-family: ${FONT_FAMILY};
   background-color: ${p => p.theme.componentBackground};
+`;
+
+const LoadingMask = styled.div`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${p => transparentize(0.5, p.theme.componentBackground)};
 `;

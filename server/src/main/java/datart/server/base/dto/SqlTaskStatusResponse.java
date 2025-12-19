@@ -46,7 +46,7 @@ public class SqlTaskStatusResponse {
     
     private List<String> log;
     
-    private Dataframe taskResult;
+    private Object taskResult;
 
     private String failType;
 

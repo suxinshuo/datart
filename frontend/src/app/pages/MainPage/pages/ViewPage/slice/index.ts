@@ -36,7 +36,7 @@ import {
   unarchiveView,
   updateViewBase,
 } from './thunks';
-import { Schema, ViewState, ViewViewModel } from './types';
+import { Schema, ViewState, ViewViewModel, QueryResult } from './types';
 
 export const initialState: ViewState = {
   views: void 0,
@@ -97,21 +97,32 @@ const slice = createSlice({
 
       if (currentEditingView) {
         const entries = Object.entries(action.payload);
+        
+        // Check if stage is being explicitly set in payload
+        const hasStageInPayload = entries.some(([key]) => key === 'stage');
+        
         entries.forEach(([key, value]) => {
           currentEditingView[key] = value;
         });
+        
+        // Don't reset stage if it was explicitly set in payload
         if (
-          !(
-            entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])
-          )
+          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0]))
         ) {
           currentEditingView.touched = true;
           if (
             ['model', 'variables', 'columnPermissions'].includes(entries[0][0])
           ) {
             currentEditingView.stage = ViewViewModelStages.Saveable;
-          } else {
-            if (currentEditingView.stage > ViewViewModelStages.Fresh) {
+          } else if (!hasStageInPayload) {
+            // Check if there's an active async task running
+            const hasActiveTask = currentEditingView.currentTaskId && 
+                                 currentEditingView.currentTaskStatus && 
+                                 currentEditingView.currentTaskStatus !== 'SUCCESS' && 
+                                 currentEditingView.currentTaskStatus !== 'FAILED';
+            
+            // Don't reset stage to Initialized if there's an active async task
+            if (currentEditingView.stage > ViewViewModelStages.Fresh && !hasActiveTask) {
               currentEditingView.stage = ViewViewModelStages.Initialized;
             }
           }
@@ -254,9 +265,11 @@ const slice = createSlice({
         v => v.id === action.meta.arg.id,
       );
 
-      if (currentEditingView && action.payload && action.payload.rows) {
+      // Check if payload is a QueryResult (synchronous execution)
+      if (currentEditingView && action.payload && 'rows' in action.payload && 'columns' in action.payload) {
+        const queryResult = action.payload as QueryResult;
         const { model, dataSource } = transformQueryResultToModelAndDataSource(
-          action.payload,
+          queryResult,
           currentEditingView.model,
           currentEditingView.type,
         );
@@ -271,9 +284,13 @@ const slice = createSlice({
           currentEditingView.stage = ViewViewModelStages.Initialized;
         }
 
-        if (action.payload.warnings) {
-          currentEditingView.warnings = action.payload.warnings;
+        if (queryResult.warnings) {
+          currentEditingView.warnings = queryResult.warnings;
         }
+      } 
+      // Check if payload is a SqlTaskCreateResponse (asynchronous execution)
+      else if (currentEditingView && action.payload && 'taskId' in action.payload) {
+        // Task creation response handled in runSqlAsync function
       }
     });
 

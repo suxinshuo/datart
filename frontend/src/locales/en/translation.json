@@ -1239,6 +1239,14 @@
     "warningDescription": "Datart uses calcite to parse SQL statements by default; calcite has an awesome parser, but it still can't parse all the grammars of all databases. When a parsing exception occurs, datart will still send the SQL statement to the database for execution after necessary processing. If the execution is successful, we will think that the parser needs to be improved for the syntax of the SQL statement. In this case, datart will show this warning message, which is convenient for users to submit the exceptional parsing statements to github or gitee issue, and help us improve the parser.",
     "close": "Close",
     "computedFieldNameExistWarning": "Computed field name has already exist. Please choose another one.",
+    "taskId": "Task ID",
+    "cancelTask": "Cancel Task",
+    "taskStatus": {
+      "queued": "Queued",
+      "running": "Running",
+      "success": "Success",
+      "failed": "Failed"
+    },
     "tabs": {
       "discard": "Discard",
       "cancel": "Cancel",
@@ -1263,7 +1271,8 @@
       "saveAs": "Save As",
       "saveFragment": "Save Fragment",
       "readonlyTip": "Not editable in recycle",
-      "saveSuccess": "Save Success"
+      "saveSuccess": "Save Success",
+      "asyncExecution": "Async Execution"
     },
     "properties": {
       "reference": "Source Reference",
