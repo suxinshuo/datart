@@ -18,16 +18,17 @@
 
 package datart.server.controller;
 
-
 import datart.core.data.provider.*;
 import datart.server.base.dto.ResponseData;
 import datart.server.base.params.ViewExecuteParam;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.service.DataProviderService;
+import datart.server.service.task.SqlTaskService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
@@ -38,11 +39,11 @@ import java.util.Set;
 @RequestMapping(value = "/data-provider")
 public class DataProviderController extends BaseController {
 
-    private final DataProviderService dataProviderService;
+    @Resource
+    private SqlTaskService sqlTaskService;
 
-    public DataProviderController(DataProviderService dataProviderService) {
-        this.dataProviderService = dataProviderService;
-    }
+    @Resource
+    private DataProviderService dataProviderService;
 
     @ApiOperation(value = "get supported data providers")
     @GetMapping(value = "/providers")
@@ -91,8 +92,15 @@ public class DataProviderController extends BaseController {
 
     @ApiOperation(value = "Execute Script")
     @PostMapping(value = "/execute/test")
-    public ResponseData<Dataframe> testExecute(@RequestBody TestExecuteParam executeParam) throws Exception {
-        return ResponseData.success(dataProviderService.testExecute(executeParam));
+    public ResponseData<?> testExecute(@RequestBody TestExecuteParam executeParam) throws Exception {
+        boolean asyncEnabled = executeParam.isAsyncEnabled();
+        if (asyncEnabled) {
+            // 异步模式：返回任务 ID
+            return ResponseData.success(sqlTaskService.createSqlTask(executeParam));
+        } else {
+            // 同步模式：保持原有逻辑
+            return ResponseData.success(dataProviderService.testExecute(executeParam));
+        }
     }
 
     @ApiOperation(value = "Execute Script")

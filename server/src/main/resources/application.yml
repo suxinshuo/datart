@@ -76,6 +76,19 @@ datart:
   server:
     path-prefix: /api/v1
 
+  task:
+    queue_capacity: 30
+    consumer:
+      count: 4
+    thread:
+      pool:
+        size: 10
+        queue_capacity: 100
+    execution:
+      max_time: 600000 # 10分钟
+#    result:
+#      retention_days: 7
+
 server:
   port: 8080
   address: 0.0.0.0
