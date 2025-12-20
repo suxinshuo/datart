@@ -79,7 +79,7 @@ export const Outputs = memo(() => {
     if (
       currentTaskId &&
       currentTaskStatus !== SqlTaskStatus.SUCCESS &&
-      currentTaskStatus !== SqlTaskStatus.FAILURE
+      currentTaskStatus !== SqlTaskStatus.FAILED
     ) {
       // Function to get polling interval based on task status and retry count
       const getPollingInterval = () => {
@@ -224,7 +224,7 @@ export const Outputs = memo(() => {
                 {t('cancelTask')}
               </Button>
             )}
-            {currentTaskStatus === SqlTaskStatus.FAILURE &&
+            {currentTaskStatus === SqlTaskStatus.FAILED &&
               currentTaskErrorMessage && (
                 <div className="task-error">{currentTaskErrorMessage}</div>
               )}
@@ -279,7 +279,7 @@ const TaskStatusWrapper = styled.div`
 
   .status-queued {
     color: white;
-    background-color: ${p => p.theme.info};
+    background-color: ${p => p.theme.normal};
   }
 
   .status-running {
@@ -292,7 +292,7 @@ const TaskStatusWrapper = styled.div`
     background-color: ${p => p.theme.success};
   }
 
-  .status-failure {
+  .status-failed {
     color: white;
     background-color: ${p => p.theme.error};
   }

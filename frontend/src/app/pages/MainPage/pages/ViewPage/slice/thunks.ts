@@ -279,7 +279,7 @@ export const updateTaskStatus = (
   };
 
   // If task is completed, update progress
-  if (status === SqlTaskStatus.SUCCESS || status === SqlTaskStatus.FAILURE) {
+  if (status === SqlTaskStatus.SUCCESS || status === SqlTaskStatus.FAILED) {
     statusUpdate.currentTaskProgress =
       status === SqlTaskStatus.SUCCESS ? 100 : progress;
   }
@@ -308,7 +308,7 @@ export const runSqlAsync = async (requestData: any, dispatch: any) => {
         error: errorMsg,
       }),
     );
-    updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILURE, 0, errorMsg);
+    updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILED, 0, errorMsg);
     return null;
   }
 };
@@ -361,7 +361,7 @@ export const runSql = createAsyncThunk<
         error: errorMsg,
       }),
     );
-    updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILURE, 0, errorMsg);
+    updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILED, 0, errorMsg);
     return {} as any;
   }
 });
@@ -376,7 +376,7 @@ export const getSqlTaskStatus = createAsyncThunk<
     // Validate taskId parameter
     if (!taskId || typeof taskId !== 'string') {
       const errorMsg = i18n.t('view.invalidTaskId');
-      updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILURE, 0, errorMsg);
+      updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILED, 0, errorMsg);
       throw new Error(errorMsg);
     }
 
@@ -422,7 +422,7 @@ export const getSqlTaskStatus = createAsyncThunk<
 
         // Auto save the view after successful execution
         dispatch(saveView({}));
-      } else if (response.data.status === SqlTaskStatus.FAILURE) {
+      } else if (response.data.status === SqlTaskStatus.FAILED) {
         dispatch(
           viewActions.changeCurrentEditingView({
             stage: ViewViewModelStages.Initialized,
@@ -443,7 +443,7 @@ export const getSqlTaskStatus = createAsyncThunk<
       getState(),
     ) as ViewViewModel;
     if (currentEditingView && currentEditingView.currentTaskId === taskId) {
-      updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILURE, 0, errorMsg);
+      updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILED, 0, errorMsg);
       dispatch(
         viewActions.changeCurrentEditingView({
           stage: ViewViewModelStages.Initialized,
@@ -475,7 +475,7 @@ export const cancelSqlTask = createAsyncThunk<
         updateTaskStatus(
           dispatch,
           currentEditingView.currentTaskId,
-          SqlTaskStatus.FAILURE,
+          SqlTaskStatus.FAILED,
           0,
           errorMsg,
         );
@@ -515,7 +515,7 @@ export const cancelSqlTask = createAsyncThunk<
       updateTaskStatus(
         dispatch,
         taskId,
-        SqlTaskStatus.FAILURE,
+        SqlTaskStatus.FAILED,
         0,
         i18n.t('view.sqlExecutionCancelled'),
       );
@@ -526,7 +526,7 @@ export const cancelSqlTask = createAsyncThunk<
       );
     } else {
       const errorMsg = i18n.t('view.cancelTaskFailed');
-      updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILURE, 0, errorMsg);
+      updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILED, 0, errorMsg);
       dispatch(
         viewActions.changeCurrentEditingView({
           stage: ViewViewModelStages.Initialized,
@@ -545,7 +545,7 @@ export const cancelSqlTask = createAsyncThunk<
       getState(),
     ) as ViewViewModel;
     if (currentEditingView && currentEditingView.currentTaskId === taskId) {
-      updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILURE, 0, errorMsg);
+      updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILED, 0, errorMsg);
       dispatch(
         viewActions.changeCurrentEditingView({
           stage: ViewViewModelStages.Initialized,

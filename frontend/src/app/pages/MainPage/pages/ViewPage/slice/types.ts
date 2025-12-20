@@ -235,7 +235,7 @@ export enum SqlTaskStatus {
   QUEUED = 'QUEUED',
   RUNNING = 'RUNNING',
   SUCCESS = 'SUCCESS',
-  FAILURE = 'FAILED',
+  FAILED = 'FAILED',
 }
 
 export enum SqlTaskFailType {
