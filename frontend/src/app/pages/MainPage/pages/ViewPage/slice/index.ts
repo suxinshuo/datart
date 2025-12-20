@@ -278,6 +278,12 @@ const slice = createSlice({
         // Clear previous results when starting a new query
         // This prevents showing stale data during loading
         currentEditingView.previewResults = undefined;
+        // Clear all task-related states when starting a new query
+        // This ensures progress bar and task status are reset
+        currentEditingView.currentTaskId = undefined;
+        currentEditingView.currentTaskStatus = undefined;
+        currentEditingView.currentTaskProgress = 0;
+        currentEditingView.currentTaskErrorMessage = undefined;
       }
     });
     builder.addCase(runSql.fulfilled, (state, action) => {
@@ -303,10 +309,17 @@ const slice = createSlice({
           currentEditingView.type!,
         );
         currentEditingView.previewResults = dataSource;
-        if (!action.meta.arg.isFragment) {
-          currentEditingView.stage = ViewViewModelStages.Saveable;
-        } else {
-          currentEditingView.stage = ViewViewModelStages.Initialized;
+        // Only update stage if view is still in Running stage (to prevent race conditions with new queries)
+        // or if it's a fragment execution (which doesn't change the overall view state)
+        if (
+          currentEditingView.stage === ViewViewModelStages.Running ||
+          action.meta.arg.isFragment
+        ) {
+          if (!action.meta.arg.isFragment) {
+            currentEditingView.stage = ViewViewModelStages.Saveable;
+          } else {
+            currentEditingView.stage = ViewViewModelStages.Initialized;
+          }
         }
 
         if (queryResult.warnings) {

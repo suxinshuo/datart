@@ -247,12 +247,8 @@ export const runSqlSync = async (
     undefined,
     {
       onRejected: error => {
-        dispatch(
-          viewActions.changeCurrentEditingView({
-            stage: ViewViewModelStages.Initialized,
-            error: getErrorMessage(error),
-          }),
-        );
+        // Error handling will be done in runSql.fulfilled/rejected reducers
+        // which already have race condition protection
       },
     },
   );
@@ -410,18 +406,29 @@ export const getSqlTaskStatus = createAsyncThunk<
           currentEditingView.type,
         );
 
-        // Update model and preview results
+        // Update model and preview results - only if this is still the active task
+        // and the view is still in Running stage (to prevent race conditions with new queries)
         // Don't set stage to Saveable - we'll let saveView handle setting to Saved
-        dispatch(
-          viewActions.changeCurrentEditingView({
-            model: diffMergeHierarchyModel(model, currentEditingView.type!),
-            previewResults: dataSource,
-            warnings: response.data.taskResult.warnings,
-          }),
-        );
+        if (
+          currentEditingView.currentTaskId === taskId &&
+          currentEditingView.stage === ViewViewModelStages.Running
+        ) {
+          dispatch(
+            viewActions.changeCurrentEditingView({
+              model: diffMergeHierarchyModel(model, currentEditingView.type!),
+              previewResults: dataSource,
+              warnings: response.data.taskResult.warnings,
+            }),
+          );
+        }
 
-        // Auto save the view after successful execution
-        dispatch(saveView({}));
+        // Auto save the view after successful execution - only if this is still the active task
+        if (
+          currentEditingView.currentTaskId === taskId &&
+          currentEditingView.stage === ViewViewModelStages.Running
+        ) {
+          dispatch(saveView({}));
+        }
       } else if (response.data.status === SqlTaskStatus.FAILED) {
         dispatch(
           viewActions.changeCurrentEditingView({
