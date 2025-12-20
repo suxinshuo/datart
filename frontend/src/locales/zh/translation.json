@@ -1246,6 +1246,7 @@
       "success": "成功",
       "failed": "失败"
     },
+    "sqlExecutionCancelled": "SQL 执行已取消",
     "tabs": {
       "discard": "放弃",
       "cancel": "取消",

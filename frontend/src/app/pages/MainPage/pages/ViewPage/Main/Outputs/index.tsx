@@ -277,7 +277,7 @@ const TaskStatusWrapper = styled.div`
     border-radius: 4px;
   }
 
-  .status-queuing {
+  .status-queued {
     color: white;
     background-color: ${p => p.theme.info};
   }
