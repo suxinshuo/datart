@@ -43,7 +43,6 @@ import {
   transformModelToViewModel,
   transformQueryResultToModelAndDataSource,
 } from '../utils';
-
 import {
   selectAllSourceDatabaseSchemas,
   selectCurrentEditingView,
@@ -156,7 +155,11 @@ export const getSchemaBySourceId = createAsyncThunk<any, string>(
 );
 
 // Helper function to build request data for SQL execution
-const buildSqlExecutionRequest = (currentEditingView: ViewViewModel, scriptProps: StructViewQueryProps | undefined, allDatabaseSchemas: any) => {
+const buildSqlExecutionRequest = (
+  currentEditingView: ViewViewModel,
+  scriptProps: StructViewQueryProps | undefined,
+  allDatabaseSchemas: any,
+) => {
   const { sourceId, size, fragment, variables, type } = currentEditingView;
   let sql = '';
   let structure: StructViewQueryProps | null = null;
@@ -182,7 +185,10 @@ const buildSqlExecutionRequest = (currentEditingView: ViewViewModel, scriptProps
     if (!structure) {
       throw new Error(i18n.t('view.structQueryRequired'));
     }
-    if (!currentEditingView.sourceId || !allDatabaseSchemas[currentEditingView.sourceId]) {
+    if (
+      !currentEditingView.sourceId ||
+      !allDatabaseSchemas[currentEditingView.sourceId]
+    ) {
       throw new Error(i18n.t('view.sourceNotAvailable'));
     }
     script = handleObjectScriptToString(
@@ -201,7 +207,11 @@ const buildSqlExecutionRequest = (currentEditingView: ViewViewModel, scriptProps
     throw new Error(i18n.t('view.selectSource'));
   }
   if (!script.trim()) {
-    throw new Error(type === 'SQL' ? i18n.t('view.sqlRequired') : i18n.t('view.structQueryRequired'));
+    throw new Error(
+      type === 'SQL'
+        ? i18n.t('view.sqlRequired')
+        : i18n.t('view.structQueryRequired'),
+    );
   }
 
   return {
@@ -223,7 +233,11 @@ const buildSqlExecutionRequest = (currentEditingView: ViewViewModel, scriptProps
 };
 
 // Helper function to handle synchronous SQL execution
-export const runSqlSync = async (requestData: any, reqColumns: string, dispatch: any) => {
+export const runSqlSync = async (
+  requestData: any,
+  reqColumns: string,
+  dispatch: any,
+) => {
   const response = await request2<QueryResult>(
     {
       url: '/data-provider/execute/test',
@@ -250,7 +264,13 @@ export const runSqlSync = async (requestData: any, reqColumns: string, dispatch:
 };
 
 // Helper function to update task status consistently
-export const updateTaskStatus = (dispatch: any, taskId: string | undefined, status: SqlTaskStatus, progress: number = 0, errorMessage?: string) => {
+export const updateTaskStatus = (
+  dispatch: any,
+  taskId: string | undefined,
+  status: SqlTaskStatus,
+  progress: number = 0,
+  errorMessage?: string,
+) => {
   const statusUpdate = {
     currentTaskId: taskId,
     currentTaskStatus: status,
@@ -258,23 +278,10 @@ export const updateTaskStatus = (dispatch: any, taskId: string | undefined, stat
     currentTaskErrorMessage: errorMessage,
   };
 
-  // If task is completed, update progress and set up cleanup
+  // If task is completed, update progress
   if (status === SqlTaskStatus.SUCCESS || status === SqlTaskStatus.FAILURE) {
-    statusUpdate.currentTaskProgress = status === SqlTaskStatus.SUCCESS ? 100 : progress;
-
-    // Clean up task related state after a short delay to allow UI to show completion status
-    // This helps avoid memory leaks and keeps the state clean
-    if (taskId) {
-      setTimeout(() => {
-        // Only clear if this task is still the current task
-        dispatch(viewActions.changeCurrentEditingView({
-          currentTaskId: undefined,
-          currentTaskStatus: undefined,
-          currentTaskProgress: 0,
-          currentTaskErrorMessage: undefined,
-        }));
-      }, 2000); // 2 seconds delay to show completion status to user
-    }
+    statusUpdate.currentTaskProgress =
+      status === SqlTaskStatus.SUCCESS ? 100 : progress;
   }
 
   dispatch(viewActions.changeCurrentEditingView(statusUpdate));
@@ -334,7 +341,11 @@ export const runSql = createAsyncThunk<
     const { enableAsyncExecution } = currentEditingView;
 
     // Build request data with validation
-    const requestData = buildSqlExecutionRequest(currentEditingView, scriptProps, allDatabaseSchemas);
+    const requestData = buildSqlExecutionRequest(
+      currentEditingView,
+      scriptProps,
+      allDatabaseSchemas,
+    );
 
     // Execute based on async flag
     if (enableAsyncExecution) {
@@ -375,36 +386,48 @@ export const getSqlTaskStatus = createAsyncThunk<
     });
 
     // Update task status in state
-    const currentEditingView = selectCurrentEditingView(getState()) as ViewViewModel;
+    const currentEditingView = selectCurrentEditingView(
+      getState(),
+    ) as ViewViewModel;
     if (currentEditingView && currentEditingView.currentTaskId === taskId) {
-      updateTaskStatus(dispatch, taskId, response.data.status, response.data.progress, response.data.errorMessage || undefined);
+      updateTaskStatus(
+        dispatch,
+        taskId,
+        response.data.status,
+        response.data.progress,
+        response.data.errorMessage || undefined,
+      );
 
       // If task is complete, update the results
-        if (response.data.status === SqlTaskStatus.SUCCESS && response.data.taskResult) {
-          // Transform query result to model and data source, similar to synchronous execution
-          const { model, dataSource } = transformQueryResultToModelAndDataSource(
-            response.data.taskResult,
-            currentEditingView.model,
-            currentEditingView.type,
-          );
+      if (
+        response.data.status === SqlTaskStatus.SUCCESS &&
+        response.data.taskResult
+      ) {
+        // Transform query result to model and data source, similar to synchronous execution
+        const { model, dataSource } = transformQueryResultToModelAndDataSource(
+          response.data.taskResult,
+          currentEditingView.model,
+          currentEditingView.type,
+        );
 
-          // Update model and preview results
-          // Don't set stage to Saveable - we'll let saveView handle setting to Saved
-          dispatch(
-            viewActions.changeCurrentEditingView({
-              model: diffMergeHierarchyModel(model, currentEditingView.type!),
-              previewResults: dataSource,
-              warnings: response.data.taskResult.warnings,
-            }),
-          );
+        // Update model and preview results
+        // Don't set stage to Saveable - we'll let saveView handle setting to Saved
+        dispatch(
+          viewActions.changeCurrentEditingView({
+            model: diffMergeHierarchyModel(model, currentEditingView.type!),
+            previewResults: dataSource,
+            warnings: response.data.taskResult.warnings,
+          }),
+        );
 
-          // Auto save the view after successful execution
-          dispatch(saveView({}));
-        } else if (response.data.status === SqlTaskStatus.FAILURE) {
+        // Auto save the view after successful execution
+        dispatch(saveView({}));
+      } else if (response.data.status === SqlTaskStatus.FAILURE) {
         dispatch(
           viewActions.changeCurrentEditingView({
             stage: ViewViewModelStages.Initialized,
-            error: response.data.errorMessage || i18n.t('view.sqlExecutionFailed'),
+            error:
+              response.data.errorMessage || i18n.t('view.sqlExecutionFailed'),
           }),
         );
       }
@@ -416,7 +439,9 @@ export const getSqlTaskStatus = createAsyncThunk<
     errorHandle(error);
 
     // Only update status if this is still the current task
-    const currentEditingView = selectCurrentEditingView(getState()) as ViewViewModel;
+    const currentEditingView = selectCurrentEditingView(
+      getState(),
+    ) as ViewViewModel;
     if (currentEditingView && currentEditingView.currentTaskId === taskId) {
       updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILURE, 0, errorMsg);
       dispatch(
@@ -443,9 +468,17 @@ export const cancelSqlTask = createAsyncThunk<
       errorHandle(new Error(errorMsg));
 
       // Only update status if there's an active task
-      const currentEditingView = selectCurrentEditingView(getState()) as ViewViewModel;
+      const currentEditingView = selectCurrentEditingView(
+        getState(),
+      ) as ViewViewModel;
       if (currentEditingView && currentEditingView.currentTaskId) {
-        updateTaskStatus(dispatch, currentEditingView.currentTaskId, SqlTaskStatus.FAILURE, 0, errorMsg);
+        updateTaskStatus(
+          dispatch,
+          currentEditingView.currentTaskId,
+          SqlTaskStatus.FAILURE,
+          0,
+          errorMsg,
+        );
         dispatch(
           viewActions.changeCurrentEditingView({
             stage: ViewViewModelStages.Initialized,
@@ -458,7 +491,9 @@ export const cancelSqlTask = createAsyncThunk<
     }
 
     // Check if this task is still the current active task
-    const currentEditingView = selectCurrentEditingView(getState()) as ViewViewModel;
+    const currentEditingView = selectCurrentEditingView(
+      getState(),
+    ) as ViewViewModel;
     if (!currentEditingView || currentEditingView.currentTaskId !== taskId) {
       const errorMsg = i18n.t('view.taskNotActive');
       errorHandle(new Error(errorMsg));
@@ -477,7 +512,13 @@ export const cancelSqlTask = createAsyncThunk<
     if (isSuccess) {
       // Don't clear taskId yet - continue polling to get final task status
       // Just update the status to show cancellation
-      updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILURE, 0, i18n.t('view.sqlExecutionCancelled'));
+      updateTaskStatus(
+        dispatch,
+        taskId,
+        SqlTaskStatus.FAILURE,
+        0,
+        i18n.t('view.sqlExecutionCancelled'),
+      );
       dispatch(
         viewActions.changeCurrentEditingView({
           stage: ViewViewModelStages.Initialized,
@@ -500,7 +541,9 @@ export const cancelSqlTask = createAsyncThunk<
     errorHandle(error);
 
     // Only update status if this is still the current task
-    const currentEditingView = selectCurrentEditingView(getState()) as ViewViewModel;
+    const currentEditingView = selectCurrentEditingView(
+      getState(),
+    ) as ViewViewModel;
     if (currentEditingView && currentEditingView.currentTaskId === taskId) {
       updateTaskStatus(dispatch, taskId, SqlTaskStatus.FAILURE, 0, errorMsg);
       dispatch(
@@ -747,7 +790,9 @@ export const getEditorProvideCompletionItems = createAsyncThunk<
           .filter(({ keywords }) => !!keywords)
           .reduce<monaco.languages.CompletionItem[]>(
             (arr, { detail, keywords }) => {
-              const validKeywords = keywords!.filter(str => typeof str === 'string' && str);
+              const validKeywords = keywords!.filter(
+                str => typeof str === 'string' && str,
+              );
               return arr.concat(
                 validKeywords.map(str => ({
                   label: str,

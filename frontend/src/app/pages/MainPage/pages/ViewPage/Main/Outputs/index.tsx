@@ -6,7 +6,12 @@ import { selectSystemInfo } from 'app/slice/selectors';
 import React, { memo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
-import { FONT_SIZE_BASE, SPACE_MD, SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
+import {
+  FONT_SIZE_BASE,
+  SPACE_MD,
+  SPACE_TIMES,
+  SPACE_XS,
+} from 'styles/StyleConstants';
 import { newIssueUrl } from 'utils/utils';
 import { ViewViewModelStages } from '../../constants';
 import { useViewSlice } from '../../slice';
@@ -71,7 +76,11 @@ export const Outputs = memo(() => {
     const MAX_RETRIES = 1800; // Maximum of 60 minutes of polling (1800 * 2s)
 
     // Stop polling if task is already completed
-    if (currentTaskId && currentTaskStatus !== SqlTaskStatus.SUCCESS && currentTaskStatus !== SqlTaskStatus.FAILURE) {
+    if (
+      currentTaskId &&
+      currentTaskStatus !== SqlTaskStatus.SUCCESS &&
+      currentTaskStatus !== SqlTaskStatus.FAILURE
+    ) {
       // Function to get polling interval based on task status and retry count
       const getPollingInterval = () => {
         // Adjust interval based on task status
@@ -90,7 +99,9 @@ export const Outputs = memo(() => {
       const pollTaskStatus = () => {
         if (retryCount >= MAX_RETRIES) {
           // Maximum retries reached, stop polling
-          console.warn(`Task ${currentTaskId}: Maximum polling retries reached`);
+          console.warn(
+            `Task ${currentTaskId}: Maximum polling retries reached`,
+          );
           if (intervalId) {
             clearInterval(intervalId);
           }
@@ -175,22 +186,35 @@ export const Outputs = memo(() => {
       {/* Task Status Display */}
       {currentTaskId && (
         <TaskStatusWrapper>
-          <Space direction="vertical" className="task-status" style={{ width: '100%' }}>
+          <Space
+            direction="vertical"
+            className="task-status"
+            style={{ width: '100%' }}
+          >
             <div className="task-info">
-              <span className="task-id">{t('taskId')}: {currentTaskId}</span>
-              <span className={`task-status-badge status-${currentTaskStatus.toLowerCase()}`}>
+              <span className="task-id">
+                {t('taskId')}: {currentTaskId}
+              </span>
+              <span
+                className={`task-status-badge status-${currentTaskStatus.toLowerCase()}`}
+              >
                 {t(`taskStatus.${currentTaskStatus.toLowerCase()}`)}
               </span>
             </div>
             <Progress
               percent={currentTaskProgress}
               status={
-                currentTaskStatus === SqlTaskStatus.QUEUED ? 'active' :
-                currentTaskStatus === SqlTaskStatus.RUNNING ? 'active' :
-                currentTaskStatus === SqlTaskStatus.SUCCESS ? 'success' : 'exception'
+                currentTaskStatus === SqlTaskStatus.QUEUED
+                  ? 'active'
+                  : currentTaskStatus === SqlTaskStatus.RUNNING
+                  ? 'active'
+                  : currentTaskStatus === SqlTaskStatus.SUCCESS
+                  ? 'success'
+                  : 'exception'
               }
             />
-            {(currentTaskStatus === SqlTaskStatus.QUEUED || currentTaskStatus === SqlTaskStatus.RUNNING) && (
+            {(currentTaskStatus === SqlTaskStatus.QUEUED ||
+              currentTaskStatus === SqlTaskStatus.RUNNING) && (
               <Button
                 icon={<PauseOutlined />}
                 onClick={cancelTask}
@@ -200,9 +224,10 @@ export const Outputs = memo(() => {
                 {t('cancelTask')}
               </Button>
             )}
-            {currentTaskStatus === SqlTaskStatus.FAILURE && currentTaskErrorMessage && (
-              <div className="task-error">{currentTaskErrorMessage}</div>
-            )}
+            {currentTaskStatus === SqlTaskStatus.FAILURE &&
+              currentTaskErrorMessage && (
+                <div className="task-error">{currentTaskErrorMessage}</div>
+              )}
           </Space>
         </TaskStatusWrapper>
       )}

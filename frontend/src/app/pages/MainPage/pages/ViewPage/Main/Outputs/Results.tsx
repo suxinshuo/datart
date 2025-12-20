@@ -21,16 +21,16 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { Tooltip } from 'antd';
+import { Spin, Tooltip } from 'antd';
 import { Popup, ToolbarButton, Tree } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { APP_CURRENT_VERSION } from 'app/migration/constants';
 import classnames from 'classnames';
+import { transparentize } from 'polished';
 import { memo, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
 import { FONT_FAMILY, FONT_SIZE_BASE } from 'styles/StyleConstants';
-import { Spin } from 'antd';
 import { CloneValueDeep, isEmptyArray } from 'utils/object';
 import { uuidv4 } from 'utils/utils';
 import { selectRoles } from '../../../MemberPage/slice/selectors';
@@ -45,7 +45,6 @@ import {
   HierarchyModel,
   ViewViewModel,
 } from '../../slice/types';
-import { transparentize } from 'polished';
 
 const ROW_KEY = 'DATART_ROW_KEY';
 
@@ -77,7 +76,10 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
   const t = useI18NPrefix('view');
 
   const dataSource = useMemo(
-    () => previewResults.map(o => ({ ...o, [ROW_KEY]: uuidv4() })),
+    () =>
+      previewResults
+        ? previewResults.map(o => ({ ...o, [ROW_KEY]: uuidv4() }))
+        : [],
     [previewResults],
   );
 

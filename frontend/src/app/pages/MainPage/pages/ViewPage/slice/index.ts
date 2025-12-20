@@ -36,7 +36,7 @@ import {
   unarchiveView,
   updateViewBase,
 } from './thunks';
-import { Schema, ViewState, ViewViewModel, QueryResult } from './types';
+import { QueryResult, Schema, ViewState, ViewViewModel } from './types';
 
 export const initialState: ViewState = {
   views: void 0,
@@ -97,23 +97,30 @@ const slice = createSlice({
 
       if (currentEditingView) {
         const entries = Object.entries(action.payload);
-        
+
         // Check if stage is being explicitly set in payload
         const hasStageInPayload = entries.some(([key]) => key === 'stage');
-        
+
         // Check if we're just cleaning up async task status fields
-        const isTaskStatusCleanup = entries.every(([key]) => 
-          ['currentTaskId', 'currentTaskStatus', 'currentTaskProgress', 'currentTaskErrorMessage'].includes(key)
+        const isTaskStatusCleanup = entries.every(([key]) =>
+          [
+            'currentTaskId',
+            'currentTaskStatus',
+            'currentTaskProgress',
+            'currentTaskErrorMessage',
+          ].includes(key),
         );
-        
+
         entries.forEach(([key, value]) => {
           currentEditingView[key] = value;
         });
-        
+
         // Don't reset stage if it was explicitly set in payload
         if (
-          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])) &&
-          !isTaskStatusCleanup  // Don't mark as touched when just cleaning up task status
+          !(
+            entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])
+          ) &&
+          !isTaskStatusCleanup // Don't mark as touched when just cleaning up task status
         ) {
           currentEditingView.touched = true;
           if (
@@ -122,13 +129,17 @@ const slice = createSlice({
             currentEditingView.stage = ViewViewModelStages.Saveable;
           } else if (!hasStageInPayload) {
             // Check if there's an active async task running
-            const hasActiveTask = currentEditingView.currentTaskId && 
-                                 currentEditingView.currentTaskStatus && 
-                                 currentEditingView.currentTaskStatus !== 'SUCCESS' && 
-                                 currentEditingView.currentTaskStatus !== 'FAILED';
-            
+            const hasActiveTask =
+              currentEditingView.currentTaskId &&
+              currentEditingView.currentTaskStatus &&
+              currentEditingView.currentTaskStatus !== 'SUCCESS' &&
+              currentEditingView.currentTaskStatus !== 'FAILED';
+
             // Don't reset stage to Initialized if there's an active async task
-            if (currentEditingView.stage > ViewViewModelStages.Fresh && !hasActiveTask) {
+            if (
+              currentEditingView.stage > ViewViewModelStages.Fresh &&
+              !hasActiveTask
+            ) {
               currentEditingView.stage = ViewViewModelStages.Initialized;
             }
           }
@@ -264,6 +275,9 @@ const slice = createSlice({
       if (currentEditingView) {
         currentEditingView.stage = ViewViewModelStages.Running;
         currentEditingView.error = '';
+        // Clear previous results when starting a new query
+        // This prevents showing stale data during loading
+        currentEditingView.previewResults = undefined;
       }
     });
     builder.addCase(runSql.fulfilled, (state, action) => {
@@ -272,7 +286,12 @@ const slice = createSlice({
       );
 
       // Check if payload is a QueryResult (synchronous execution)
-      if (currentEditingView && action.payload && 'rows' in action.payload && 'columns' in action.payload) {
+      if (
+        currentEditingView &&
+        action.payload &&
+        'rows' in action.payload &&
+        'columns' in action.payload
+      ) {
         const queryResult = action.payload as QueryResult;
         const { model, dataSource } = transformQueryResultToModelAndDataSource(
           queryResult,
@@ -293,9 +312,13 @@ const slice = createSlice({
         if (queryResult.warnings) {
           currentEditingView.warnings = queryResult.warnings;
         }
-      } 
+      }
       // Check if payload is a SqlTaskCreateResponse (asynchronous execution)
-      else if (currentEditingView && action.payload && 'taskId' in action.payload) {
+      else if (
+        currentEditingView &&
+        action.payload &&
+        'taskId' in action.payload
+      ) {
         // Task creation response handled in runSqlAsync function
       }
     });
