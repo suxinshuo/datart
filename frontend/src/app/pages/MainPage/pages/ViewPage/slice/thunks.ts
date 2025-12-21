@@ -313,59 +313,62 @@ export const runSql = createAsyncThunk<
   QueryResult | null | SqlTaskCreateResponse,
   { id: string; isFragment: boolean; script?: StructViewQueryProps },
   { state: RootState }
->('view/runSql', async ({ id, script: scriptProps }, { getState, dispatch }) => {
-  try {
-    const currentEditingView = selectCurrentEditingView(
-      getState(),
-    ) as ViewViewModel;
+>(
+  'view/runSql',
+  async ({ id, script: scriptProps }, { getState, dispatch }) => {
+    try {
+      const currentEditingView = selectCurrentEditingView(
+        getState(),
+      ) as ViewViewModel;
 
-    // Ensure we have a valid current editing view
-    if (!currentEditingView) {
-      throw new Error(i18n.t('view.noCurrentEditingView'));
+      // Ensure we have a valid current editing view
+      if (!currentEditingView) {
+        throw new Error(i18n.t('view.noCurrentEditingView'));
+      }
+
+      // Check if view is currently being saved, if so, don't allow running SQL
+      if (currentEditingView.stage === ViewViewModelStages.Saving) {
+        throw new Error(i18n.t('view.saveInProgress'));
+      }
+
+      // Set stage to Running at the beginning of execution
+      dispatch(
+        viewActions.changeCurrentEditingView({
+          stage: ViewViewModelStages.Running,
+          error: undefined,
+        }),
+      );
+
+      const allDatabaseSchemas = selectAllSourceDatabaseSchemas(getState());
+
+      const { enableAsyncExecution } = currentEditingView;
+
+      // Build request data with validation
+      const requestData = buildSqlExecutionRequest(
+        currentEditingView,
+        scriptProps,
+        allDatabaseSchemas,
+      );
+
+      // Execute based on async flag
+      if (enableAsyncExecution) {
+        return await runSqlAsync(requestData, dispatch);
+      } else {
+        return await runSqlSync(requestData, requestData.columns, dispatch);
+      }
+    } catch (error) {
+      const errorMsg = getErrorMessage(error);
+      dispatch(
+        viewActions.changeCurrentEditingView({
+          stage: ViewViewModelStages.Initialized,
+          error: errorMsg,
+        }),
+      );
+      updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILED, 0, errorMsg);
+      return {} as any;
     }
-
-    // Check if view is currently being saved, if so, don't allow running SQL
-    if (currentEditingView.stage === ViewViewModelStages.Saving) {
-      throw new Error(i18n.t('view.saveInProgress'));
-    }
-
-    // Set stage to Running at the beginning of execution
-    dispatch(
-      viewActions.changeCurrentEditingView({
-        stage: ViewViewModelStages.Running,
-        error: undefined,
-      }),
-    );
-
-    const allDatabaseSchemas = selectAllSourceDatabaseSchemas(getState());
-
-    const { enableAsyncExecution } = currentEditingView;
-
-    // Build request data with validation
-    const requestData = buildSqlExecutionRequest(
-      currentEditingView,
-      scriptProps,
-      allDatabaseSchemas,
-    );
-
-    // Execute based on async flag
-    if (enableAsyncExecution) {
-      return await runSqlAsync(requestData, dispatch);
-    } else {
-      return await runSqlSync(requestData, requestData.columns, dispatch);
-    }
-  } catch (error) {
-    const errorMsg = getErrorMessage(error);
-    dispatch(
-      viewActions.changeCurrentEditingView({
-        stage: ViewViewModelStages.Initialized,
-        error: errorMsg,
-      }),
-    );
-    updateTaskStatus(dispatch, undefined, SqlTaskStatus.FAILED, 0, errorMsg);
-    return {} as any;
-  }
-});
+  },
+);
 
 // New async SQL task functions
 export const getSqlTaskStatus = createAsyncThunk<

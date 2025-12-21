@@ -245,7 +245,9 @@ export const Toolbar = memo(
                       }
                       color={fragment ? WARNING : INFO}
                       onClick={onRun}
-                      disabled={stage === ViewViewModelStages.Saving || isArchived}
+                      disabled={
+                        stage === ViewViewModelStages.Saving || isArchived
+                      }
                     />
                   </Tooltip>
                   <Tooltip title={t('beautify')} placement="bottom">
