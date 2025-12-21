@@ -315,7 +315,7 @@ export const runSql = createAsyncThunk<
   { state: RootState }
 >(
   'view/runSql',
-  async ({ id, script: scriptProps }, { getState, dispatch }) => {
+  async ({ script: scriptProps }, { getState, dispatch }) => {
     try {
       const currentEditingView = selectCurrentEditingView(
         getState(),
