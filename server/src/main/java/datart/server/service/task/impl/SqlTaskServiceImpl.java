@@ -346,15 +346,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             // 执行 SQL
             Dataframe dataframe = dataProviderService.testExecute(JSONUtil.toBean(task.getExecuteParam(), TestExecuteParam.class));
 
-            // 更新任务状态为成功
             Date endDate = new Date();
-            task.setStatus(SqlTaskStatus.SUCCESS.toString());
-            task.setEndTime(endDate);
-            task.setDuration(endDate.getTime() - task.getStartTime().getTime());
-            task.setProgress(100);
-            task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
-            task.setUpdateTime(endDate);
-            sqlTaskMapper.updateByPrimaryKeySelective(task);
 
             // 保存执行结果
             SqlTaskResult result = new SqlTaskResult();
@@ -367,6 +359,15 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             result.setCreateBy(task.getCreateBy());
             result.setCreateTime(endDate);
             sqlTaskResultService.insertSelective(result);
+
+            // 更新任务状态为成功
+            task.setStatus(SqlTaskStatus.SUCCESS.toString());
+            task.setEndTime(endDate);
+            task.setDuration(endDate.getTime() - task.getStartTime().getTime());
+            task.setProgress(100);
+            task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
+            task.setUpdateTime(endDate);
+            sqlTaskMapper.updateByPrimaryKeySelective(task);
         } catch (Exception e) {
             log.error("Execute task error. task: {}", task, e);
 
