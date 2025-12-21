@@ -313,7 +313,7 @@ export const runSql = createAsyncThunk<
   QueryResult | null | SqlTaskCreateResponse,
   { id: string; isFragment: boolean; script?: StructViewQueryProps },
   { state: RootState }
->('view/runSql', async ({ script: scriptProps }, { getState, dispatch }) => {
+>('view/runSql', async ({ id, script: scriptProps }, { getState, dispatch }) => {
   try {
     const currentEditingView = selectCurrentEditingView(
       getState(),
@@ -322,6 +322,11 @@ export const runSql = createAsyncThunk<
     // Ensure we have a valid current editing view
     if (!currentEditingView) {
       throw new Error(i18n.t('view.noCurrentEditingView'));
+    }
+
+    // Check if view is currently being saved, if so, don't allow running SQL
+    if (currentEditingView.stage === ViewViewModelStages.Saving) {
+      throw new Error(i18n.t('view.saveInProgress'));
     }
 
     // Set stage to Running at the beginning of execution

@@ -80,13 +80,19 @@ export const SQLEditor = memo(() => {
   const theme = useSelector(selectThemeKey);
   const viewsData = useSelector(selectViews);
   const t = useI18NPrefix('view.editor');
+  const tView = useI18NPrefix('view');
 
   const run = useCallback(() => {
+    // Check if view is currently being saved, if so, don't allow running SQL
+    if (stage === ViewViewModelStages.Saving) {
+      message.warning(tView('saveInProgress'));
+      return;
+    }
     const fragment = editorInstance
       ?.getModel()
       ?.getValueInRange(editorInstance.getSelection()!);
     dispatch(runSql({ id, isFragment: !!fragment }));
-  }, [dispatch, id, editorInstance]);
+  }, [dispatch, id, editorInstance, stage]);
 
   const save = useCallback(
     (resolve?) => {

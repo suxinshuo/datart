@@ -1247,6 +1247,8 @@
       "success": "Success",
       "failed": "Failed"
     },
+    "sqlExecutionCancelled": "SQL execution cancelled",
+    "saveInProgress": "Data view is being saved, query execution is temporarily disabled",
     "tabs": {
       "discard": "Discard",
       "cancel": "Cancel",
