@@ -232,7 +232,10 @@ export const Outputs = memo(() => {
         </TaskStatusWrapper>
       )}
 
-      <Results width={width} height={height} />
+      <Results
+        width={width}
+        height={currentTaskId ? (height || 0) - 80 : height}
+      />
       {error && <Error />}
     </Wrapper>
   );
