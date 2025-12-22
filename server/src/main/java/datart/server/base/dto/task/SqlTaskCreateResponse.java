@@ -15,41 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package datart.server.base.dto;
+package datart.server.base.dto.task;
 
-import datart.core.data.provider.Dataframe;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.List;
 
 @Data
-public class SqlTaskStatusResponse {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SqlTaskCreateResponse {
     
     private String taskId;
     
-    private String status;
-    
-    private String statusDesc;
-    
-    private String createBy;
-    
     private Date createTime;
     
-    private Date startTime;
-    
-    private Date endTime;
-    
-    private Long duration;
-    
-    private Integer progress;
-    
-    private List<String> log;
-    
-    private Object taskResult;
-
-    private String failType;
-
-    private String errorMessage;
-
 }

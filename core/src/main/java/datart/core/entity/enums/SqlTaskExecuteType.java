@@ -15,23 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package datart.server.base.dto;
+package datart.core.entity.enums;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-import java.util.Date;
+/**
+ * @author suxinshuo
+ * @date 2025/12/22 10:53
+ */
+@Getter
+public enum SqlTaskExecuteType {
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class SqlTaskCreateResponse {
-    
-    private String taskId;
-    
-    private Date createTime;
-    
+    AD_HOC("AD_HOC", "即席查询"),
+
+    OTHER("OTHER", "其他");
+
+    private final String code;
+
+    private final String desc;
+
+    SqlTaskExecuteType(String code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
+
 }

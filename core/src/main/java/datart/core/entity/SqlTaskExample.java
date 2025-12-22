@@ -1015,6 +1015,76 @@ public class SqlTaskExample {
             return (Criteria) this;
         }
 
+        public Criteria andExecuteTypeIsNull() {
+            addCriterion("execute_type is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeIsNotNull() {
+            addCriterion("execute_type is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeEqualTo(String value) {
+            addCriterion("execute_type =", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeNotEqualTo(String value) {
+            addCriterion("execute_type <>", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeGreaterThan(String value) {
+            addCriterion("execute_type >", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeGreaterThanOrEqualTo(String value) {
+            addCriterion("execute_type >=", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeLessThan(String value) {
+            addCriterion("execute_type <", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeLessThanOrEqualTo(String value) {
+            addCriterion("execute_type <=", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeLike(String value) {
+            addCriterion("execute_type like", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeNotLike(String value) {
+            addCriterion("execute_type not like", value, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeIn(List<String> values) {
+            addCriterion("execute_type in", values, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeNotIn(List<String> values) {
+            addCriterion("execute_type not in", values, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeBetween(String value1, String value2) {
+            addCriterion("execute_type between", value1, value2, "executeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andExecuteTypeNotBetween(String value1, String value2) {
+            addCriterion("execute_type not between", value1, value2, "executeType");
+            return (Criteria) this;
+        }
+
         public Criteria andCreateByIsNull() {
             addCriterion("create_by is null");
             return (Criteria) this;

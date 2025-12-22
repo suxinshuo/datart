@@ -27,15 +27,17 @@ import datart.core.bo.task.QueueTaskBo;
 import datart.core.bo.task.RunningTaskBo;
 import datart.core.bo.task.SqlTaskChecker;
 import datart.core.bo.task.SqlTaskConsumerChecker;
-import datart.core.common.SqlTaskStatus;
-import datart.core.common.SqlTaskFailType;
+import datart.core.entity.enums.SqlTaskExecuteType;
+import datart.core.entity.enums.SqlTaskStatus;
+import datart.core.entity.enums.SqlTaskFailType;
 import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
 import datart.core.data.provider.Dataframe;
 import datart.core.mappers.SqlTaskMapper;
-import datart.server.base.dto.SqlTaskStatusResponse;
-import datart.server.base.dto.SqlTaskCreateResponse;
-import datart.server.base.dto.SqlTaskCancelResponse;
+import datart.server.base.dto.task.SqlTaskHistoryResponse;
+import datart.server.base.dto.task.SqlTaskStatusResponse;
+import datart.server.base.dto.task.SqlTaskCreateResponse;
+import datart.server.base.dto.task.SqlTaskCancelResponse;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
@@ -43,6 +45,7 @@ import datart.server.service.task.SqlTaskLogService;
 import datart.server.service.task.SqlTaskResultService;
 import datart.server.service.task.SqlTaskService;
 import datart.server.service.SourceService;
+import datart.server.service.task.factory.SqlTaskFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -82,6 +85,9 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
     @Resource
     private DataProviderService dataProviderService;
+
+    @Resource
+    private SqlTaskFactory sqlTaskFactory;
 
     @Value("${datart.task.consumer.count:4}")
     private int consumerCount;
@@ -138,7 +144,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             RunningTaskBo runningTask = entry.getValue();
             SqlTaskWithBLOBs sqlTask = new SqlTaskWithBLOBs();
             sqlTask.setId(taskId);
-            sqlTask.setStatus(SqlTaskStatus.FAILED.toString());
+            sqlTask.setStatus(SqlTaskStatus.FAILED.getCode());
             sqlTask.setFailType(SqlTaskFailType.SERVICE_RESTART.getCode());
             sqlTask.setErrorMessage(SqlTaskFailType.SERVICE_RESTART.getDesc());
             sqlTask.setEndTime(nowDate);
@@ -166,7 +172,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         task.setSourceId(executeParam.getSourceId());
         task.setScript(executeParam.getScript());
         task.setScriptType(executeParam.getScriptType().name());
-        task.setStatus(SqlTaskStatus.QUEUED.toString());
+        task.setStatus(SqlTaskStatus.QUEUED.getCode());
         task.setPriority(executeParam.getPriority());
         task.setTimeout((int) maxRunningTime);
         task.setMaxSize(executeParam.getSize());
@@ -176,6 +182,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         task.setCreateBy(getCurrentUser().getId());
         task.setCreateTime(new Date());
         task.setProgress(0);
+        task.setExecuteType(SqlTaskExecuteType.AD_HOC.getCode());
 
         // 保存任务信息
         sqlTaskMapper.insertSelective(task);
@@ -264,6 +271,29 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         return response;
     }
 
+    /**
+     * 获取当前用户 SQL 任务执行历史
+     *
+     * @return 任务执行历史响应
+     */
+    @Override
+    public List<SqlTaskHistoryResponse> getSqlTaskHistory() {
+        String currentUserId = getCurrentUser().getId();
+        SqlTaskExample sqlTaskExample = new SqlTaskExample();
+        SqlTaskExample.Criteria criteria = sqlTaskExample.createCriteria();
+        criteria.andCreateByEqualTo(currentUserId)
+                .andExecuteTypeEqualTo(SqlTaskExecuteType.AD_HOC.getCode());
+        sqlTaskExample.setOrderByClause("`create_time` DESC");
+
+        List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
+        if (CollUtil.isEmpty(sqlTasks)) {
+            return Lists.newArrayList();
+        }
+        return sqlTasks.stream()
+                .map(sqlTaskFactory::getSqlTaskHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {
         cancelSqlTask(taskId, failType, SystemConstant.SYSTEM_USER_ID);
     }
@@ -275,7 +305,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
         // 更新任务状态为失败
         Date endTime = new Date();
-        task.setStatus(SqlTaskStatus.FAILED.toString());
+        task.setStatus(SqlTaskStatus.FAILED.getCode());
         task.setFailType(failType.getCode());
         task.setErrorMessage(failType.getDesc());
         task.setEndTime(endTime);
@@ -329,7 +359,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
             // 更新任务状态为执行中
             Date runDate = new Date();
-            task.setStatus(SqlTaskStatus.RUNNING.toString());
+            task.setStatus(SqlTaskStatus.RUNNING.getCode());
             task.setProgress(20);
             task.setStartTime(runDate);
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
@@ -361,7 +391,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             sqlTaskResultService.insertSelective(result);
 
             // 更新任务状态为成功
-            task.setStatus(SqlTaskStatus.SUCCESS.toString());
+            task.setStatus(SqlTaskStatus.SUCCESS.getCode());
             task.setEndTime(endDate);
             task.setDuration(endDate.getTime() - task.getStartTime().getTime());
             task.setProgress(100);
@@ -373,8 +403,8 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
             // 更新任务状态为失败
             Date failedDate = new Date();
-            task.setStatus(SqlTaskStatus.FAILED.toString());
-            task.setFailType(SqlTaskFailType.EXECUTION_FAILED.toString());
+            task.setStatus(SqlTaskStatus.FAILED.getCode());
+            task.setFailType(SqlTaskFailType.EXECUTION_FAILED.getCode());
             task.setErrorMessage(e.getMessage());
             task.setEndTime(failedDate);
             task.setDuration(System.currentTimeMillis() - task.getStartTime().getTime());

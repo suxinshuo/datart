@@ -1,8 +1,8 @@
 package datart.core.bo.task;
 
 import cn.hutool.core.collection.CollUtil;
-import datart.core.common.SqlTaskFailType;
-import datart.core.common.SqlTaskStatus;
+import datart.core.entity.enums.SqlTaskFailType;
+import datart.core.entity.enums.SqlTaskStatus;
 import datart.core.entity.SqlTaskWithBLOBs;
 import datart.core.mappers.SqlTaskMapper;
 import lombok.AllArgsConstructor;

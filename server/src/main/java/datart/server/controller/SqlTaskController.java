@@ -53,4 +53,11 @@ public class SqlTaskController extends BaseController {
         checkBlank(taskId, "taskId");
         return ResponseData.success(sqlTaskService.cancelSqlTask(taskId));
     }
+
+    @ApiOperation(value = "获取当前用户 SQL 任务执行历史")
+    @GetMapping(value = "/tasks/history")
+    public ResponseData<?> getSqlTaskHistory() throws Exception {
+        return ResponseData.success(sqlTaskService.getSqlTaskHistory());
+    }
+
 }
