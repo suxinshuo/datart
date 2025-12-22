@@ -105,9 +105,21 @@ export const getViewDetail = createAsyncThunk<
     }
 
     if (isNewView(viewId)) {
+      // Check if there's saved data in local storage for this new view
+      let savedViewData: Partial<ViewViewModel> = {};
+      try {
+        const savedData = localStorage.getItem(`datart_view_${viewId}`);
+        if (savedData) {
+          savedViewData = JSON.parse(savedData);
+        }
+      } catch (error) {
+        console.error('Failed to load view from local storage:', error);
+      }
+
       const newView = generateEditingView({
         id: viewId,
         name: generateNewEditingViewName(editingViews),
+        ...savedViewData, // Merge saved data if exists
       });
       dispatch(viewActions.addEditingView(newView));
       return newView;
@@ -430,10 +442,11 @@ export const getSqlTaskStatus = createAsyncThunk<
           );
         }
 
-        // Auto save the view after successful execution - only if this is still the active task
+        // Auto save the view after successful execution - only if this is still the active task and it's not a new view
         if (
           currentEditingView.currentTaskId === taskId &&
-          currentEditingView.stage === ViewViewModelStages.Running
+          currentEditingView.stage === ViewViewModelStages.Running &&
+          !isNewView(currentEditingView.id) // Only auto save for persisted views
         ) {
           dispatch(saveView({}));
         }
