@@ -302,18 +302,16 @@ export const History = memo(() => {
     <Container
       title="history"
       loading={loading}
-      more={{
+      add={{
+        icon: <ReloadOutlined />,
         items: [
           {
             key: 'refresh',
             text: t('refresh'),
-            prefix: <ReloadOutlined />,
           },
         ],
         callback: key => {
-          if (key === 'refresh') {
-            handleRefresh();
-          }
+          handleRefresh();
         },
       }}
     >
