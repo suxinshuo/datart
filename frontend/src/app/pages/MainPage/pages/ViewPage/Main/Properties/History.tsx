@@ -24,6 +24,7 @@ import styled from 'styled-components/macro';
 import {
   ERROR,
   G50,
+  SPACE,
   SPACE_MD,
   SPACE_XS,
   SUCCESS,
@@ -433,7 +434,7 @@ const TaskItemWrapper = styled.div`
 const HistoryMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${SPACE_MD};
+  gap: ${SPACE};
   margin-top: ${SPACE_XS};
   font-size: 12px;
   line-height: 1.2;
