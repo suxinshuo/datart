@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS `sql_task`;
 CREATE TABLE `sql_task`  (
   `id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `source_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `view_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `script` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `script_type` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `status` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,

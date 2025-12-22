@@ -18,6 +18,7 @@
 
 package datart.server.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
@@ -36,6 +37,7 @@ import datart.core.common.RequestContext;
 import datart.core.data.provider.*;
 import datart.core.entity.RelSubjectColumns;
 import datart.core.entity.Source;
+import datart.core.entity.SqlTaskResult;
 import datart.core.entity.View;
 import datart.core.mappers.ext.RelSubjectColumnsMapperExt;
 import datart.security.util.AESUtil;
@@ -46,12 +48,14 @@ import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
 import datart.server.service.VariableService;
 import datart.server.service.ViewService;
+import datart.server.service.task.SqlTaskResultService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
@@ -74,23 +78,20 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
     private ObjectMapper objectMapper;
 
-    private final DataProviderManager dataProviderManager;
+    @Resource
+    private DataProviderManager dataProviderManager;
 
-    private final RelSubjectColumnsMapperExt rscMapper;
+    @Resource
+    private RelSubjectColumnsMapperExt rscMapper;
 
-    private final VariableService variableService;
+    @Resource
+    private VariableService variableService;
 
-    private final ViewService viewService;
+    @Resource
+    private ViewService viewService;
 
-    public DataProviderServiceImpl(DataProviderManager dataProviderManager,
-                                   RelSubjectColumnsMapperExt rscMapper,
-                                   VariableService variableService,
-                                   ViewService viewService) {
-        this.dataProviderManager = dataProviderManager;
-        this.rscMapper = rscMapper;
-        this.variableService = variableService;
-        this.viewService = viewService;
-    }
+    @Resource
+    private SqlTaskResultService sqlTaskResultService;
 
     @PostConstruct
     public void init() {
@@ -271,6 +272,22 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
 
         viewExecuteParam.getPageInfo().setPageSize(Math.min(viewExecuteParam.getPageInfo().getPageSize(), Integer.MAX_VALUE));
 
+        // 静态分析, 分析上次 source 执行结果
+        Dataframe sqlTaskResult = null;
+        if (viewExecuteParam.isStaticAnalysis()) {
+            log.info("静态分析, 直接读取 View 上次的执行结果");
+            String sqlTaskResultId = viewExecuteParam.getSqlTaskResultId();
+            if (StringUtils.isBlank(sqlTaskResultId)) {
+                Exceptions.tr(BaseException.class, "message.source.task.not-found");
+            } else {
+                SqlTaskResult taskResult = sqlTaskResultService.getById(sqlTaskResultId);
+                if (StringUtils.isBlank(taskResult.getData())) {
+                    Exceptions.tr(BaseException.class, "message.source.task.not-found");
+                }
+                sqlTaskResult = JSONUtil.toBean(taskResult.getData(), Dataframe.class);
+            }
+        }
+
         ExecuteParam queryParam = ExecuteParam.builder()
                 .columns(viewExecuteParam.getColumns())
                 .keywords(viewExecuteParam.getKeywords())
@@ -285,6 +302,8 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .serverAggregate((boolean) providerSource.getProperties().getOrDefault(SERVER_AGGREGATE, false))
                 .cacheEnable(viewExecuteParam.isCache())
                 .cacheExpires(viewExecuteParam.getCacheExpires())
+                .staticAnalysis(viewExecuteParam.isStaticAnalysis())
+                .sqlTaskResult(sqlTaskResult)
                 .build();
 
         Dataframe dataframe = dataProviderManager.execute(providerSource, queryScript, queryParam);

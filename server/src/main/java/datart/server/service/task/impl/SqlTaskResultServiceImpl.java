@@ -48,4 +48,9 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
         example.createCriteria().andTaskIdEqualTo(taskId);
         return sqlTaskResultMapper.selectByExampleWithBLOBs(example);
     }
+
+    @Override
+    public SqlTaskResult getById(String id) {
+        return sqlTaskResultMapper.selectByPrimaryKey(id);
+    }
 }

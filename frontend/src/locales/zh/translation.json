@@ -421,7 +421,10 @@
         "format": {
           "local": "本地",
           "date": "日期"
-        }
+        },
+        "analysisBasedStatic": "基于历史执行结果分析",
+        "selectHistoricalExecutionResult": "选择历史执行结果",
+        "analysisBasedStaticTip": "基于历史执行结果分析只能查看，不支持保存。"
       },
       "dataview": {
         "plsSelectDataView": "请选择",

@@ -167,6 +167,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         SqlTaskWithBLOBs task = new SqlTaskWithBLOBs();
         task.setId(taskId);
         task.setSourceId(executeParam.getSourceId());
+        task.setViewId(executeParam.getViewId());
         task.setScript(executeParam.getScript());
         task.setScriptType(executeParam.getScriptType().name());
         task.setStatus(SqlTaskStatus.QUEUED.getCode());
@@ -280,6 +281,31 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         SqlTaskExample.Criteria criteria = sqlTaskExample.createCriteria();
         criteria.andCreateByEqualTo(currentUserId)
                 .andExecuteTypeEqualTo(SqlTaskExecuteType.AD_HOC.getCode());
+        sqlTaskExample.setOrderByClause("`create_time` DESC");
+
+        List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
+        if (CollUtil.isEmpty(sqlTasks)) {
+            return Lists.newArrayList();
+        }
+        return sqlTasks.stream()
+                .map(sqlTaskFactory::getSqlTaskHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取当前用户 SQL 任务执行历史
+     *
+     * @param viewId View ID
+     * @return 任务执行历史响应
+     */
+    @Override
+    public List<SqlTaskHistoryResponse> getSqlTaskHistory(String viewId) {
+        String currentUserId = getCurrentUser().getId();
+        SqlTaskExample sqlTaskExample = new SqlTaskExample();
+        SqlTaskExample.Criteria criteria = sqlTaskExample.createCriteria();
+        criteria.andCreateByEqualTo(currentUserId)
+                .andExecuteTypeEqualTo(SqlTaskExecuteType.AD_HOC.getCode())
+                .andViewIdEqualTo(viewId);
         sqlTaskExample.setOrderByClause("`create_time` DESC");
 
         List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);

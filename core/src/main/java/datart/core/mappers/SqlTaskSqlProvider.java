@@ -35,6 +35,10 @@ public class SqlTaskSqlProvider {
             sql.VALUES("source_id", "#{sourceId,jdbcType=VARCHAR}");
         }
         
+        if (record.getViewId() != null) {
+            sql.VALUES("view_id", "#{viewId,jdbcType=VARCHAR}");
+        }
+        
         if (record.getScriptType() != null) {
             sql.VALUES("script_type", "#{scriptType,jdbcType=VARCHAR}");
         }
@@ -130,6 +134,7 @@ public class SqlTaskSqlProvider {
             sql.SELECT("id");
         }
         sql.SELECT("source_id");
+        sql.SELECT("view_id");
         sql.SELECT("script_type");
         sql.SELECT("`status`");
         sql.SELECT("priority");
@@ -169,6 +174,7 @@ public class SqlTaskSqlProvider {
             sql.SELECT("id");
         }
         sql.SELECT("source_id");
+        sql.SELECT("view_id");
         sql.SELECT("script_type");
         sql.SELECT("`status`");
         sql.SELECT("priority");
@@ -210,6 +216,10 @@ public class SqlTaskSqlProvider {
         
         if (record.getSourceId() != null) {
             sql.SET("source_id = #{record.sourceId,jdbcType=VARCHAR}");
+        }
+        
+        if (record.getViewId() != null) {
+            sql.SET("view_id = #{record.viewId,jdbcType=VARCHAR}");
         }
         
         if (record.getScriptType() != null) {
@@ -306,6 +316,7 @@ public class SqlTaskSqlProvider {
         
         sql.SET("id = #{record.id,jdbcType=VARCHAR}");
         sql.SET("source_id = #{record.sourceId,jdbcType=VARCHAR}");
+        sql.SET("view_id = #{record.viewId,jdbcType=VARCHAR}");
         sql.SET("script_type = #{record.scriptType,jdbcType=VARCHAR}");
         sql.SET("`status` = #{record.status,jdbcType=VARCHAR}");
         sql.SET("priority = #{record.priority,jdbcType=INTEGER}");
@@ -339,6 +350,7 @@ public class SqlTaskSqlProvider {
         
         sql.SET("id = #{record.id,jdbcType=VARCHAR}");
         sql.SET("source_id = #{record.sourceId,jdbcType=VARCHAR}");
+        sql.SET("view_id = #{record.viewId,jdbcType=VARCHAR}");
         sql.SET("script_type = #{record.scriptType,jdbcType=VARCHAR}");
         sql.SET("`status` = #{record.status,jdbcType=VARCHAR}");
         sql.SET("priority = #{record.priority,jdbcType=INTEGER}");
@@ -369,6 +381,10 @@ public class SqlTaskSqlProvider {
         
         if (record.getSourceId() != null) {
             sql.SET("source_id = #{sourceId,jdbcType=VARCHAR}");
+        }
+        
+        if (record.getViewId() != null) {
+            sql.SET("view_id = #{viewId,jdbcType=VARCHAR}");
         }
         
         if (record.getScriptType() != null) {

@@ -46,4 +46,6 @@ public class TestExecuteParam {
 
     private Integer priority;
 
+    private String viewId;
+
 }

@@ -44,6 +44,17 @@ export type WorkbenchState = {
   chartEditorDownloadPolling: boolean;
   availableSourceFunctions?: string[];
   selectedItems: SelectedItem[];
+  staticAnalysis?: boolean;
+  sqlTaskResultId?: string;
+  sqlTaskHistory?: Array<{
+    id: string;
+    status: 'SUCCESS' | 'FAILED' | 'RUNNING' | 'CANCELLED';
+    query: string;
+    submitTime: string;
+    startTime: string;
+    endTime: string;
+    duration: number;
+  }>;
 };
 
 export interface renderMataProps extends Omit<ChartDataViewMeta, 'children'> {

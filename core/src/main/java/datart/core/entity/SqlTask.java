@@ -9,6 +9,8 @@ import lombok.EqualsAndHashCode;
 public class SqlTask extends BaseEntity {
     private String sourceId;
 
+    private String viewId;
+
     private String scriptType;
 
     private String status;

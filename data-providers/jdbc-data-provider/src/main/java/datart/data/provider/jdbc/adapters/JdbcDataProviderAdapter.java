@@ -464,32 +464,38 @@ public class JdbcDataProviderAdapter implements Closeable {
      * 本地执行，从数据源拉取全量数据，在本地执行聚合操作
      */
     public Dataframe executeInLocal(QueryScript script, ExecuteParam executeParam) throws Exception {
+        Dataframe data;
+        if (executeParam.isStaticAnalysis()) {
+            log.info("静态分析, 直接读取 View 历史的执行结果");
+            data = executeParam.getSqlTaskResult();
+        } else {
+            List<SelectColumn> selectColumns = null;
+            // 构建执行参数，查询源表全量数据
+            if (!CollectionUtils.isEmpty(script.getSchema())) {
+                selectColumns = script.getSchema().values().parallelStream().map(column -> {
+                    SelectColumn selectColumn = new SelectColumn();
+                    selectColumn.setColumn(column.getName());
+                    selectColumn.setAlias(column.columnKey());
+                    return selectColumn;
+                }).collect(Collectors.toList());
+            }
+            ExecuteParam tempExecuteParam = ExecuteParam.builder()
+                    .columns(selectColumns)
+                    .concurrencyOptimize(true)
+                    .cacheEnable(executeParam.isCacheEnable())
+                    .cacheExpires(executeParam.getCacheExpires())
+                    .concurrencyOptimize(executeParam.isConcurrencyOptimize())
+                    .build();
 
-        List<SelectColumn> selectColumns = null;
-        // 构建执行参数，查询源表全量数据
-        if (!CollectionUtils.isEmpty(script.getSchema())) {
-            selectColumns = script.getSchema().values().parallelStream().map(column -> {
-                SelectColumn selectColumn = new SelectColumn();
-                selectColumn.setColumn(column.getName());
-                selectColumn.setAlias(column.columnKey());
-                return selectColumn;
-            }).collect(Collectors.toList());
+            SqlScriptRender render = new SqlScriptRender(script
+                    , tempExecuteParam
+                    , getSqlDialect()
+                    , jdbcProperties.isEnableSpecialSql()
+                    , driverInfo.getQuoteIdentifiers());
+            String sql = render.render(true, false, false);
+            data = execute(sql);
         }
-        ExecuteParam tempExecuteParam = ExecuteParam.builder()
-                .columns(selectColumns)
-                .concurrencyOptimize(true)
-                .cacheEnable(executeParam.isCacheEnable())
-                .cacheExpires(executeParam.getCacheExpires())
-                .concurrencyOptimize(executeParam.isConcurrencyOptimize())
-                .build();
 
-        SqlScriptRender render = new SqlScriptRender(script
-                , tempExecuteParam
-                , getSqlDialect()
-                , jdbcProperties.isEnableSpecialSql()
-                , driverInfo.getQuoteIdentifiers());
-        String sql = render.render(true, false, false);
-        Dataframe data = execute(sql);
 
         if (!CollectionUtils.isEmpty(script.getSchema())) {
             for (Column column : data.getColumns()) {

@@ -77,6 +77,8 @@ export class ChartDataRequestBuilder {
   aggregation?: boolean;
   drillOption?: IChartDrillOption;
   variableParams?: Record<string, any[]>;
+  sqlTaskResultId?: string;
+  staticAnalysis?: boolean;
 
   constructor(
     dataView: Pick<ChartDataView, 'id' | 'computedFields' | 'type' | 'meta'> & {
@@ -123,6 +125,16 @@ export class ChartDataRequestBuilder {
     if (params) {
       this.variableParams = params;
     }
+    return this;
+  }
+
+  public setStaticAnalysis(staticAnalysis: boolean) {
+    this.staticAnalysis = staticAnalysis;
+    return this;
+  }
+
+  public setSqlTaskResultId(sqlTaskResultId: string) {
+    this.sqlTaskResultId = sqlTaskResultId;
     return this;
   }
 
@@ -626,6 +638,8 @@ export class ChartDataRequestBuilder {
       columns: this.buildSelectColumns(),
       script: this.script,
       params: this.variableParams,
+      staticAnalysis: this.staticAnalysis,
+      sqlTaskResultId: this.sqlTaskResultId,
     };
   }
 
