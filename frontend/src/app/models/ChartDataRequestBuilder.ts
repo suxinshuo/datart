@@ -77,7 +77,7 @@ export class ChartDataRequestBuilder {
   aggregation?: boolean;
   drillOption?: IChartDrillOption;
   variableParams?: Record<string, any[]>;
-  sqlTaskResultId?: string;
+  sqlTaskId?: string;
   staticAnalysis?: boolean;
 
   constructor(
@@ -133,8 +133,8 @@ export class ChartDataRequestBuilder {
     return this;
   }
 
-  public setSqlTaskResultId(sqlTaskResultId: string) {
-    this.sqlTaskResultId = sqlTaskResultId;
+  public setSqlTaskId(sqlTaskId: string) {
+    this.sqlTaskId = sqlTaskId;
     return this;
   }
 
@@ -639,7 +639,7 @@ export class ChartDataRequestBuilder {
       script: this.script,
       params: this.variableParams,
       staticAnalysis: this.staticAnalysis,
-      sqlTaskResultId: this.sqlTaskResultId,
+      sqlTaskId: this.sqlTaskId,
     };
   }
 

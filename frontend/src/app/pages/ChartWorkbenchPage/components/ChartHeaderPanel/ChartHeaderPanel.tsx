@@ -72,7 +72,7 @@ const ChartHeaderPanel: FC<{
 
     // 静态分析相关状态
     const [staticAnalysis, setStaticAnalysis] = useState<boolean>(true);
-    const [sqlTaskResultId, setSqlTaskResultId] = useState<string>('');
+    const [sqlTaskId, setSqlTaskId] = useState<string>('');
     const [sqlTaskHistory, setSqlTaskHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
 
@@ -95,7 +95,8 @@ const ChartHeaderPanel: FC<{
         // 设置默认选中最近的成功执行
         const latestSuccessTask = tasks.find(task => task.status === 'SUCCESS');
         if (latestSuccessTask) {
-          setSqlTaskResultId(latestSuccessTask.id);
+          setSqlTaskId(latestSuccessTask.id);
+          dispatch(actions.updateSqlTaskId(latestSuccessTask.id));
         }
       } catch (error) {
         errorHandle(error);
@@ -114,10 +115,10 @@ const ChartHeaderPanel: FC<{
     );
 
     // SQL任务结果ID变化
-    const handleSqlTaskResultIdChange = useCallback(
+    const handleSqlTaskIdChange = useCallback(
       (value: string) => {
-        setSqlTaskResultId(value);
-        dispatch(actions.updateSqlTaskResultId(value));
+        setSqlTaskId(value);
+        dispatch(actions.updateSqlTaskId(value));
       },
       [dispatch, actions],
     );
@@ -166,8 +167,8 @@ const ChartHeaderPanel: FC<{
           {/* SQL任务历史下拉菜单 */}
           {staticAnalysis && (
             <Select
-              value={sqlTaskResultId}
-              onChange={handleSqlTaskResultIdChange}
+              value={sqlTaskId}
+              onChange={handleSqlTaskIdChange}
               loading={loadingHistory}
               placeholder={t('selectHistoricalExecutionResult')}
               style={{ width: 300 }}

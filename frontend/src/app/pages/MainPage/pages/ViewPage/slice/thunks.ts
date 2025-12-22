@@ -172,7 +172,7 @@ const buildSqlExecutionRequest = (
   scriptProps: StructViewQueryProps | undefined,
   allDatabaseSchemas: any,
 ) => {
-  const { sourceId, size, fragment, variables, type } = currentEditingView;
+  const { id, sourceId, size, fragment, variables, type } = currentEditingView;
   let sql = '';
   let structure: StructViewQueryProps | null = null;
   let script = '';
@@ -226,7 +226,7 @@ const buildSqlExecutionRequest = (
     );
   }
 
-  return {
+  const requestData = {
     script,
     sourceId,
     size,
@@ -241,7 +241,11 @@ const buildSqlExecutionRequest = (
         expression,
       }),
     ),
+    // Add viewId if it exists, otherwise it will be undefined
+    viewId: id,
   };
+
+  return requestData;
 };
 
 // Helper function to handle synchronous SQL execution

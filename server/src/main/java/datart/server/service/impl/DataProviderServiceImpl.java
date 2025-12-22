@@ -18,6 +18,7 @@
 
 package datart.server.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -276,15 +277,15 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
         Dataframe sqlTaskResult = null;
         if (viewExecuteParam.isStaticAnalysis()) {
             log.info("静态分析, 直接读取 View 上次的执行结果");
-            String sqlTaskResultId = viewExecuteParam.getSqlTaskResultId();
-            if (StringUtils.isBlank(sqlTaskResultId)) {
+            String sqlTaskId = viewExecuteParam.getSqlTaskId();
+            if (StringUtils.isBlank(sqlTaskId)) {
                 Exceptions.tr(BaseException.class, "message.source.task.not-found");
             } else {
-                SqlTaskResult taskResult = sqlTaskResultService.getById(sqlTaskResultId);
-                if (StringUtils.isBlank(taskResult.getData())) {
+                List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(sqlTaskId);
+                if (CollUtil.isEmpty(sqlTaskResults) || StringUtils.isBlank(sqlTaskResults.get(0).getData())) {
                     Exceptions.tr(BaseException.class, "message.source.task.not-found");
                 }
-                sqlTaskResult = JSONUtil.toBean(taskResult.getData(), Dataframe.class);
+                sqlTaskResult = JSONUtil.toBean(sqlTaskResults.get(0).getData(), Dataframe.class);
             }
         }
 

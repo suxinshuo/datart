@@ -190,7 +190,7 @@ export const refreshDatasetAction = createAsyncThunk(
       .addExtraSorters(arg?.sorter ? [arg?.sorter as any] : [])
       .addDrillOption(arg?.drillOption)
       .setStaticAnalysis(workbenchState.staticAnalysis || false)
-      .setSqlTaskResultId(workbenchState.sqlTaskResultId || '')
+      .setSqlTaskId(workbenchState.sqlTaskId || '')
       .build();
     return thunkAPI.dispatch(fetchDataSetAction(requestParams));
   },

@@ -68,5 +68,5 @@ export type ChartDataRequest = {
   vizType?: string;
   analytics?: Boolean;
   staticAnalysis?: boolean;
-  sqlTaskResultId?: string;
+  sqlTaskId?: string;
 };

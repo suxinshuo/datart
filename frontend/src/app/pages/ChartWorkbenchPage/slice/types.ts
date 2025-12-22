@@ -45,7 +45,7 @@ export type WorkbenchState = {
   availableSourceFunctions?: string[];
   selectedItems: SelectedItem[];
   staticAnalysis?: boolean;
-  sqlTaskResultId?: string;
+  sqlTaskId?: string;
   sqlTaskHistory?: Array<{
     id: string;
     status: 'SUCCESS' | 'FAILED' | 'RUNNING' | 'CANCELLED';

@@ -70,7 +70,7 @@ public class ViewExecuteParam {
 
     private boolean analytics;
 
-    private String sqlTaskResultId;
+    private String sqlTaskId;
 
     /**
      * 静态分析, 分析历史 source 执行结果

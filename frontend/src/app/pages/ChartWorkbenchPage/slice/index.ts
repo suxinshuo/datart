@@ -51,7 +51,7 @@ export const initState: WorkbenchState = {
   chartEditorDownloadPolling: false,
   selectedItems: [],
   staticAnalysis: true,
-  sqlTaskResultId: '',
+  sqlTaskId: '',
   sqlTaskHistory: [],
 };
 
@@ -169,8 +169,8 @@ const workbenchSlice = createSlice({
     updateStaticAnalysis(state, { payload }: PayloadAction<boolean>) {
       state.staticAnalysis = payload;
     },
-    updateSqlTaskResultId(state, { payload }: PayloadAction<string>) {
-      state.sqlTaskResultId = payload;
+    updateSqlTaskId(state, { payload }: PayloadAction<string>) {
+      state.sqlTaskId = payload;
     },
     updateSqlTaskHistory(state, { payload }: PayloadAction<any[]>) {
       state.sqlTaskHistory = payload;

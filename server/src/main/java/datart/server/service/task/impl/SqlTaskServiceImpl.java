@@ -44,6 +44,7 @@ import datart.server.service.task.SqlTaskService;
 import datart.server.service.SourceService;
 import datart.server.service.task.factory.SqlTaskFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -167,7 +168,9 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         SqlTaskWithBLOBs task = new SqlTaskWithBLOBs();
         task.setId(taskId);
         task.setSourceId(executeParam.getSourceId());
-        task.setViewId(executeParam.getViewId());
+        if (!StringUtils.startsWithIgnoreCase(executeParam.getViewId(), "GENERATED-")) {
+            task.setViewId(executeParam.getViewId());
+        }
         task.setScript(executeParam.getScript());
         task.setScriptType(executeParam.getScriptType().name());
         task.setStatus(SqlTaskStatus.QUEUED.getCode());
