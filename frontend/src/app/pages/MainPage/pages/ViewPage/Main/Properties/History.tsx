@@ -49,6 +49,8 @@ interface TaskHistory {
   startTime: string;
   endTime: string;
   duration: number;
+  failType: string;
+  errorMessage: string;
 }
 
 export const History = memo(() => {
@@ -411,6 +413,21 @@ export const History = memo(() => {
                 </Text>
               </p>
             </div>
+            {detailTask.status === 'FAILED' && (
+              <div style={{ marginTop: SPACE_MD }}>
+                <h4
+                  style={{
+                    margin: '0 0 8px 0',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {t('failMessage')}:
+                </h4>
+                <p>{detailTask.failType}</p>
+                <p>{detailTask.errorMessage}</p>
+              </div>
+            )}
           </div>
         )}
       </Modal>

@@ -307,7 +307,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         Date endTime = new Date();
         task.setStatus(SqlTaskStatus.FAILED.getCode());
         task.setFailType(failType.getCode());
-        task.setErrorMessage(failType.getDesc());
+        task.setErrorMessage("");
         task.setEndTime(endTime);
         task.setDuration(System.currentTimeMillis() - task.getCreateTime().getTime());
         task.setUpdateBy(operatorUserId);
@@ -400,6 +400,15 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             sqlTaskMapper.updateByPrimaryKeySelective(task);
         } catch (Exception e) {
             log.error("Execute task error. task: {}", task, e);
+
+            // 如果之前已经更新为手动终止, 则不更新状态
+            SqlTaskWithBLOBs nowTask = sqlTaskMapper.selectByPrimaryKey(task.getId());
+            SqlTaskFailType nowSlTaskFailType = SqlTaskFailType.fromCode(nowTask.getFailType());
+            if (Objects.equals(SqlTaskStatus.FAILED.getCode(), nowTask.getStatus())
+                    && SqlTaskFailType.getManualTypes().contains(nowSlTaskFailType)) {
+                log.info("任务已手动终止, 不更新状态. nowTask: {}", nowTask);
+                return;
+            }
 
             // 更新任务状态为失败
             Date failedDate = new Date();

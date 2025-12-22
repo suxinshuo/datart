@@ -64,7 +64,7 @@ public class SqlTaskHistoryResponse {
      */
     private Long duration;
 
-    private SqlTaskFailType failType;
+    private String failType;
 
     private String errorMessage;
 

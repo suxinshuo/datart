@@ -1287,6 +1287,7 @@
       "loadMore": "加载更多",
       "refresh": "刷新",
       "viewDetail": "查看详情",
+      "failMessage": "失败信息",
       "query": "查询语句",
       "submitTime": "提交时间",
       "startTime": "开始时间",

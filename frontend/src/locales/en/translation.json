@@ -1288,6 +1288,7 @@
       "loadMore": "Load More",
       "refresh": "Refresh",
       "viewDetail": "View Detail",
+      "failMessage": "Fail Message",
       "query": "Query",
       "submitTime": "Submit Time",
       "startTime": "Start Time",
