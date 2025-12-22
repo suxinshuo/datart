@@ -306,7 +306,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         String resultData = sqlTaskResults.get(0).getData();
         try {
             Dataframe dataframe = JSONUtil.toBean(resultData, Dataframe.class);
-            // dataframe 转 toon 格式
+            // dataframe 转 字符串 格式
             StringJoiner columnSj = new StringJoiner(",", "=== 列名(以','分隔) ===\n", "");
             dataframe.getColumns().stream().map(c -> {
                 if (Objects.nonNull(c.getName()) && c.getName().length >= 1) {
