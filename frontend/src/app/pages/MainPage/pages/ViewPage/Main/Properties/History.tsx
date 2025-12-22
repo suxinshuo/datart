@@ -16,7 +16,12 @@
  * limitations under the License.
  */
 
-import { CopyOutlined, EyeOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  CopyOutlined,
+  EyeOutlined,
+  LoadingOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
 import { Button, List, Modal, Spin, Tag, Tooltip, Typography } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { memo, useCallback, useEffect, useState } from 'react';
@@ -35,7 +40,6 @@ import { errorHandle } from 'utils/utils';
 import Container from './Container';
 
 const { Text, Paragraph } = Typography;
-const { confirm } = Modal;
 
 interface TaskHistory {
   id: string;
@@ -301,7 +305,7 @@ export const History = memo(() => {
           {
             key: 'refresh',
             text: t('refresh'),
-            prefix: <LoadingOutlined spin={refreshing} />,
+            prefix: <ReloadOutlined />,
           },
         ],
         callback: key => {
@@ -413,14 +417,6 @@ export const History = memo(() => {
     </Container>
   );
 });
-
-const StatusIcon = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-`;
 
 const TaskItemWrapper = styled.div`
   padding: ${SPACE_XS} ${SPACE_MD};
