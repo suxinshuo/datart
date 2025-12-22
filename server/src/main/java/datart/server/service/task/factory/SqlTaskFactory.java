@@ -15,6 +15,8 @@ public class SqlTaskFactory {
     public SqlTaskHistoryResponse getSqlTaskHistoryResponse(SqlTaskWithBLOBs sqlTask) {
         SqlTaskHistoryResponse sqlTaskHistoryResponse = new SqlTaskHistoryResponse();
         BeanUtil.copyProperties(sqlTask, sqlTaskHistoryResponse);
+        sqlTaskHistoryResponse.setQuery(sqlTask.getScript());
+        sqlTaskHistoryResponse.setSubmitTime(sqlTask.getCreateTime());
         return sqlTaskHistoryResponse;
     }
 

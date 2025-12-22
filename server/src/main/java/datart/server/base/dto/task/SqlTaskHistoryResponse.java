@@ -43,7 +43,7 @@ public class SqlTaskHistoryResponse {
     /**
      * sql 内容
      */
-    private String script;
+    private String query;
 
     private String scriptType;
 
@@ -71,6 +71,6 @@ public class SqlTaskHistoryResponse {
     /**
      * 发起时间
      */
-    private Date createTime;
+    private Date submitTime;
 
 }

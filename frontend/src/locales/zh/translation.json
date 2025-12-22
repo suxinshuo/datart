@@ -1279,7 +1279,33 @@
       "reference": "数据源信息",
       "variable": "变量配置",
       "model": "数据模型",
-      "columnPermissions": "列权限"
+      "columnPermissions": "列权限",
+      "history": "历史记录"
+    },
+    "history": {
+      "empty": "暂无历史记录",
+      "loadMore": "加载更多",
+      "refresh": "刷新",
+      "viewDetail": "查看详情",
+      "query": "查询语句",
+      "submitTime": "提交时间",
+      "startTime": "开始时间",
+      "endTime": "结束时间",
+      "duration": "耗时",
+      "detailTitle": "查询详情",
+      "copy": "复制",
+      "copySuccess": "复制成功",
+      "copySuccessMessage": "查询语句已复制到剪贴板",
+      "copyFailed": "复制失败",
+      "copyFailedMessage": "复制查询语句失败",
+      "close": "关闭",
+      "status": {
+        "success": "成功",
+        "failed": "失败",
+        "running": "运行中",
+        "cancelled": "已取消",
+        "unknown": "未知"
+      }
     },
     "resource": {
       "title": "数据源信息",
