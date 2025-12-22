@@ -60,4 +60,11 @@ public class SqlTaskController extends BaseController {
         return ResponseData.success(sqlTaskService.getSqlTaskHistory());
     }
 
+    @ApiOperation(value = "获取任务执行结果(字符串格式)")
+    @GetMapping(value = "/tasks/{taskId}/result_str")
+    public ResponseData<?> getSqlTaskResultStr(@PathVariable String taskId) throws Exception {
+        checkBlank(taskId, "taskId");
+        return ResponseData.success(sqlTaskService.getSqlTaskResult(taskId));
+    }
+
 }

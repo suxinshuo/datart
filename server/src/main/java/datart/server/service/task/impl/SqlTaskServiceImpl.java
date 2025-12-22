@@ -34,10 +34,7 @@ import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
 import datart.core.data.provider.Dataframe;
 import datart.core.mappers.SqlTaskMapper;
-import datart.server.base.dto.task.SqlTaskHistoryResponse;
-import datart.server.base.dto.task.SqlTaskStatusResponse;
-import datart.server.base.dto.task.SqlTaskCreateResponse;
-import datart.server.base.dto.task.SqlTaskCancelResponse;
+import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
@@ -292,6 +289,47 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         return sqlTasks.stream()
                 .map(sqlTaskFactory::getSqlTaskHistoryResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取任务执行结果
+     *
+     * @param taskId 任务 ID
+     * @return 任务执行结果响应
+     */
+    @Override
+    public SqlTaskResultStrResponse getSqlTaskResult(String taskId) {
+        List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+        if (CollUtil.isEmpty(sqlTaskResults)) {
+            return new SqlTaskResultStrResponse("");
+        }
+        String resultData = sqlTaskResults.get(0).getData();
+        try {
+            Dataframe dataframe = JSONUtil.toBean(resultData, Dataframe.class);
+            // dataframe 转 toon 格式
+            StringJoiner columnSj = new StringJoiner(",", "=== 列名(以','分隔) ===\n", "");
+            dataframe.getColumns().stream().map(c -> {
+                if (Objects.nonNull(c.getName()) && c.getName().length >= 1) {
+                    return c.getName()[0];
+                }
+                return "";
+            }).forEach(columnSj::add);
+
+             StringJoiner rowSj = new StringJoiner("\n", "=== 数据(以'|'分隔列) ===\n", "");
+            dataframe.getRows().stream().map(line -> {
+                return line.stream().map(col -> {
+                    if (Objects.nonNull(col)) {
+                        return col.toString();
+                    }
+                    return "";
+                }).collect(Collectors.joining("|"));
+            }).forEach(rowSj::add);
+
+            return new SqlTaskResultStrResponse(columnSj + "\n\n" + rowSj);
+        } catch (Exception e) {
+            log.error("getSqlTaskResult error. taskId: {}", taskId, e);
+            return new SqlTaskResultStrResponse("");
+        }
     }
 
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {
