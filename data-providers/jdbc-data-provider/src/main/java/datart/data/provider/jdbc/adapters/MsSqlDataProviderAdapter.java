@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
 
@@ -33,8 +34,8 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    protected Dataframe execute(String selectSql, PageInfo pageInfo) throws SQLException {
+    protected Dataframe execute(List<String> setSqls, String selectSql, PageInfo pageInfo) throws SQLException {
         selectSql = SqlStringUtils.rebuildSqlWithFragment(selectSql);
-        return super.execute(selectSql, pageInfo);
+        return super.execute(setSqls, selectSql, pageInfo);
     }
 }

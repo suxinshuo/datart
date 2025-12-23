@@ -256,9 +256,15 @@ public class JdbcDataProviderAdapter implements Closeable {
      * @return 全量数据
      * @throws SQLException SQL执行异常
      */
-    protected Dataframe execute(String sql) throws SQLException {
+    protected Dataframe execute(List<String> setSqls, String sql) throws SQLException {
         try (Connection conn = getConn()) {
             try (Statement statement = conn.createStatement()) {
+                if (CollUtil.isNotEmpty(setSqls)) {
+                    for (String setSql : setSqls) {
+                        statement.execute(setSql);
+                    }
+                }
+
                 try (ResultSet rs = statement.executeQuery(sql)) {
                     return parseResultSet(rs);
                 }
@@ -274,11 +280,17 @@ public class JdbcDataProviderAdapter implements Closeable {
      * @return 分页后的数据
      * @throws SQLException SQL执行异常
      */
-    protected Dataframe execute(String selectSql, PageInfo pageInfo) throws SQLException {
+    protected Dataframe execute(List<String> setSqls, String selectSql, PageInfo pageInfo) throws SQLException {
         Dataframe dataframe;
         try (Connection conn = getConn()) {
             try (Statement statement = conn.createStatement()) {
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
+                // 执行 set 语句
+                if (CollUtil.isNotEmpty(setSqls)) {
+                    for (String setSql : setSqls) {
+                        statement.execute(setSql);
+                    }
+                }
 
                 Boolean sqlSelectTypeFlag = RequestContext.getSqlSelectTypeFlag();
                 if (Objects.nonNull(sqlSelectTypeFlag) && !sqlSelectTypeFlag) {
@@ -487,13 +499,15 @@ public class JdbcDataProviderAdapter implements Closeable {
                     .concurrencyOptimize(executeParam.isConcurrencyOptimize())
                     .build();
 
+            List<String> setSqls = extractSetSqls(script.getScript());
+
             SqlScriptRender render = new SqlScriptRender(script
                     , tempExecuteParam
                     , getSqlDialect()
                     , jdbcProperties.isEnableSpecialSql()
                     , driverInfo.getQuoteIdentifiers());
             String sql = render.render(true, false, false);
-            data = execute(sql);
+            data = execute(setSqls, sql);
         }
 
 
@@ -506,6 +520,23 @@ public class JdbcDataProviderAdapter implements Closeable {
         return LocalDB.executeLocalQuery(script, executeParam, data.splitByTable(script.getSchema()));
     }
 
+    protected List<String> extractSetSqls(String scriptSql) {
+        List<String> setSqls = Lists.newArrayList();
+        String[] sqls = StringUtils.split(scriptSql, "\n");
+        if (Objects.isNull(sqls) || sqls.length == 0) {
+            return Lists.newArrayList();
+        }
+        for (String lineSql : sqls) {
+            lineSql = StringUtils.trim(lineSql);
+            if (StringUtils.startsWithIgnoreCase(lineSql, "set ")) {
+                setSqls.add(lineSql);
+                continue;
+            }
+            break;
+        }
+        return setSqls;
+    }
+
     /**
      * 在数据源执行，组装完整SQL，提交至数据源执行
      */
@@ -513,6 +544,9 @@ public class JdbcDataProviderAdapter implements Closeable {
 
         Dataframe dataframe;
         String sql;
+
+        // 把 set sql 剥离出来
+        List<String> setSqls = extractSetSqls(script.getScript());
 
         SqlScriptRender render = new SqlScriptRender(script
                 , executeParam
@@ -522,12 +556,12 @@ public class JdbcDataProviderAdapter implements Closeable {
 
         if (supportPaging()) {
             sql = render.render(true, true, false);
-            log.info(sql);
-            dataframe = execute(sql);
+            log.info("setSqls: {}, sql: {}", setSqls, sql);
+            dataframe = execute(setSqls, sql);
         } else {
             sql = render.render(true, false, false);
-            log.info(sql);
-            dataframe = execute(sql, executeParam.getPageInfo());
+            log.info("setSqls: {}, sql: {}", setSqls, sql);
+            dataframe = execute(setSqls, sql, executeParam.getPageInfo());
         }
         // fix page info
         if (executeParam.getPageInfo().isCountTotal()) {

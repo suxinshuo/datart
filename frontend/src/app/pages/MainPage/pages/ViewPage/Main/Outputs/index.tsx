@@ -44,6 +44,9 @@ export const Outputs = memo(() => {
   const currentTaskErrorMessage = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'currentTaskErrorMessage' }),
   ) as string;
+  const isCancelClicked = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'isCancelClicked' }),
+  ) as boolean;
 
   const { width, height, ref } = useResizeObserver({
     refreshMode: 'debounce',
@@ -61,9 +64,14 @@ export const Outputs = memo(() => {
   // Task monitoring and management
   const cancelTask = useCallback(() => {
     if (currentTaskId) {
+      dispatch(
+        actions.changeCurrentEditingView({
+          isCancelClicked: true,
+        }),
+      );
       dispatch(cancelSqlTask({ taskId: currentTaskId }));
     }
-  }, [dispatch, currentTaskId]);
+  }, [dispatch, currentTaskId, actions]);
 
   // Monitor task status with optimized polling strategy
   useEffect(() => {
@@ -75,7 +83,8 @@ export const Outputs = memo(() => {
     if (
       currentTaskId &&
       currentTaskStatus !== SqlTaskStatus.SUCCESS &&
-      currentTaskStatus !== SqlTaskStatus.FAILED
+      currentTaskStatus !== SqlTaskStatus.FAILED &&
+      !isCancelClicked
     ) {
       // Function to get polling interval based on task status and retry count
       const getPollingInterval = () => {
@@ -118,7 +127,7 @@ export const Outputs = memo(() => {
         clearInterval(intervalId);
       }
     };
-  }, [dispatch, currentTaskId, currentTaskStatus]);
+  }, [dispatch, currentTaskId, currentTaskStatus, isCancelClicked]);
 
   const submitIssue = useCallback(
     type => {
@@ -232,7 +241,7 @@ export const Outputs = memo(() => {
         width={width}
         height={currentTaskId ? (height || 0) - 80 : height}
       />
-      {error && <Error />}
+      {error && !isCancelClicked && <Error />}
     </Wrapper>
   );
 });

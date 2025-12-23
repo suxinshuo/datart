@@ -28,6 +28,7 @@ import datart.core.bo.task.RunningTaskBo;
 import datart.core.bo.task.SqlTaskChecker;
 import datart.core.bo.task.SqlTaskConsumerChecker;
 import datart.core.entity.enums.SqlTaskExecuteType;
+import datart.core.entity.enums.SqlTaskProgress;
 import datart.core.entity.enums.SqlTaskStatus;
 import datart.core.entity.enums.SqlTaskFailType;
 import datart.core.common.UUIDGenerator;
@@ -182,7 +183,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         task.setExecInstanceId(getInstantId());
         task.setCreateBy(getCurrentUser().getId());
         task.setCreateTime(new Date());
-        task.setProgress(0);
+        task.setProgress(SqlTaskProgress.QUEUED.getProgress());
         task.setExecuteType(SqlTaskExecuteType.AD_HOC.getCode());
 
         // 保存任务信息
@@ -427,7 +428,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             // 更新任务状态为执行中
             Date runDate = new Date();
             task.setStatus(SqlTaskStatus.RUNNING.getCode());
-            task.setProgress(20);
+            task.setProgress(SqlTaskProgress.START.getProgress());
             task.setStartTime(runDate);
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
             task.setUpdateTime(runDate);
@@ -461,7 +462,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             task.setStatus(SqlTaskStatus.SUCCESS.getCode());
             task.setEndTime(endDate);
             task.setDuration(endDate.getTime() - task.getStartTime().getTime());
-            task.setProgress(100);
+            task.setProgress(SqlTaskProgress.FINISH.getProgress());
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
             task.setUpdateTime(endDate);
             sqlTaskMapper.updateByPrimaryKeySelective(task);
