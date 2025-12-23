@@ -34,10 +34,7 @@ import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
 import datart.core.data.provider.Dataframe;
 import datart.core.mappers.SqlTaskMapper;
-import datart.server.base.dto.task.SqlTaskHistoryResponse;
-import datart.server.base.dto.task.SqlTaskStatusResponse;
-import datart.server.base.dto.task.SqlTaskCreateResponse;
-import datart.server.base.dto.task.SqlTaskCancelResponse;
+import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
@@ -47,6 +44,7 @@ import datart.server.service.task.SqlTaskService;
 import datart.server.service.SourceService;
 import datart.server.service.task.factory.SqlTaskFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -170,6 +168,9 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         SqlTaskWithBLOBs task = new SqlTaskWithBLOBs();
         task.setId(taskId);
         task.setSourceId(executeParam.getSourceId());
+        if (!StringUtils.startsWithIgnoreCase(executeParam.getViewId(), "GENERATED-")) {
+            task.setViewId(executeParam.getViewId());
+        }
         task.setScript(executeParam.getScript());
         task.setScriptType(executeParam.getScriptType().name());
         task.setStatus(SqlTaskStatus.QUEUED.getCode());
@@ -292,6 +293,72 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         return sqlTasks.stream()
                 .map(sqlTaskFactory::getSqlTaskHistoryResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取当前用户 SQL 任务执行历史
+     *
+     * @param viewId View ID
+     * @return 任务执行历史响应
+     */
+    @Override
+    public List<SqlTaskHistoryResponse> getSqlTaskHistory(String viewId) {
+        String currentUserId = getCurrentUser().getId();
+        SqlTaskExample sqlTaskExample = new SqlTaskExample();
+        SqlTaskExample.Criteria criteria = sqlTaskExample.createCriteria();
+        criteria.andCreateByEqualTo(currentUserId)
+                .andExecuteTypeEqualTo(SqlTaskExecuteType.AD_HOC.getCode())
+                .andViewIdEqualTo(viewId);
+        sqlTaskExample.setOrderByClause("`create_time` DESC");
+
+        List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
+        if (CollUtil.isEmpty(sqlTasks)) {
+            return Lists.newArrayList();
+        }
+        return sqlTasks.stream()
+                .map(sqlTaskFactory::getSqlTaskHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取任务执行结果
+     *
+     * @param taskId 任务 ID
+     * @return 任务执行结果响应
+     */
+    @Override
+    public SqlTaskResultStrResponse getSqlTaskResult(String taskId) {
+        List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+        if (CollUtil.isEmpty(sqlTaskResults)) {
+            return new SqlTaskResultStrResponse("");
+        }
+        String resultData = sqlTaskResults.get(0).getData();
+        try {
+            Dataframe dataframe = JSONUtil.toBean(resultData, Dataframe.class);
+            // dataframe 转 字符串 格式
+            StringJoiner columnSj = new StringJoiner(",", "=== 列名(以','分隔) ===\n", "");
+            dataframe.getColumns().stream().map(c -> {
+                if (Objects.nonNull(c.getName()) && c.getName().length >= 1) {
+                    return c.getName()[0];
+                }
+                return "";
+            }).forEach(columnSj::add);
+
+             StringJoiner rowSj = new StringJoiner("\n", "=== 数据(以'|'分隔列) ===\n", "");
+            dataframe.getRows().stream().map(line -> {
+                return line.stream().map(col -> {
+                    if (Objects.nonNull(col)) {
+                        return col.toString();
+                    }
+                    return "";
+                }).collect(Collectors.joining("|"));
+            }).forEach(rowSj::add);
+
+            return new SqlTaskResultStrResponse(columnSj + "\n\n" + rowSj);
+        } catch (Exception e) {
+            log.error("getSqlTaskResult error. taskId: {}", taskId, e);
+            return new SqlTaskResultStrResponse("");
+        }
     }
 
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {

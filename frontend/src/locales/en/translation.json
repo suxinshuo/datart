@@ -423,7 +423,10 @@
         "format": {
           "local": "local",
           "date": "date"
-        }
+        },
+        "analysisBasedStatic": "Analyze based on historical execution results",
+        "selectHistoricalExecutionResult": "Select historical execution result",
+        "analysisBasedStaticTip": "Analysis based on historical execution results can only be viewed. Please disable this option before saving."
       },
       "dataview": {
         "plsSelectDataView": "Please Select",

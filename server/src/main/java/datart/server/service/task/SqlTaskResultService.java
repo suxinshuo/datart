@@ -25,4 +25,6 @@ public interface SqlTaskResultService {
      */
     List<SqlTaskResult> getByTaskId(String taskId);
 
+    SqlTaskResult getById(String id);
+
 }

@@ -124,7 +124,7 @@ public class JdbcDataProvider extends DataProvider {
     public Dataframe execute(DataProviderSource source, QueryScript script, ExecuteParam executeParam) throws Exception {
         JdbcDataProviderAdapter adapter = matchProviderAdapter(source);
         //If server aggregation is enabled, query the full data before performing server aggregation
-        if (executeParam.isServerAggregate() && !script.isTest()) {
+        if (executeParam.isStaticAnalysis() || (executeParam.isServerAggregate() && !script.isTest())) {
             return adapter.executeInLocal(script, executeParam);
         } else {
             return adapter.executeOnSource(script, executeParam);

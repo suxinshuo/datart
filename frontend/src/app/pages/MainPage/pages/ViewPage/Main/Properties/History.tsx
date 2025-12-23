@@ -58,7 +58,6 @@ export const History = memo(() => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [detailTask, setDetailTask] = useState<TaskHistory | null>(null);
   const t = useI18NPrefix('view.history');
 
@@ -89,7 +88,6 @@ export const History = memo(() => {
         errorHandle(error);
       } finally {
         setLoading(false);
-        setRefreshing(false);
       }
     },
     [hasMore],
@@ -109,7 +107,6 @@ export const History = memo(() => {
 
   // 刷新历史记录
   const handleRefresh = useCallback(() => {
-    setRefreshing(true);
     setHasMore(true);
     fetchHistory(1);
   }, [fetchHistory]);
@@ -154,31 +151,26 @@ export const History = memo(() => {
           return {
             text: t('status.success'),
             color: SUCCESS,
-            tagColor: 'success',
           };
         case 'FAILED':
           return {
             text: t('status.failed'),
             color: ERROR,
-            tagColor: 'error',
           };
         case 'RUNNING':
           return {
             text: t('status.running'),
             color: WARNING,
-            tagColor: 'warning',
           };
         case 'CANCELLED':
           return {
             text: t('status.cancelled'),
             color: G50,
-            tagColor: 'default',
           };
         default:
           return {
             text: t('status.unknown'),
             color: G50,
-            tagColor: 'default',
           };
       }
     },
@@ -234,7 +226,7 @@ export const History = memo(() => {
                   }}
                 >
                   <Tag
-                    color={statusConfig.tagColor}
+                    color={statusConfig.color}
                     style={{ fontSize: '12px', padding: '0 6px' }}
                   >
                     {statusConfig.text}
@@ -365,7 +357,7 @@ export const History = memo(() => {
           <div>
             <div style={{ marginBottom: SPACE_MD }}>
               <Tag
-                color={getStatusConfig(detailTask.status).tagColor}
+                color={getStatusConfig(detailTask.status).color}
                 style={{ marginRight: SPACE_XS }}
               >
                 {getStatusConfig(detailTask.status).text}

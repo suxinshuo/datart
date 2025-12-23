@@ -25,29 +25,29 @@ public interface SqlTaskMapper extends CRUDMapper {
 
     @Insert({
         "insert into sql_task (id, source_id, ",
-        "script_type, `status`, ",
-        "priority, timeout, ",
-        "max_size, start_time, ",
-        "end_time, duration, ",
-        "fail_type, exec_instance_id, ",
-        "progress, org_id, ",
-        "execute_type, create_by, ",
-        "create_time, update_by, ",
-        "update_time, permission, ",
-        "script, error_message, ",
-        "execute_param)",
+        "view_id, script_type, ",
+        "`status`, priority, ",
+        "timeout, max_size, ",
+        "start_time, end_time, ",
+        "duration, fail_type, ",
+        "exec_instance_id, progress, ",
+        "org_id, execute_type, ",
+        "create_by, create_time, ",
+        "update_by, update_time, ",
+        "permission, script, ",
+        "error_message, execute_param)",
         "values (#{id,jdbcType=VARCHAR}, #{sourceId,jdbcType=VARCHAR}, ",
-        "#{scriptType,jdbcType=VARCHAR}, #{status,jdbcType=VARCHAR}, ",
-        "#{priority,jdbcType=INTEGER}, #{timeout,jdbcType=INTEGER}, ",
-        "#{maxSize,jdbcType=INTEGER}, #{startTime,jdbcType=TIMESTAMP}, ",
-        "#{endTime,jdbcType=TIMESTAMP}, #{duration,jdbcType=BIGINT}, ",
-        "#{failType,jdbcType=VARCHAR}, #{execInstanceId,jdbcType=VARCHAR}, ",
-        "#{progress,jdbcType=INTEGER}, #{orgId,jdbcType=VARCHAR}, ",
-        "#{executeType,jdbcType=VARCHAR}, #{createBy,jdbcType=VARCHAR}, ",
-        "#{createTime,jdbcType=TIMESTAMP}, #{updateBy,jdbcType=VARCHAR}, ",
-        "#{updateTime,jdbcType=TIMESTAMP}, #{permission,jdbcType=INTEGER}, ",
-        "#{script,jdbcType=LONGVARCHAR}, #{errorMessage,jdbcType=LONGVARCHAR}, ",
-        "#{executeParam,jdbcType=LONGVARCHAR})"
+        "#{viewId,jdbcType=VARCHAR}, #{scriptType,jdbcType=VARCHAR}, ",
+        "#{status,jdbcType=VARCHAR}, #{priority,jdbcType=INTEGER}, ",
+        "#{timeout,jdbcType=INTEGER}, #{maxSize,jdbcType=INTEGER}, ",
+        "#{startTime,jdbcType=TIMESTAMP}, #{endTime,jdbcType=TIMESTAMP}, ",
+        "#{duration,jdbcType=BIGINT}, #{failType,jdbcType=VARCHAR}, ",
+        "#{execInstanceId,jdbcType=VARCHAR}, #{progress,jdbcType=INTEGER}, ",
+        "#{orgId,jdbcType=VARCHAR}, #{executeType,jdbcType=VARCHAR}, ",
+        "#{createBy,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, ",
+        "#{updateBy,jdbcType=VARCHAR}, #{updateTime,jdbcType=TIMESTAMP}, ",
+        "#{permission,jdbcType=INTEGER}, #{script,jdbcType=LONGVARCHAR}, ",
+        "#{errorMessage,jdbcType=LONGVARCHAR}, #{executeParam,jdbcType=LONGVARCHAR})"
     })
     int insert(SqlTaskWithBLOBs record);
 
@@ -58,6 +58,7 @@ public interface SqlTaskMapper extends CRUDMapper {
     @Results({
         @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
         @Result(column="source_id", property="sourceId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="view_id", property="viewId", jdbcType=JdbcType.VARCHAR),
         @Result(column="script_type", property="scriptType", jdbcType=JdbcType.VARCHAR),
         @Result(column="status", property="status", jdbcType=JdbcType.VARCHAR),
         @Result(column="priority", property="priority", jdbcType=JdbcType.INTEGER),
@@ -86,6 +87,7 @@ public interface SqlTaskMapper extends CRUDMapper {
     @Results({
         @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
         @Result(column="source_id", property="sourceId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="view_id", property="viewId", jdbcType=JdbcType.VARCHAR),
         @Result(column="script_type", property="scriptType", jdbcType=JdbcType.VARCHAR),
         @Result(column="status", property="status", jdbcType=JdbcType.VARCHAR),
         @Result(column="priority", property="priority", jdbcType=JdbcType.INTEGER),
@@ -109,16 +111,17 @@ public interface SqlTaskMapper extends CRUDMapper {
 
     @Select({
         "select",
-        "id, source_id, script_type, `status`, priority, timeout, max_size, start_time, ",
-        "end_time, duration, fail_type, exec_instance_id, progress, org_id, execute_type, ",
-        "create_by, create_time, update_by, update_time, permission, script, error_message, ",
-        "execute_param",
+        "id, source_id, view_id, script_type, `status`, priority, timeout, max_size, ",
+        "start_time, end_time, duration, fail_type, exec_instance_id, progress, org_id, ",
+        "execute_type, create_by, create_time, update_by, update_time, permission, script, ",
+        "error_message, execute_param",
         "from sql_task",
         "where id = #{id,jdbcType=VARCHAR}"
     })
     @Results({
         @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
         @Result(column="source_id", property="sourceId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="view_id", property="viewId", jdbcType=JdbcType.VARCHAR),
         @Result(column="script_type", property="scriptType", jdbcType=JdbcType.VARCHAR),
         @Result(column="status", property="status", jdbcType=JdbcType.VARCHAR),
         @Result(column="priority", property="priority", jdbcType=JdbcType.INTEGER),
@@ -158,6 +161,7 @@ public interface SqlTaskMapper extends CRUDMapper {
     @Update({
         "update sql_task",
         "set source_id = #{sourceId,jdbcType=VARCHAR},",
+          "view_id = #{viewId,jdbcType=VARCHAR},",
           "script_type = #{scriptType,jdbcType=VARCHAR},",
           "`status` = #{status,jdbcType=VARCHAR},",
           "priority = #{priority,jdbcType=INTEGER},",
@@ -186,6 +190,7 @@ public interface SqlTaskMapper extends CRUDMapper {
     @Update({
         "update sql_task",
         "set source_id = #{sourceId,jdbcType=VARCHAR},",
+          "view_id = #{viewId,jdbcType=VARCHAR},",
           "script_type = #{scriptType,jdbcType=VARCHAR},",
           "`status` = #{status,jdbcType=VARCHAR},",
           "priority = #{priority,jdbcType=INTEGER},",

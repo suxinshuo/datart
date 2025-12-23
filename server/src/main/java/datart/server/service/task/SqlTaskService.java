@@ -17,10 +17,7 @@
  */
 package datart.server.service.task;
 
-import datart.server.base.dto.task.SqlTaskHistoryResponse;
-import datart.server.base.dto.task.SqlTaskStatusResponse;
-import datart.server.base.dto.task.SqlTaskCreateResponse;
-import datart.server.base.dto.task.SqlTaskCancelResponse;
+import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
 
 import java.util.List;
@@ -57,5 +54,21 @@ public interface SqlTaskService {
      * @return 任务执行历史响应
      */
     List<SqlTaskHistoryResponse> getSqlTaskHistory();
+
+    /**
+     * 获取当前用户 SQL 任务执行历史
+     *
+     * @param viewId View ID
+     * @return 任务执行历史响应
+     */
+    List<SqlTaskHistoryResponse> getSqlTaskHistory(String viewId);
+
+    /**
+     * 获取任务执行结果
+     *
+     * @param taskId 任务 ID
+     * @return 任务执行结果响应
+     */
+    SqlTaskResultStrResponse getSqlTaskResult(String taskId);
 
 }

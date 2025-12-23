@@ -19,6 +19,8 @@
 package datart.server.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.TypeReference;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
@@ -179,7 +181,9 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             if (StringUtils.isEmpty(sourceSchemas.getSchemas())) {
                 return schemaInfo;
             }
-            schemaInfo.setSchemaItems(OBJECT_MAPPER.readerForListOf(SchemaItem.class).readValue(sourceSchemas.getSchemas()));
+            List<SchemaItem> schemaItems = JSONUtil.toBean(sourceSchemas.getSchemas(), new TypeReference<List<SchemaItem>>() {
+            }, false);
+            schemaInfo.setSchemaItems(schemaItems);
         } catch (Exception e) {
             log.error("source schema parse error ", e);
         }

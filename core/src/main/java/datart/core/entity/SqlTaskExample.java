@@ -245,6 +245,76 @@ public class SqlTaskExample {
             return (Criteria) this;
         }
 
+        public Criteria andViewIdIsNull() {
+            addCriterion("view_id is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdIsNotNull() {
+            addCriterion("view_id is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdEqualTo(String value) {
+            addCriterion("view_id =", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdNotEqualTo(String value) {
+            addCriterion("view_id <>", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdGreaterThan(String value) {
+            addCriterion("view_id >", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdGreaterThanOrEqualTo(String value) {
+            addCriterion("view_id >=", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdLessThan(String value) {
+            addCriterion("view_id <", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdLessThanOrEqualTo(String value) {
+            addCriterion("view_id <=", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdLike(String value) {
+            addCriterion("view_id like", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdNotLike(String value) {
+            addCriterion("view_id not like", value, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdIn(List<String> values) {
+            addCriterion("view_id in", values, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdNotIn(List<String> values) {
+            addCriterion("view_id not in", values, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdBetween(String value1, String value2) {
+            addCriterion("view_id between", value1, value2, "viewId");
+            return (Criteria) this;
+        }
+
+        public Criteria andViewIdNotBetween(String value1, String value2) {
+            addCriterion("view_id not between", value1, value2, "viewId");
+            return (Criteria) this;
+        }
+
         public Criteria andScriptTypeIsNull() {
             addCriterion("script_type is null");
             return (Criteria) this;

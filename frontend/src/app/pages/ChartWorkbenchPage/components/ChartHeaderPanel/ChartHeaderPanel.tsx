@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { DownloadOutlined } from '@ant-design/icons';
-import { Button, Space } from 'antd';
+import { Button, Select, Space, Switch, Tooltip } from 'antd';
 import SaveToDashboard from 'app/components/SaveToDashboard';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useMount from 'app/hooks/useMount';
@@ -26,7 +26,7 @@ import { loadTasks } from 'app/pages/MainPage/Navbar/service';
 import { selectHasVizFetched } from 'app/pages/MainPage/pages/VizPage/slice/selectors';
 import { getFolders } from 'app/pages/MainPage/pages/VizPage/slice/thunks';
 import { downloadFile } from 'app/utils/fetch';
-import { FC, memo, useCallback, useState } from 'react';
+import { FC, memo, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
 import {
@@ -37,8 +37,11 @@ import {
   SPACE_SM,
   SPACE_XS,
 } from 'styles/StyleConstants';
+import { request2 } from 'utils/request';
+import { errorHandle } from 'utils/utils';
 import {
   backendChartSelector,
+  currentDataViewSelector,
   selectChartEditorDownloadPolling,
 } from '../../slice/selectors';
 
@@ -62,9 +65,63 @@ const ChartHeaderPanel: FC<{
     const hasVizFetched = useSelector(selectHasVizFetched);
     const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
     const backendChart = useSelector(backendChartSelector);
+    const currentDataView = useSelector(currentDataViewSelector);
     const downloadPolling = useSelector(selectChartEditorDownloadPolling);
     const dispatch = useDispatch();
     const { actions } = useWorkbenchSlice();
+
+    // 静态分析相关状态
+    const [staticAnalysis, setStaticAnalysis] = useState<boolean>(true);
+    const [sqlTaskId, setSqlTaskId] = useState<string>('');
+    const [sqlTaskHistory, setSqlTaskHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
+
+    // 获取SQL任务历史
+    const fetchSqlTaskHistory = useCallback(async () => {
+      if (!currentDataView?.id) return;
+
+      setLoadingHistory(true);
+      try {
+        const response = await request2<any[]>(
+          `/execute/tasks/${currentDataView.id}/history`,
+          {
+            params: {},
+          },
+        );
+
+        const tasks = response.data || [];
+        setSqlTaskHistory(tasks);
+
+        // 设置默认选中最近的成功执行
+        const latestSuccessTask = tasks.find(task => task.status === 'SUCCESS');
+        if (latestSuccessTask) {
+          setSqlTaskId(latestSuccessTask.id);
+          dispatch(actions.updateSqlTaskId(latestSuccessTask.id));
+        }
+      } catch (error) {
+        errorHandle(error);
+      } finally {
+        setLoadingHistory(false);
+      }
+    }, [currentDataView, actions, dispatch]);
+
+    // 静态分析开关变化
+    const handleStaticAnalysisChange = useCallback(
+      (checked: boolean) => {
+        setStaticAnalysis(checked);
+        dispatch(actions.updateStaticAnalysis(checked));
+      },
+      [dispatch, actions],
+    );
+
+    // SQL任务结果ID变化
+    const handleSqlTaskIdChange = useCallback(
+      (value: string) => {
+        setSqlTaskId(value);
+        dispatch(actions.updateSqlTaskId(value));
+      },
+      [dispatch, actions],
+    );
 
     const handleModalOk = useCallback(
       (dashboardId: string, dashboardType: string) => {
@@ -96,10 +153,45 @@ const ChartHeaderPanel: FC<{
       }
     });
 
+    // 当currentDataView变化时，重新获取SQL任务历史
+    useEffect(() => {
+      if (currentDataView?.id) {
+        fetchSqlTaskHistory();
+      }
+    }, [fetchSqlTaskHistory, currentDataView, staticAnalysis]);
+
     return (
       <Wrapper>
         <h1>{chartName}</h1>
         <Space>
+          {/* SQL任务历史下拉菜单 */}
+          {staticAnalysis && (
+            <Select
+              value={sqlTaskId}
+              onChange={handleSqlTaskIdChange}
+              loading={loadingHistory}
+              placeholder={t('selectHistoricalExecutionResult')}
+              style={{ width: 300 }}
+            >
+              {sqlTaskHistory.map(task => (
+                <Select.Option key={task.id} value={task.id}>
+                  {new Date(task.submitTime).toLocaleString()} - {task.status}
+                </Select.Option>
+              ))}
+            </Select>
+          )}
+
+          {/* 基于历史执行结果分析 */}
+          <Space align="center">
+            <Tooltip title={t('analysisBasedStatic')}>
+              <Switch
+                checked={staticAnalysis}
+                onChange={handleStaticAnalysisChange}
+              />
+            </Tooltip>
+            <span>{t('analysisBasedStatic')}</span>
+          </Space>
+
           <DownloadListPopup
             polling={downloadPolling}
             setPolling={onSetPolling}
@@ -116,18 +208,33 @@ const ChartHeaderPanel: FC<{
             }
           />
           <Button onClick={onGoBack}>{t('cancel')}</Button>
-          <Button type="primary" onClick={onSaveChart}>
-            {t('save')}
-          </Button>
-          {!(container === 'widget') && (
+          <Tooltip
+            title={staticAnalysis ? t('analysisBasedStaticTip') : undefined}
+            placement="bottom"
+          >
             <Button
               type="primary"
-              onClick={() => {
-                setIsModalVisible(true);
-              }}
+              onClick={onSaveChart}
+              disabled={staticAnalysis}
             >
-              {t('saveToDashboard')}
+              {t('save')}
             </Button>
+          </Tooltip>
+          {!(container === 'widget') && (
+            <Tooltip
+              title={staticAnalysis ? t('analysisBasedStaticTip') : undefined}
+              placement="bottom"
+            >
+              <Button
+                type="primary"
+                onClick={() => {
+                  setIsModalVisible(true);
+                }}
+                disabled={staticAnalysis}
+              >
+                {t('saveToDashboard')}
+              </Button>
+            </Tooltip>
           )}
           <SaveToDashboard
             orgId={orgId as string}
