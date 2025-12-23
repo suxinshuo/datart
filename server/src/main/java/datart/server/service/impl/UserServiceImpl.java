@@ -46,6 +46,8 @@ import datart.server.base.dto.OrganizationBaseInfo;
 import datart.server.base.dto.UserProfile;
 import datart.server.base.params.*;
 import datart.server.base.params.doris.DorisUserMappingCreateParam;
+import datart.server.base.params.folder.FolderCreateDirectlyParam;
+import datart.server.base.params.storyboard.StoryboardCreateDirectlyParam;
 import datart.server.base.params.view.ViewCreateDirectlyParam;
 import datart.server.service.*;
 import datart.server.service.doris.DorisUserMappingService;
@@ -95,6 +97,12 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Resource
     private ViewService viewService;
+
+    @Resource
+    private FolderService folderService;
+
+    @Resource
+    private StoryboardService storyboardService;
 
     @Resource
     private DataProviderService dataProviderService;
@@ -187,7 +195,7 @@ public class UserServiceImpl extends BaseService implements UserService {
         if (user == null) {
             Exceptions.notFound("resource.not-exist", "resource.user");
         }
-        //更新用户激活状态至已激活
+        // 更新用户激活状态至已激活
         int count = userMapper.updateToActiveById(user.getId());
         if (count != 1) {
             Exceptions.tr(BaseException.class, "message.user.active.fail", user.getUsername());
@@ -281,21 +289,8 @@ public class UserServiceImpl extends BaseService implements UserService {
         orgService.initOrganization(organization, user);
     }
 
-    /**
-     * 初始化用户目录
-     *
-     * @param orgId 组织 ID
-     * @param user  用户
-     */
-    private void initUserDir(String orgId, User user) {
+    private View findOrCreateAdHocDirView(String orgId) {
         String adHocDirName = Application.adHocDirName();
-        String adHocExampleDirName = Application.adHocExampleDirName();
-        log.info("ad-hoc 查询父目录: {}, 示例查询父目录: {}", adHocDirName, adHocExampleDirName);
-
-        String userId = user.getId();
-        String username = user.getUsername();
-
-        // 在当前组织下查找是否有这个父目录
         List<View> adHocDirViews = viewService.getTopFolderViewsByName(orgId, adHocDirName, false);
         View adHocDirView;
         if (CollUtil.isEmpty(adHocDirViews)) {
@@ -305,21 +300,71 @@ public class UserServiceImpl extends BaseService implements UserService {
                     .orgId(orgId)
                     .parentId(null)
                     .isFolder(true)
-                    .index(-999D)
+                    .index(-99D)
                     .status(Const.DATA_STATUS_ACTIVE)
-                    .operatorUserId(userId)
+                    // 系统用户创建 Ad-hoc 目录
+                    .operatorUserId(SystemConstant.SYSTEM_USER_ID)
                     .build();
             adHocDirView = viewService.createDirectly(createParam);
         } else {
             adHocDirView = adHocDirViews.get(0);
         }
-        String parentViewDirId = adHocDirView.getId();
+        return adHocDirView;
+    }
 
-        // 给用户赋默认权限: 所有 source 使用权限 + view(Ad-hoc Query SQLs) 的使用和管理权限
-        String adHocViewPermId = initSourceAndViewPerm(orgId, userId, parentViewDirId);
-        log.info("初始化用户({})默认权限第一阶段完成", username);
+    private Folder findOrCreateParentPerFolder(String orgId) {
+        String folderPerDirName = Application.folderPerDirName();
+        List<Folder> perFolders = folderService.getTopFoldersByName(orgId, folderPerDirName);
 
-        // 在当前父目录下查找当前 username 的文件夹
+        Folder perFolder;
+        if (CollUtil.isEmpty(perFolders)) {
+            // 如果没有就创建
+            FolderCreateDirectlyParam createParam = FolderCreateDirectlyParam.builder()
+                    .name(folderPerDirName)
+                    .orgId(orgId)
+                    .relType(ResourceType.FOLDER.name())
+                    .subType(null)
+                    .relId(null)
+                    .avatar(null)
+                    .parentId(null)
+                    .index(-99D)
+                    .build();
+            perFolder = folderService.createDirectly(createParam);
+        } else {
+            perFolder = perFolders.get(0);
+        }
+        return perFolder;
+    }
+
+    private Storyboard findOrCreateParentPerStoryboard(String orgId) {
+        String storyboardPerDirName = Application.storyboardPerDirName();
+        List<Storyboard> perStoryboards = storyboardService.getTopStoryboardsByName(orgId, storyboardPerDirName);
+
+        Storyboard perStoryboard;
+        if (CollUtil.isEmpty(perStoryboards)) {
+            // 如果没有就创建
+            StoryboardCreateDirectlyParam createParam = StoryboardCreateDirectlyParam.builder()
+                    .name(storyboardPerDirName)
+                    .orgId(orgId)
+                    .parentId(null)
+                    .isFolder(true)
+                    .index(-99D)
+                    .config(null)
+                    .status(Const.DATA_STATUS_ACTIVE)
+                    // 系统用户创建目录
+                    .operatorUserId(SystemConstant.SYSTEM_USER_ID)
+                    .build();
+            perStoryboard = storyboardService.createDirectly(createParam);
+        } else {
+            perStoryboard = perStoryboards.get(0);
+        }
+        return perStoryboard;
+    }
+
+    private View findOrCreateUserDirView(String orgId, String parentViewDirId, User user) {
+        String userId = user.getId();
+        String username = user.getUsername();
+
         List<View> userDirViews = viewService.getFolderViewsByParentIdAndName(orgId, parentViewDirId, username, false);
         View userDirView;
         if (CollUtil.isEmpty(userDirViews)) {
@@ -336,28 +381,158 @@ public class UserServiceImpl extends BaseService implements UserService {
                     .operatorUserId(userId)
                     .build();
             userDirView = viewService.createDirectly(createParam);
-            log.info("创建个人 ad-hoc 目录成功, 目录路径: {}/{}, userDirView: {}", adHocDirName, username, userDirView);
+            log.info("创建个人 ad-hoc 目录成功, 目录路径: {}, userDirView: {}", username, userDirView);
         } else {
-            log.info("个人 ad-hoc 目录已存在, 目录路径: {}/{}", adHocDirName, username);
+            log.info("个人 ad-hoc 目录已存在, 目录路径: {}", username);
             userDirView = userDirViews.get(0);
         }
+        return userDirView;
+    }
 
-        // 用户赋权, 移除 view(Ad-hoc Query SQLs) 的使用和管理权限, 增加当前用户文件夹的使用和管理权限 和查询示例的使用权限
-        initUserDirViewPer(orgId, userId, adHocViewPermId, userDirView, adHocExampleDirName);
+    private Folder findOrCreateUserDirFolder(String orgId, String parentFolderDirId, User user) {
+        String username = user.getUsername();
+
+        List<Folder> userFolders = folderService.getFoldersByParentIdAndName(orgId, parentFolderDirId, username, false);
+
+        Folder userDirFolder;
+        if (CollUtil.isEmpty(userFolders)) {
+            // 如果没有就创建
+            Folder lastFolder = folderService.getLastFolderByParentId(orgId, parentFolderDirId);
+            double maxIndex = Objects.isNull(lastFolder) ? -1 : lastFolder.getIndex();
+            FolderCreateDirectlyParam createParam = FolderCreateDirectlyParam.builder()
+                    .name(username)
+                    .orgId(orgId)
+                    .relType(ResourceType.FOLDER.name())
+                    .subType(null)
+                    .relId(null)
+                    .avatar(null)
+                    .parentId(parentFolderDirId)
+                    .index(maxIndex + 1)
+                    .build();
+            userDirFolder = folderService.createDirectly(createParam);
+            log.info("创建个人 folder 目录成功, 目录路径: {}, userDirFolder: {}", username, userDirFolder);
+        } else {
+            log.info("个人 folder 目录已存在, 目录路径: {}", username);
+            userDirFolder = userFolders.get(0);
+        }
+        return userDirFolder;
+    }
+
+    private Storyboard findOrCreateUserDirStoryboard(String orgId, String parentStoryboardId, User user) {
+        String userId = user.getId();
+        String username = user.getUsername();
+
+        List<Storyboard> userFolderStoryboards = storyboardService.getFolderStoryboardsByParentIdAndName(orgId, parentStoryboardId, username, false);
+
+        Storyboard userDirStoryboard;
+        if (CollUtil.isEmpty(userFolderStoryboards)) {
+            // 如果没有就创建
+            Storyboard lastStoryboard = storyboardService.getLastStoryboardByParentId(orgId, parentStoryboardId);
+            double maxIndex = Objects.isNull(lastStoryboard) ? -1 : lastStoryboard.getIndex();
+            StoryboardCreateDirectlyParam createParam = StoryboardCreateDirectlyParam.builder()
+                    .name(username)
+                    .orgId(orgId)
+                    .parentId(parentStoryboardId)
+                    .isFolder(true)
+                    .index(maxIndex + 1)
+                    .config(null)
+                    .status(Const.DATA_STATUS_ACTIVE)
+                    .operatorUserId(userId)
+                    .build();
+            userDirStoryboard = storyboardService.createDirectly(createParam);
+            log.info("创建个人 storyboard 目录成功, 目录路径: {}, userDirStoryboard: {}", username, userDirStoryboard);
+        } else {
+            log.info("个人 storyboard 目录已存在, 目录路径: {}", username);
+            userDirStoryboard = userFolderStoryboards.get(0);
+        }
+        return userDirStoryboard;
+    }
+
+    /**
+     * 初始化用户目录
+     *
+     * @param orgId 组织 ID
+     * @param user  用户
+     */
+    private void initUserDir(String orgId, User user) {
+        String adHocDirName = Application.adHocDirName();
+        String adHocExampleDirName = Application.adHocExampleDirName();
+        String folderPerDirName = Application.folderPerDirName();
+        String folderExampleDirName = Application.folderExampleDirName();
+        String storyboardPerDirName = Application.storyboardPerDirName();
+        String storyboardExampleDirName = Application.storyboardExampleDirName();
+        log.info("ad-hoc 查询父目录: {}, 示例查询父目录: {}, 文件夹父目录: {}, 看板父目录: {}, 文件夹示例目录: {}, 看板示例目录: {}",
+                adHocDirName, adHocExampleDirName, folderPerDirName, storyboardPerDirName, folderExampleDirName, storyboardExampleDirName);
+
+        String userId = user.getId();
+        String username = user.getUsername();
+
+        // 在当前组织下查找是否有这个父目录
+        // View
+        View adHocDirView = findOrCreateAdHocDirView(orgId);
+        String parentViewDirId = adHocDirView.getId();
+        // Folder
+        Folder parentPerFolder = findOrCreateParentPerFolder(orgId);
+        String parentFolderId = parentPerFolder.getId();
+        // Storyboard
+        Storyboard parentPerStoryboard = findOrCreateParentPerStoryboard(orgId);
+        String parentStoryboardId = parentPerStoryboard.getId();
+
+        // 给用户赋默认权限:
+        // 所有 Source 使用权限
+        // View(Ad-hoc Query SQLs) 的使用和管理权限
+        // 启用 Viz 权限
+        // Folder(perFolder) 的使用和管理权限
+        // Storyboard(perStoryboard) 的使用和管理权限
+        List<String> permIds = initUserPerm(orgId, userId, parentViewDirId, parentFolderId, parentStoryboardId);
+        log.info("初始化用户({})默认权限第一阶段完成, permIds: {}", username, permIds);
+
+        // 在当前父目录下查找当前 username 的文件夹
+        View userDirView = findOrCreateUserDirView(orgId, parentViewDirId, user);
+        // 创建 Folder 个人文件夹
+        Folder userDirFolder = findOrCreateUserDirFolder(orgId, parentFolderId, user);
+        // 创建 Storyboard 个人文件夹
+        Storyboard userDirStoryboard = findOrCreateUserDirStoryboard(orgId, parentStoryboardId, user);
+
+        // 用户赋权:
+        // 移除 View(Ad-hoc Query SQLs) 的使用和管理权限
+        // 移除 Folder(perFolder) 的使用和管理权限
+        // 移除 Storyboard(perStoryboard) 的使用和管理权限
+        // 增加当前用户文件夹的使用和管理权限
+        // 增加查询示例的使用权限
+        // 增加 Folder 个人文件夹的使用和管理权限
+        // 增加 Storyboard 个人文件夹的使用和管理权限
+        initUserDirViewPer(orgId, userId, permIds, userDirView, adHocExampleDirName,
+                userDirFolder, folderExampleDirName, userDirStoryboard, storyboardExampleDirName);
         log.info("初始化用户({})默认权限第二阶段完成", username);
     }
 
-    private void initUserDirViewPer(String orgId, String userId, String adHocViewPermId, View userDirView, String adHocExampleDirName) {
+    private void initUserDirViewPer(String orgId, String userId, List<String> permIds, View userDirView, String adHocExampleDirName,
+                                    Folder userDirFolder, String folderExampleDirName, Storyboard userDirStoryboard, String storyboardExampleDirName) {
+        String adHocViewPermId = permIds.get(0);
+        String parentFolderPermId = permIds.get(1);
+        String parentStoryboardPermId = permIds.get(2);
+
         // 移除 View(Ad-hoc Query SQLs) 的使用和管理权限
+        // 移除 Folder(perFolder) 的使用和管理权限
+        // 移除 Storyboard(perStoryboard) 的使用和管理权限
         GrantPermissionParam delViewGrantPermissionParam = new GrantPermissionParam();
         delViewGrantPermissionParam.setPermissionToDelete(Lists.newArrayList(
                 PermissionInfo.builder()
                         .id(adHocViewPermId)
+                        .build(),
+                PermissionInfo.builder()
+                        .id(parentFolderPermId)
+                        .build(),
+                PermissionInfo.builder()
+                        .id(parentStoryboardPermId)
                         .build()
         ));
         roleService.grantPermission(delViewGrantPermissionParam, false);
 
-        // 增加当前用户文件夹的使用和管理权限 和查询示例的使用权限
+        // 增加当前用户文件夹的使用和管理权限
+        // 增加 Folder 个人文件夹的使用和管理权限
+        // 增加 Storyboard 个人文件夹的使用和管理权限
         GrantPermissionParam grantPermissionParam = new GrantPermissionParam();
         grantPermissionParam.setPermissionToCreate(Lists.newArrayList(
                 PermissionInfo.builder()
@@ -367,11 +542,32 @@ public class UserServiceImpl extends BaseService implements UserService {
                         .resourceType(ResourceType.VIEW)
                         .resourceId(userDirView.getId())
                         .permission(Const.CREATE)
+                        .build(),
+                // Folder(perFolder) 的管理权限
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIZ)
+                        .resourceId(userDirFolder.getId())
+                        .permission(Const.CREATE)
+                        .build(),
+                // Storyboard(perStoryboard) 的管理权限
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIZ)
+                        .resourceId(userDirStoryboard.getId())
+                        .permission(Const.CREATE)
                         .build()
         ));
 
+        // 增加示例的使用权限
         // 在当前组织下查找是否有这个父目录, 如果有的话就给权限
         List<View> adHocExampleDirViews = viewService.getTopFolderViewsByName(orgId, adHocExampleDirName, false);
+        List<Folder> folderExampleFolders = folderService.getTopFoldersByName(orgId, folderExampleDirName);
+        List<Storyboard> storyboardExampleFolders = storyboardService.getTopStoryboardsByName(orgId, storyboardExampleDirName);
         if (CollUtil.isNotEmpty(adHocExampleDirViews)) {
             String adHocExampleDirViewId = adHocExampleDirViews.get(0).getId();
             grantPermissionParam.getPermissionToCreate().add(
@@ -385,12 +581,42 @@ public class UserServiceImpl extends BaseService implements UserService {
                             .build()
             );
         }
+        if (CollUtil.isNotEmpty(folderExampleFolders)) {
+            String folderExampleFolderId = folderExampleFolders.get(0).getId();
+            grantPermissionParam.getPermissionToCreate().add(
+                    PermissionInfo.builder()
+                            .orgId(orgId)
+                            .subjectType(SubjectType.USER_ROLE)
+                            .subjectId(userId)
+                            .resourceType(ResourceType.VIZ)
+                            .resourceId(folderExampleFolderId)
+                            .permission(Const.READ)
+                            .build()
+            );
+        }
+        if (CollUtil.isNotEmpty(storyboardExampleFolders)) {
+            String storyboardExampleFolderId = storyboardExampleFolders.get(0).getId();
+            grantPermissionParam.getPermissionToCreate().add(
+                    PermissionInfo.builder()
+                            .orgId(orgId)
+                            .subjectType(SubjectType.USER_ROLE)
+                            .subjectId(userId)
+                            .resourceType(ResourceType.VIZ)
+                            .resourceId(storyboardExampleFolderId)
+                            .permission(Const.READ)
+                            .build()
+            );
+        }
 
         roleService.grantPermission(grantPermissionParam, false);
     }
 
-    private String initSourceAndViewPerm(String orgId, String userId, String parentViewDirId) {
-        // 启用 Source & View 功能权限 & 所有 Source 的使用权限
+    private List<String> initUserPerm(String orgId, String userId, String parentViewDirId, String parentFolderId, String parentStoryboardId) {
+        // 所有 Source 使用权限
+        // View(Ad-hoc Query SQLs) 的使用和管理权限
+        // 启用 Viz 权限
+        // Folder(perFolder) 的使用和管理权限
+        // Storyboard(perStoryboard) 的使用和管理权限
         GrantPermissionParam enableSourceGrantPermissionParam = new GrantPermissionParam();
         enableSourceGrantPermissionParam.setPermissionToCreate(Lists.newArrayList(
                 // Source
@@ -407,7 +633,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                         .subjectType(SubjectType.USER_ROLE)
                         .subjectId(userId)
                         .resourceType(ResourceType.SOURCE)
-                        .resourceId(ResourceType.SOURCE.toString())
+                        .resourceId(ResourceType.SOURCE.name())
                         .permission(Const.READ)
                         .build(),
                 // View
@@ -425,7 +651,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                         .subjectType(SubjectType.USER_ROLE)
                         .subjectId(userId)
                         .resourceType(ResourceType.VIEW)
-                        .resourceId(ResourceType.VIEW.toString())
+                        .resourceId(ResourceType.VIEW.name())
                         .permission(Const.DISABLE)
                         .build(),
                 // View(Ad-hoc Query SQLs) 管理权限
@@ -436,10 +662,58 @@ public class UserServiceImpl extends BaseService implements UserService {
                         .resourceType(ResourceType.VIEW)
                         .resourceId(parentViewDirId)
                         .permission(Const.CREATE)
+                        .build(),
+                // Viz
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIZ)
+                        .resourceId("*")
+                        .permission(Const.ENABLE)
+                        .build(),
+                // 禁用所有 Viz 权限
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIZ)
+                        .resourceId(ResourceType.FOLDER.name())
+                        .permission(Const.DISABLE)
+                        .build(),
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIZ)
+                        .resourceId(ResourceType.STORYBOARD.name())
+                        .permission(Const.DISABLE)
+                        .build(),
+                // Folder(perFolder) 的管理权限
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIZ)
+                        .resourceId(parentFolderId)
+                        .permission(Const.CREATE)
+                        .build(),
+                // Storyboard(perStoryboard) 的管理权限
+                PermissionInfo.builder()
+                        .orgId(orgId)
+                        .subjectType(SubjectType.USER_ROLE)
+                        .subjectId(userId)
+                        .resourceType(ResourceType.VIZ)
+                        .resourceId(parentStoryboardId)
+                        .permission(Const.CREATE)
                         .build()
         ));
         List<PermissionInfo> permissionInfos = roleService.grantPermission(enableSourceGrantPermissionParam, false);
-        return permissionInfos.get(4).getId();
+        return Lists.newArrayList(
+                permissionInfos.get(4).getId(),
+                permissionInfos.get(8).getId(),
+                permissionInfos.get(9).getId()
+        );
     }
 
     private void initDynamicDataSourceUser(String orgId, String username) {
@@ -588,7 +862,7 @@ public class UserServiceImpl extends BaseService implements UserService {
         user.setName(JsonPath.read(jsonObj, nameMapping));
         user.setUsername(oauthUser.getName());
         user.setActive(true);
-        //todo: oauth2登录后需要设置随机密码，此字段作为密文，显然无法对应原文，即不会有任何密码对应以下值
+        // todo: oauth2登录后需要设置随机密码，此字段作为密文，显然无法对应原文，即不会有任何密码对应以下值
         user.setPassword(BCrypt.hashpw("xxx", BCrypt.gensalt()));
         if (emailMapping != null) {
             user.setEmail(JsonPath.read(jsonObj, emailMapping));
@@ -632,9 +906,9 @@ public class UserServiceImpl extends BaseService implements UserService {
     @Transactional
     public boolean deleteUserFromOrg(String orgId, String userId) {
         securityManager.requireOrgOwner(orgId);
-        //删除组织关联
+        // 删除组织关联
         orgService.removeUser(orgId, userId);
-        //删除角色关联
+        // 删除角色关联
         RelRoleUserMapperExt rruMapper = Application.getBean(RelRoleUserMapperExt.class);
         List<String> roleIds = rruMapper.listByUserId(userId).stream().map(Role::getId).collect(Collectors.toList());
         rruMapper.deleteByUserAndRoles(userId, roleIds);
@@ -642,7 +916,7 @@ public class UserServiceImpl extends BaseService implements UserService {
         if (role != null) {
             roleService.delete(role.getId());
         }
-        //删除用户信息
+        // 删除用户信息
         UserSettingService orgSettingService = Application.getBean(UserSettingService.class);
         orgSettingService.deleteByUserId(userId);
         userMapper.deleteByPrimaryKey(userId);

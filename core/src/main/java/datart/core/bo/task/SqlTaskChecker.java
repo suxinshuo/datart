@@ -39,11 +39,12 @@ public class SqlTaskChecker implements Runnable {
                 log.error("Check running tasks error", e);
             }
 
-            log.info("Check running tasks, size: {}", runningTasks.size());
             if (CollUtil.isEmpty(runningTasks)) {
                 log.debug("No running tasks, sleep 20s");
                 continue;
             }
+            log.info("Check running tasks, size: {}", runningTasks.size());
+
             runningTasks.forEach((taskId, runningTask) -> {
                 // 先判断当前运行中的任务, 是否数据库中已经更新为失败状态, 成功只可能在当前实例更新, 所以不需要判断
                 SqlTaskWithBLOBs sqlTask = sqlTaskMapper.selectByPrimaryKey(taskId);

@@ -115,6 +115,22 @@ public class Application implements ApplicationContextAware {
         return getProperty("datart.ad-hoc.example-dir-name", "Example Query SQLs");
     }
 
+    public static String folderPerDirName() {
+        return getProperty("datart.folder.per-dir-name", "个人目录");
+    }
+
+    public static String storyboardPerDirName() {
+        return getProperty("datart.storyboard.per-dir-name", "个人目录");
+    }
+
+    public static String folderExampleDirName() {
+        return getProperty("datart.folder.example-dir-name", "示例");
+    }
+
+    public static String storyboardExampleDirName() {
+        return getProperty("datart.storyboard.example-dir-name", "示例");
+    }
+
     public static TenantManagementMode getCurrMode() {
         if (currMode == null) {
             String mode = Application.getProperty("datart.tenant-management-mode");
