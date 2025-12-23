@@ -13,7 +13,6 @@ import {
   SPACE_XS,
 } from 'styles/StyleConstants';
 import { newIssueUrl } from 'utils/utils';
-import { ViewViewModelStages } from '../../constants';
 import { useViewSlice } from '../../slice';
 import { selectCurrentEditingViewAttr } from '../../slice/selectors';
 import { cancelSqlTask, getSqlTaskStatus } from '../../slice/thunks';
@@ -30,9 +29,6 @@ export const Outputs = memo(() => {
   const error = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'error' }),
   ) as string;
-  const stage = useSelector(state =>
-    selectCurrentEditingViewAttr(state, { name: 'stage' }),
-  ) as ViewViewModelStages;
   const warnings = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'warnings' }),
   ) as string[];

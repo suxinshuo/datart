@@ -1280,7 +1280,34 @@
       "reference": "Source Reference",
       "variable": "Variables",
       "model": "Data Model",
-      "columnPermissions": "Column Permissions"
+      "columnPermissions": "Column Permissions",
+      "history": "History"
+    },
+    "history": {
+      "empty": "No history records found",
+      "loadMore": "Load More",
+      "refresh": "Refresh",
+      "viewDetail": "View Detail",
+      "failMessage": "Fail Message",
+      "query": "Query",
+      "submitTime": "Submit Time",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "duration": "Duration",
+      "detailTitle": "Query Detail",
+      "copy": "Copy",
+      "copySuccess": "Copy Success",
+      "copySuccessMessage": "Query copied to clipboard",
+      "copyFailed": "Copy Failed",
+      "copyFailedMessage": "Failed to copy query",
+      "close": "Close",
+      "status": {
+        "success": "Success",
+        "failed": "Failed",
+        "running": "Running",
+        "cancelled": "Cancelled",
+        "unknown": "Unknown"
+      }
     },
     "resource": {
       "title": "Source info",

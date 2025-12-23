@@ -17,10 +17,13 @@
  */
 package datart.server.service.task;
 
-import datart.server.base.dto.SqlTaskStatusResponse;
-import datart.server.base.dto.SqlTaskCreateResponse;
-import datart.server.base.dto.SqlTaskCancelResponse;
+import datart.server.base.dto.task.SqlTaskHistoryResponse;
+import datart.server.base.dto.task.SqlTaskStatusResponse;
+import datart.server.base.dto.task.SqlTaskCreateResponse;
+import datart.server.base.dto.task.SqlTaskCancelResponse;
 import datart.server.base.params.TestExecuteParam;
+
+import java.util.List;
 
 public interface SqlTaskService {
 
@@ -47,4 +50,12 @@ public interface SqlTaskService {
      * @return 取消响应
      */
     SqlTaskCancelResponse cancelSqlTask(String taskId);
+
+    /**
+     * 获取当前用户 SQL 任务执行历史
+     *
+     * @return 任务执行历史响应
+     */
+    List<SqlTaskHistoryResponse> getSqlTaskHistory();
+
 }

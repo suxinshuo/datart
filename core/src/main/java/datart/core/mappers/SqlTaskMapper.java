@@ -31,10 +31,11 @@ public interface SqlTaskMapper extends CRUDMapper {
         "end_time, duration, ",
         "fail_type, exec_instance_id, ",
         "progress, org_id, ",
-        "create_by, create_time, ",
-        "update_by, update_time, ",
-        "permission, script, ",
-        "error_message, execute_param)",
+        "execute_type, create_by, ",
+        "create_time, update_by, ",
+        "update_time, permission, ",
+        "script, error_message, ",
+        "execute_param)",
         "values (#{id,jdbcType=VARCHAR}, #{sourceId,jdbcType=VARCHAR}, ",
         "#{scriptType,jdbcType=VARCHAR}, #{status,jdbcType=VARCHAR}, ",
         "#{priority,jdbcType=INTEGER}, #{timeout,jdbcType=INTEGER}, ",
@@ -42,10 +43,11 @@ public interface SqlTaskMapper extends CRUDMapper {
         "#{endTime,jdbcType=TIMESTAMP}, #{duration,jdbcType=BIGINT}, ",
         "#{failType,jdbcType=VARCHAR}, #{execInstanceId,jdbcType=VARCHAR}, ",
         "#{progress,jdbcType=INTEGER}, #{orgId,jdbcType=VARCHAR}, ",
-        "#{createBy,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, ",
-        "#{updateBy,jdbcType=VARCHAR}, #{updateTime,jdbcType=TIMESTAMP}, ",
-        "#{permission,jdbcType=INTEGER}, #{script,jdbcType=LONGVARCHAR}, ",
-        "#{errorMessage,jdbcType=LONGVARCHAR}, #{executeParam,jdbcType=LONGVARCHAR})"
+        "#{executeType,jdbcType=VARCHAR}, #{createBy,jdbcType=VARCHAR}, ",
+        "#{createTime,jdbcType=TIMESTAMP}, #{updateBy,jdbcType=VARCHAR}, ",
+        "#{updateTime,jdbcType=TIMESTAMP}, #{permission,jdbcType=INTEGER}, ",
+        "#{script,jdbcType=LONGVARCHAR}, #{errorMessage,jdbcType=LONGVARCHAR}, ",
+        "#{executeParam,jdbcType=LONGVARCHAR})"
     })
     int insert(SqlTaskWithBLOBs record);
 
@@ -68,6 +70,7 @@ public interface SqlTaskMapper extends CRUDMapper {
         @Result(column="exec_instance_id", property="execInstanceId", jdbcType=JdbcType.VARCHAR),
         @Result(column="progress", property="progress", jdbcType=JdbcType.INTEGER),
         @Result(column="org_id", property="orgId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="execute_type", property="executeType", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
         @Result(column="update_by", property="updateBy", jdbcType=JdbcType.VARCHAR),
@@ -95,6 +98,7 @@ public interface SqlTaskMapper extends CRUDMapper {
         @Result(column="exec_instance_id", property="execInstanceId", jdbcType=JdbcType.VARCHAR),
         @Result(column="progress", property="progress", jdbcType=JdbcType.INTEGER),
         @Result(column="org_id", property="orgId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="execute_type", property="executeType", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
         @Result(column="update_by", property="updateBy", jdbcType=JdbcType.VARCHAR),
@@ -106,8 +110,9 @@ public interface SqlTaskMapper extends CRUDMapper {
     @Select({
         "select",
         "id, source_id, script_type, `status`, priority, timeout, max_size, start_time, ",
-        "end_time, duration, fail_type, exec_instance_id, progress, org_id, create_by, ",
-        "create_time, update_by, update_time, permission, script, error_message, execute_param",
+        "end_time, duration, fail_type, exec_instance_id, progress, org_id, execute_type, ",
+        "create_by, create_time, update_by, update_time, permission, script, error_message, ",
+        "execute_param",
         "from sql_task",
         "where id = #{id,jdbcType=VARCHAR}"
     })
@@ -126,6 +131,7 @@ public interface SqlTaskMapper extends CRUDMapper {
         @Result(column="exec_instance_id", property="execInstanceId", jdbcType=JdbcType.VARCHAR),
         @Result(column="progress", property="progress", jdbcType=JdbcType.INTEGER),
         @Result(column="org_id", property="orgId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="execute_type", property="executeType", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
         @Result(column="update_by", property="updateBy", jdbcType=JdbcType.VARCHAR),
@@ -164,6 +170,7 @@ public interface SqlTaskMapper extends CRUDMapper {
           "exec_instance_id = #{execInstanceId,jdbcType=VARCHAR},",
           "progress = #{progress,jdbcType=INTEGER},",
           "org_id = #{orgId,jdbcType=VARCHAR},",
+          "execute_type = #{executeType,jdbcType=VARCHAR},",
           "create_by = #{createBy,jdbcType=VARCHAR},",
           "create_time = #{createTime,jdbcType=TIMESTAMP},",
           "update_by = #{updateBy,jdbcType=VARCHAR},",
@@ -191,6 +198,7 @@ public interface SqlTaskMapper extends CRUDMapper {
           "exec_instance_id = #{execInstanceId,jdbcType=VARCHAR},",
           "progress = #{progress,jdbcType=INTEGER},",
           "org_id = #{orgId,jdbcType=VARCHAR},",
+          "execute_type = #{executeType,jdbcType=VARCHAR},",
           "create_by = #{createBy,jdbcType=VARCHAR},",
           "create_time = #{createTime,jdbcType=TIMESTAMP},",
           "update_by = #{updateBy,jdbcType=VARCHAR},",

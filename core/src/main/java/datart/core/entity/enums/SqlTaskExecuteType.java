@@ -15,30 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package datart.core.common;
+package datart.core.entity.enums;
 
 import lombok.Getter;
 
+/**
+ * @author suxinshuo
+ * @date 2025/12/22 10:53
+ */
 @Getter
-public enum SqlTaskFailType {
-    
-    SQL_SYNTAX_ERROR("SQL_SYNTAX_ERROR", "SQL 语法错误"),
-    
-    EXECUTION_FAILED("EXECUTION_FAILED", "执行失败"),
+public enum SqlTaskExecuteType {
 
-    EXECUTION_TIMEOUT("EXECUTION_TIMEOUT", "执行超时"),
+    AD_HOC("AD_HOC", "即席查询"),
 
-    MANUAL_TERMINATION("MANUAL_TERMINATION", "手动终止"),
-    
-    SERVICE_RESTART("SERVICE_RESTART", "服务重启"),
-    
-    RESOURCE_INSUFFICIENT("RESOURCE_INSUFFICIENT", "资源不足");
-    
+    OTHER("OTHER", "其他");
+
     private final String code;
-    
+
     private final String desc;
-    
-    SqlTaskFailType(String code, String desc) {
+
+    SqlTaskExecuteType(String code, String desc) {
         this.code = code;
         this.desc = desc;
     }

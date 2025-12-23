@@ -32,4 +32,6 @@ public class SqlTask extends BaseEntity {
     private Integer progress;
 
     private String orgId;
+
+    private String executeType;
 }

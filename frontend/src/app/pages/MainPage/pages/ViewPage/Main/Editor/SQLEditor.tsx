@@ -92,7 +92,7 @@ export const SQLEditor = memo(() => {
       ?.getModel()
       ?.getValueInRange(editorInstance.getSelection()!);
     dispatch(runSql({ id, isFragment: !!fragment }));
-  }, [dispatch, id, editorInstance, stage]);
+  }, [dispatch, id, editorInstance, stage, tView]);
 
   const save = useCallback(
     (resolve?) => {
@@ -140,7 +140,7 @@ export const SQLEditor = memo(() => {
         });
       }
     }
-  }, [dispatch, actions, stage, status, id, save, showSaveForm, viewsData, t]);
+  }, [dispatch, actions, status, id, save, showSaveForm, viewsData, t]);
 
   const editorWillMount = useCallback(
     editor => {

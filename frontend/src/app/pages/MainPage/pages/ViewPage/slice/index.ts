@@ -118,7 +118,9 @@ const slice = createSlice({
 
         // Don't reset stage if it was explicitly set in payload
         if (
-          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])) &&
+          !(
+            entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])
+          ) &&
           !isTaskStatusCleanup // Don't mark as touched when just cleaning up task status
         ) {
           currentEditingView.touched = true;
@@ -128,8 +130,11 @@ const slice = createSlice({
             currentEditingView.stage = ViewViewModelStages.Saveable;
           } else if (!hasStageInPayload) {
             // Check if there's an active async task running
-            const hasActiveTask = currentEditingView.currentTaskId && currentEditingView.currentTaskStatus &&
-              currentEditingView.currentTaskStatus !== 'SUCCESS' && currentEditingView.currentTaskStatus !== 'FAILED';
+            const hasActiveTask =
+              currentEditingView.currentTaskId &&
+              currentEditingView.currentTaskStatus &&
+              currentEditingView.currentTaskStatus !== 'SUCCESS' &&
+              currentEditingView.currentTaskStatus !== 'FAILED';
 
             // Don't reset stage to Initialized if there's an active async task
             if (
@@ -146,7 +151,7 @@ const slice = createSlice({
           try {
             localStorage.setItem(
               `datart_view_${currentEditingView.id}`,
-              JSON.stringify(currentEditingView)
+              JSON.stringify(currentEditingView),
             );
           } catch (error) {
             console.error('Failed to save view to local storage:', error);
@@ -359,10 +364,10 @@ const slice = createSlice({
         const editingIndex = state.editingViews.findIndex(
           v => v.id === state.currentEditingView,
         );
-        
+
         // Get the old view ID (temporary ID for new views)
         const oldViewId = state.currentEditingView;
-        
+
         state.editingViews.splice(editingIndex, 1, {
           ...action.payload,
           touched: false,
@@ -371,7 +376,7 @@ const slice = createSlice({
           originColumnPermissions: [...action.payload.columnPermissions],
         });
         state.currentEditingView = action.payload.id;
-        
+
         // If it was a new view (had temporary ID), clear local storage
         if (isNewView(oldViewId)) {
           localStorage.removeItem(`datart_view_${oldViewId}`);

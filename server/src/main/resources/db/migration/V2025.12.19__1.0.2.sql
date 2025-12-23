@@ -20,6 +20,7 @@ CREATE TABLE `sql_task`  (
   `progress` int(11) NOT NULL DEFAULT 0,
   `org_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `execute_param` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  `execute_type` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'AD_HOC',
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `create_time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `update_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL,

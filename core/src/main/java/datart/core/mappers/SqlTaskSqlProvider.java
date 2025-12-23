@@ -83,6 +83,10 @@ public class SqlTaskSqlProvider {
             sql.VALUES("org_id", "#{orgId,jdbcType=VARCHAR}");
         }
         
+        if (record.getExecuteType() != null) {
+            sql.VALUES("execute_type", "#{executeType,jdbcType=VARCHAR}");
+        }
+        
         if (record.getCreateBy() != null) {
             sql.VALUES("create_by", "#{createBy,jdbcType=VARCHAR}");
         }
@@ -138,6 +142,7 @@ public class SqlTaskSqlProvider {
         sql.SELECT("exec_instance_id");
         sql.SELECT("progress");
         sql.SELECT("org_id");
+        sql.SELECT("execute_type");
         sql.SELECT("create_by");
         sql.SELECT("create_time");
         sql.SELECT("update_by");
@@ -176,6 +181,7 @@ public class SqlTaskSqlProvider {
         sql.SELECT("exec_instance_id");
         sql.SELECT("progress");
         sql.SELECT("org_id");
+        sql.SELECT("execute_type");
         sql.SELECT("create_by");
         sql.SELECT("create_time");
         sql.SELECT("update_by");
@@ -254,6 +260,10 @@ public class SqlTaskSqlProvider {
             sql.SET("org_id = #{record.orgId,jdbcType=VARCHAR}");
         }
         
+        if (record.getExecuteType() != null) {
+            sql.SET("execute_type = #{record.executeType,jdbcType=VARCHAR}");
+        }
+        
         if (record.getCreateBy() != null) {
             sql.SET("create_by = #{record.createBy,jdbcType=VARCHAR}");
         }
@@ -308,6 +318,7 @@ public class SqlTaskSqlProvider {
         sql.SET("exec_instance_id = #{record.execInstanceId,jdbcType=VARCHAR}");
         sql.SET("progress = #{record.progress,jdbcType=INTEGER}");
         sql.SET("org_id = #{record.orgId,jdbcType=VARCHAR}");
+        sql.SET("execute_type = #{record.executeType,jdbcType=VARCHAR}");
         sql.SET("create_by = #{record.createBy,jdbcType=VARCHAR}");
         sql.SET("create_time = #{record.createTime,jdbcType=TIMESTAMP}");
         sql.SET("update_by = #{record.updateBy,jdbcType=VARCHAR}");
@@ -340,6 +351,7 @@ public class SqlTaskSqlProvider {
         sql.SET("exec_instance_id = #{record.execInstanceId,jdbcType=VARCHAR}");
         sql.SET("progress = #{record.progress,jdbcType=INTEGER}");
         sql.SET("org_id = #{record.orgId,jdbcType=VARCHAR}");
+        sql.SET("execute_type = #{record.executeType,jdbcType=VARCHAR}");
         sql.SET("create_by = #{record.createBy,jdbcType=VARCHAR}");
         sql.SET("create_time = #{record.createTime,jdbcType=TIMESTAMP}");
         sql.SET("update_by = #{record.updateBy,jdbcType=VARCHAR}");
@@ -405,6 +417,10 @@ public class SqlTaskSqlProvider {
         
         if (record.getOrgId() != null) {
             sql.SET("org_id = #{orgId,jdbcType=VARCHAR}");
+        }
+        
+        if (record.getExecuteType() != null) {
+            sql.SET("execute_type = #{executeType,jdbcType=VARCHAR}");
         }
         
         if (record.getCreateBy() != null) {
