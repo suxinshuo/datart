@@ -1,35 +1,23 @@
-/**
- * Datart
- *
- * Copyright 2021
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-import { GithubOutlined } from '@ant-design/icons';
-import { Alert, Button, Popover, Space, Spin } from 'antd';
+import { GithubOutlined, PauseOutlined } from '@ant-design/icons';
+import { Alert, Button, Popover, Progress, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { selectSystemInfo } from 'app/slice/selectors';
-import { transparentize } from 'polished';
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
-import { SPACE_MD, SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
+import {
+  FONT_SIZE_BASE,
+  SPACE_MD,
+  SPACE_TIMES,
+  SPACE_XS,
+} from 'styles/StyleConstants';
 import { newIssueUrl } from 'utils/utils';
 import { ViewViewModelStages } from '../../constants';
 import { useViewSlice } from '../../slice';
 import { selectCurrentEditingViewAttr } from '../../slice/selectors';
+import { cancelSqlTask, getSqlTaskStatus } from '../../slice/thunks';
+import { SqlTaskStatus } from '../../slice/types';
 import { Error } from './Error';
 import { Results } from './Results';
 
@@ -48,6 +36,18 @@ export const Outputs = memo(() => {
   const warnings = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'warnings' }),
   ) as string[];
+  const currentTaskId = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'currentTaskId' }),
+  ) as string;
+  const currentTaskStatus = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'currentTaskStatus' }),
+  ) as SqlTaskStatus;
+  const currentTaskProgress = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'currentTaskProgress' }),
+  ) as number;
+  const currentTaskErrorMessage = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'currentTaskErrorMessage' }),
+  ) as string;
 
   const { width, height, ref } = useResizeObserver({
     refreshMode: 'debounce',
@@ -61,6 +61,68 @@ export const Outputs = memo(() => {
       }),
     );
   }, [dispatch, actions]);
+
+  // Task monitoring and management
+  const cancelTask = useCallback(() => {
+    if (currentTaskId) {
+      dispatch(cancelSqlTask({ taskId: currentTaskId }));
+    }
+  }, [dispatch, currentTaskId]);
+
+  // Monitor task status with optimized polling strategy
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    let retryCount = 0;
+    const MAX_RETRIES = 1800; // Maximum of 60 minutes of polling (1800 * 2s)
+
+    // Stop polling if task is already completed
+    if (
+      currentTaskId &&
+      currentTaskStatus !== SqlTaskStatus.SUCCESS &&
+      currentTaskStatus !== SqlTaskStatus.FAILED
+    ) {
+      // Function to get polling interval based on task status and retry count
+      const getPollingInterval = () => {
+        // Adjust interval based on task status
+        if (currentTaskStatus === SqlTaskStatus.QUEUED) {
+          // Longer interval for queuing status (1 seconds)
+          return 1000;
+        } else if (currentTaskStatus === SqlTaskStatus.RUNNING) {
+          // Dynamic interval for running status: start with 2s, increase to 5s after 10 retries
+          // retryCount < 10, 从 650 递增到 2000
+          return retryCount <= 10 ? 500 + 150 * (retryCount + 1) : 5000;
+        }
+        return 2000; // Default fallback for cancelled or other statuses
+      };
+
+      // Polling function with retry limit
+      const pollTaskStatus = () => {
+        if (retryCount >= MAX_RETRIES) {
+          // Maximum retries reached, stop polling
+          console.warn(
+            `Task ${currentTaskId}: Maximum polling retries reached`,
+          );
+          if (intervalId) {
+            clearInterval(intervalId);
+          }
+          return;
+        }
+
+        retryCount++;
+        dispatch(getSqlTaskStatus({ taskId: currentTaskId }));
+      };
+
+      // Initial poll and set up interval
+      pollTaskStatus();
+      intervalId = setInterval(pollTaskStatus, getPollingInterval());
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [dispatch, currentTaskId, currentTaskStatus]);
 
   const submitIssue = useCallback(
     type => {
@@ -121,13 +183,60 @@ export const Outputs = memo(() => {
         />
       )}
 
-      <Results width={width} height={height} />
-      {error && <Error />}
-      {stage === ViewViewModelStages.Running && (
-        <LoadingMask>
-          <Spin />
-        </LoadingMask>
+      {/* Task Status Display */}
+      {currentTaskId && (
+        <TaskStatusWrapper>
+          <Space
+            direction="vertical"
+            className="task-status"
+            style={{ width: '100%' }}
+          >
+            <div className="task-info">
+              <span className="task-id">
+                {t('taskId')}: {currentTaskId}
+              </span>
+              <span
+                className={`task-status-badge status-${currentTaskStatus.toLowerCase()}`}
+              >
+                {t(`taskStatus.${currentTaskStatus.toLowerCase()}`)}
+              </span>
+            </div>
+            <Progress
+              percent={currentTaskProgress}
+              status={
+                currentTaskStatus === SqlTaskStatus.QUEUED
+                  ? 'active'
+                  : currentTaskStatus === SqlTaskStatus.RUNNING
+                  ? 'active'
+                  : currentTaskStatus === SqlTaskStatus.SUCCESS
+                  ? 'success'
+                  : 'exception'
+              }
+            />
+            {(currentTaskStatus === SqlTaskStatus.QUEUED ||
+              currentTaskStatus === SqlTaskStatus.RUNNING) && (
+              <Button
+                icon={<PauseOutlined />}
+                onClick={cancelTask}
+                type="primary"
+                danger
+              >
+                {t('cancelTask')}
+              </Button>
+            )}
+            {currentTaskStatus === SqlTaskStatus.FAILED &&
+              currentTaskErrorMessage && (
+                <div className="task-error">{currentTaskErrorMessage}</div>
+              )}
+          </Space>
+        </TaskStatusWrapper>
       )}
+
+      <Results
+        width={width}
+        height={currentTaskId ? (height || 0) - 80 : height}
+      />
+      {error && <Error />}
     </Wrapper>
   );
 });
@@ -147,14 +256,52 @@ const Wrapper = styled.div`
   }
 `;
 
-const LoadingMask = styled.div`
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: ${p => transparentize(0.5, p.theme.componentBackground)};
+const TaskStatusWrapper = styled.div`
+  padding: ${SPACE_XS} ${SPACE_MD};
+  background-color: ${p => p.theme.componentBackground};
+  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+
+  .task-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: ${SPACE_XS};
+  }
+
+  .task-id {
+    font-size: ${FONT_SIZE_BASE * 0.875}px;
+    color: ${p => p.theme.textColorSnd};
+  }
+
+  .task-status-badge {
+    padding: 2px 8px;
+    font-size: ${FONT_SIZE_BASE * 0.8125}px;
+    font-weight: 500;
+    border-radius: 4px;
+  }
+
+  .status-queued {
+    color: white;
+    background-color: ${p => p.theme.normal};
+  }
+
+  .status-running {
+    color: white;
+    background-color: ${p => p.theme.processing};
+  }
+
+  .status-success {
+    color: white;
+    background-color: ${p => p.theme.success};
+  }
+
+  .status-failed {
+    color: white;
+    background-color: ${p => p.theme.error};
+  }
+
+  .task-error {
+    font-size: ${FONT_SIZE_BASE * 0.875}px;
+    color: ${p => p.theme.error};
+  }
 `;

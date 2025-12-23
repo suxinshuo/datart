@@ -99,7 +99,7 @@ datart:
   security:
     token:
       secret: "d@a$t%a^r&a*t" #加密密钥
-      timeout-min: 30  # 登录会话有效时长，单位：分钟。
+      timeout-min: 180  # 登录会话有效时长，单位：分钟。
 
   env:
     file-path: ${user.dir}/files # 服务端文件保存位置

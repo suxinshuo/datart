@@ -25,7 +25,7 @@ import {
   SaveFilled,
   SettingFilled,
 } from '@ant-design/icons';
-import { Divider, Dropdown, Menu, Select, Space, Tooltip } from 'antd';
+import { Divider, Dropdown, Menu, Select, Space, Switch, Tooltip } from 'antd';
 import { ToolbarButton } from 'app/components';
 import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
@@ -118,6 +118,17 @@ export const Toolbar = memo(
       selectCurrentEditingViewAttr(state, { name: 'index' }),
     ) as number;
     const isArchived = status === ViewStatus.Archived;
+    const enableAsyncExecution = useSelector(state =>
+      selectCurrentEditingViewAttr(state, { name: 'enableAsyncExecution' }),
+    ) as boolean;
+
+    const toggleAsyncExecution = useCallback(() => {
+      dispatch(
+        actions.changeCurrentEditingView({
+          enableAsyncExecution: !enableAsyncExecution,
+        }),
+      );
+    }, [dispatch, actions, enableAsyncExecution]);
 
     const formatSQL = useCallback(() => {
       dispatch(
@@ -234,6 +245,9 @@ export const Toolbar = memo(
                       }
                       color={fragment ? WARNING : INFO}
                       onClick={onRun}
+                      disabled={
+                        stage === ViewViewModelStages.Saving || isArchived
+                      }
                     />
                   </Tooltip>
                   <Tooltip title={t('beautify')} placement="bottom">
@@ -241,6 +255,13 @@ export const Toolbar = memo(
                       icon={<AlignCenterOutlined />}
                       disabled={isArchived}
                       onClick={formatSQL}
+                    />
+                  </Tooltip>
+                  <Tooltip title={t('asyncExecution')} placement="bottom">
+                    <Switch
+                      checked={enableAsyncExecution}
+                      onChange={toggleAsyncExecution}
+                      disabled={isArchived}
                     />
                   </Tooltip>
                 </Space>

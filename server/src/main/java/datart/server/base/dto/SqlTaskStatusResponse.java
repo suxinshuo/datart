@@ -15,35 +15,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package datart.server.base.dto;
 
-package datart.server.base.params;
-
-import datart.core.data.provider.ScriptType;
-import datart.core.data.provider.ScriptVariable;
-import datart.core.data.provider.SelectColumn;
+import datart.core.data.provider.Dataframe;
 import lombok.Data;
 
-import javax.validation.constraints.NotNull;
+import java.util.Date;
 import java.util.List;
 
 @Data
-public class TestExecuteParam {
+public class SqlTaskStatusResponse {
+    
+    private String taskId;
+    
+    private String status;
+    
+    private String statusDesc;
+    
+    private String createBy;
+    
+    private Date createTime;
+    
+    private Date startTime;
+    
+    private Date endTime;
+    
+    private Long duration;
+    
+    private Integer progress;
+    
+    private List<String> log;
+    
+    private Object taskResult;
 
-    private String sourceId;
+    private String failType;
 
-    private String script;
-
-    private List<SelectColumn> columns;
-
-    @NotNull
-    private ScriptType scriptType;
-
-    private List<ScriptVariable> variables;
-
-    private int size = 100;
-
-    private boolean asyncEnabled = false;
-
-    private Integer priority;
+    private String errorMessage;
 
 }

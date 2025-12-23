@@ -22,6 +22,7 @@ import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { ViewViewModelStages } from '../constants';
 import {
   diffMergeHierarchyModel,
+  isNewView,
   transformQueryResultToModelAndDataSource,
 } from '../utils';
 import {
@@ -36,7 +37,7 @@ import {
   unarchiveView,
   updateViewBase,
 } from './thunks';
-import { Schema, ViewState, ViewViewModel } from './types';
+import { QueryResult, Schema, ViewState, ViewViewModel } from './types';
 
 export const initialState: ViewState = {
   views: void 0,
@@ -97,23 +98,58 @@ const slice = createSlice({
 
       if (currentEditingView) {
         const entries = Object.entries(action.payload);
+
+        // Check if stage is being explicitly set in payload
+        const hasStageInPayload = entries.some(([key]) => key === 'stage');
+
+        // Check if we're just cleaning up async task status fields
+        const isTaskStatusCleanup = entries.every(([key]) =>
+          [
+            'currentTaskId',
+            'currentTaskStatus',
+            'currentTaskProgress',
+            'currentTaskErrorMessage',
+          ].includes(key),
+        );
+
         entries.forEach(([key, value]) => {
           currentEditingView[key] = value;
         });
+
+        // Don't reset stage if it was explicitly set in payload
         if (
-          !(
-            entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])
-          )
+          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])) &&
+          !isTaskStatusCleanup // Don't mark as touched when just cleaning up task status
         ) {
           currentEditingView.touched = true;
           if (
             ['model', 'variables', 'columnPermissions'].includes(entries[0][0])
           ) {
             currentEditingView.stage = ViewViewModelStages.Saveable;
-          } else {
-            if (currentEditingView.stage > ViewViewModelStages.Fresh) {
+          } else if (!hasStageInPayload) {
+            // Check if there's an active async task running
+            const hasActiveTask = currentEditingView.currentTaskId && currentEditingView.currentTaskStatus &&
+              currentEditingView.currentTaskStatus !== 'SUCCESS' && currentEditingView.currentTaskStatus !== 'FAILED';
+
+            // Don't reset stage to Initialized if there's an active async task
+            if (
+              currentEditingView.stage > ViewViewModelStages.Fresh &&
+              !hasActiveTask
+            ) {
               currentEditingView.stage = ViewViewModelStages.Initialized;
             }
+          }
+        }
+
+        // Save to local storage if it's a new view
+        if (isNewView(currentEditingView.id)) {
+          try {
+            localStorage.setItem(
+              `datart_view_${currentEditingView.id}`,
+              JSON.stringify(currentEditingView)
+            );
+          } catch (error) {
+            console.error('Failed to save view to local storage:', error);
           }
         }
       }
@@ -247,6 +283,15 @@ const slice = createSlice({
       if (currentEditingView) {
         currentEditingView.stage = ViewViewModelStages.Running;
         currentEditingView.error = '';
+        // Clear previous results when starting a new query
+        // This prevents showing stale data during loading
+        currentEditingView.previewResults = undefined;
+        // Clear all task-related states when starting a new query
+        // This ensures progress bar and task status are reset
+        currentEditingView.currentTaskId = undefined;
+        currentEditingView.currentTaskStatus = undefined;
+        currentEditingView.currentTaskProgress = 0;
+        currentEditingView.currentTaskErrorMessage = undefined;
       }
     });
     builder.addCase(runSql.fulfilled, (state, action) => {
@@ -254,9 +299,16 @@ const slice = createSlice({
         v => v.id === action.meta.arg.id,
       );
 
-      if (currentEditingView && action.payload && action.payload.rows) {
+      // Check if payload is a QueryResult (synchronous execution)
+      if (
+        currentEditingView &&
+        action.payload &&
+        'rows' in action.payload &&
+        'columns' in action.payload
+      ) {
+        const queryResult = action.payload as QueryResult;
         const { model, dataSource } = transformQueryResultToModelAndDataSource(
-          action.payload,
+          queryResult,
           currentEditingView.model,
           currentEditingView.type,
         );
@@ -265,15 +317,30 @@ const slice = createSlice({
           currentEditingView.type!,
         );
         currentEditingView.previewResults = dataSource;
-        if (!action.meta.arg.isFragment) {
-          currentEditingView.stage = ViewViewModelStages.Saveable;
-        } else {
-          currentEditingView.stage = ViewViewModelStages.Initialized;
+        // Only update stage if view is still in Running stage (to prevent race conditions with new queries)
+        // or if it's a fragment execution (which doesn't change the overall view state)
+        if (
+          currentEditingView.stage === ViewViewModelStages.Running ||
+          action.meta.arg.isFragment
+        ) {
+          if (!action.meta.arg.isFragment) {
+            currentEditingView.stage = ViewViewModelStages.Saveable;
+          } else {
+            currentEditingView.stage = ViewViewModelStages.Initialized;
+          }
         }
 
-        if (action.payload.warnings) {
-          currentEditingView.warnings = action.payload.warnings;
+        if (queryResult.warnings) {
+          currentEditingView.warnings = queryResult.warnings;
         }
+      }
+      // Check if payload is a SqlTaskCreateResponse (asynchronous execution)
+      else if (
+        currentEditingView &&
+        action.payload &&
+        'taskId' in action.payload
+      ) {
+        // Task creation response handled in runSqlAsync function
       }
     });
 
@@ -292,6 +359,10 @@ const slice = createSlice({
         const editingIndex = state.editingViews.findIndex(
           v => v.id === state.currentEditingView,
         );
+        
+        // Get the old view ID (temporary ID for new views)
+        const oldViewId = state.currentEditingView;
+        
         state.editingViews.splice(editingIndex, 1, {
           ...action.payload,
           touched: false,
@@ -300,6 +371,11 @@ const slice = createSlice({
           originColumnPermissions: [...action.payload.columnPermissions],
         });
         state.currentEditingView = action.payload.id;
+        
+        // If it was a new view (had temporary ID), clear local storage
+        if (isNewView(oldViewId)) {
+          localStorage.removeItem(`datart_view_${oldViewId}`);
+        }
       }
 
       if (state.views) {

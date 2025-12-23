@@ -134,7 +134,8 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
           }}
         >
           {({ rowIndex, columnIndex, style }) => {
-            const cellValue = rawData[rowIndex][mergedColumns[columnIndex].dataIndex];
+            const cellValue =
+              rawData[rowIndex][mergedColumns[columnIndex].dataIndex];
             let displayValue = cellValue;
             let cellStyle = {};
 

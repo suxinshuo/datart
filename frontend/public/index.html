@@ -22,6 +22,16 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>Datart</title>
+    <style>
+      #dify-chatbot-bubble-button {
+        background-color: #1C64F2 !important;
+        bottom: 33px !important;
+      }
+      #dify-chatbot-bubble-window {
+        width: 27rem !important;
+        height: 80rem !important;
+      }
+    </style>
   </head>
 
   <body>
@@ -39,6 +49,22 @@
       };
     </script>
     <script type="text/javascript" src="%PUBLIC_URL%/antd/less.min.js"></script>
+    <!-- Dify Chatbot Configuration -->
+    <script>
+      window.difyChatbotConfig = {
+        token: 'ShoppcjgmEQkGmbk',
+        baseUrl: 'https://tify.tigerbrokers.net',
+        systemVariables: {
+          // user_id: 'YOU CAN DEFINE USER ID HERE',
+          // conversation_id: 'YOU CAN DEFINE CONVERSATION ID HERE, IT MUST BE A VALID UUID',
+        },
+      }
+    </script>
+    <script
+      src="https://tify.tigerbrokers.net/embed.min.js"
+      id="WmluwcisimSei2hM"
+      defer>
+    </script>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

@@ -66,6 +66,7 @@ export function generateEditingView(
     previewResults: [],
     error: '',
     fragment: '',
+    enableAsyncExecution: true,
     ...attrs,
   };
 }
@@ -112,11 +113,13 @@ export function transformQueryResultToModelAndDataSource(
       lastModel?.hierarchy || {},
     );
 
-    let _name: any = [];
-    if (viewType === 'STRUCT') {
-      _name = reqColumns?.find(column => column.alias === name[0])?.column;
-    } else {
-      _name = name;
+    let _name: any = name;
+    if (viewType === 'STRUCT' && reqColumns) {
+      // For STRUCT view, find the original column path from reqColumns using alias
+      const reqColumn = reqColumns.find(column => column.alias === name);
+      if (reqColumn) {
+        _name = reqColumn.column;
+      }
     }
 
     return {
@@ -134,7 +137,12 @@ export function transformQueryResultToModelAndDataSource(
       const key = columns[index].name;
       // Handle empty objects gracefully to prevent rendering crashes
       // Only convert to null if val is an object and empty
-      const value = typeof val === 'object' && val !== null && isEmptyArray(Object.keys(val)) ? null : val;
+      const value =
+        typeof val === 'object' &&
+        val !== null &&
+        isEmptyArray(Object.keys(val))
+          ? null
+          : val;
       return {
         ...obj,
         [key]: value,
@@ -346,6 +354,7 @@ export function transformModelToViewModel(
     variables,
     relVariableSubjects,
     relSubjectColumns,
+    enableAsyncExecution,
     ...rest
   } = data;
 
@@ -364,6 +373,7 @@ export function transformModelToViewModel(
       ...r,
       columnPermission: JSON.parse(r.columnPermission),
     })),
+    enableAsyncExecution: enableAsyncExecution ?? true,
   };
 }
 
