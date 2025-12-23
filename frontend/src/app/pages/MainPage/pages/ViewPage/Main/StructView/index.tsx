@@ -279,7 +279,7 @@ export const StructView = memo(
           errorInfo.message && message.error(errorInfo.message);
         }
       },
-      [dispatch, id, structure, form, stage],
+      [dispatch, id, structure, form, stage, tView],
     );
 
     const handleDeleteConditions = useCallback(

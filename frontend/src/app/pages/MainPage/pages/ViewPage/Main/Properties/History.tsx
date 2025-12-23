@@ -58,7 +58,6 @@ export const History = memo(() => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [detailTask, setDetailTask] = useState<TaskHistory | null>(null);
   const t = useI18NPrefix('view.history');
 
@@ -89,7 +88,6 @@ export const History = memo(() => {
         errorHandle(error);
       } finally {
         setLoading(false);
-        setRefreshing(false);
       }
     },
     [hasMore],
@@ -109,7 +107,6 @@ export const History = memo(() => {
 
   // 刷新历史记录
   const handleRefresh = useCallback(() => {
-    setRefreshing(true);
     setHasMore(true);
     fetchHistory(1);
   }, [fetchHistory]);

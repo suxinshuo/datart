@@ -103,7 +103,7 @@ const ChartHeaderPanel: FC<{
       } finally {
         setLoadingHistory(false);
       }
-    }, [currentDataView]);
+    }, [currentDataView, actions, dispatch]);
 
     // 静态分析开关变化
     const handleStaticAnalysisChange = useCallback(
