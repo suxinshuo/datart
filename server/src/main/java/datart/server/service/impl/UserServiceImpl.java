@@ -550,7 +550,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                         .subjectId(userId)
                         .resourceType(ResourceType.VIZ)
                         .resourceId(userDirFolder.getId())
-                        .permission(Const.CREATE)
+                        .permission(Const.READ | Const.DOWNLOAD | Const.SHARE | Const.CREATE)
                         .build(),
                 // Storyboard(perStoryboard) 的管理权限
                 PermissionInfo.builder()
@@ -559,7 +559,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                         .subjectId(userId)
                         .resourceType(ResourceType.VIZ)
                         .resourceId(userDirStoryboard.getId())
-                        .permission(Const.CREATE)
+                        .permission(Const.READ | Const.SHARE | Const.CREATE)
                         .build()
         ));
 
