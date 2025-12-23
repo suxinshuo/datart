@@ -26,6 +26,7 @@ import datart.core.base.consts.ValueType;
 import datart.core.base.exception.Exceptions;
 import datart.core.common.BeanUtils;
 import datart.core.common.ReflectUtils;
+import datart.core.common.RequestContext;
 import datart.core.data.provider.*;
 import datart.data.provider.JdbcDataProvider;
 import datart.data.provider.calcite.dialect.CustomSqlDialect;
@@ -278,6 +279,19 @@ public class JdbcDataProviderAdapter implements Closeable {
         try (Connection conn = getConn()) {
             try (Statement statement = conn.createStatement()) {
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
+
+                Boolean sqlSelectTypeFlag = RequestContext.getSqlSelectTypeFlag();
+                if (Objects.nonNull(sqlSelectTypeFlag) && !sqlSelectTypeFlag) {
+                    // 非 select 类型 sql
+                    try {
+                        statement.execute(selectSql);
+                        return Dataframe.execSuccess();
+                    } catch (Exception e) {
+                        log.error("非 select 类型 sql 执行异常. selectSql: {}", selectSql, e);
+                        return Dataframe.execFail(e.getMessage());
+                    }
+                }
+
                 try (ResultSet resultSet = statement.executeQuery(selectSql)) {
                     try {
                         resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));

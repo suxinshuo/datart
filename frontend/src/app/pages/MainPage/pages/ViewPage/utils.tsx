@@ -132,9 +132,12 @@ export function transformQueryResultToModelAndDataSource(
   const dataSource = rows.map(arr =>
     arr.reduce((obj, val, index) => {
       const key = columns[index].name;
+      // Handle empty objects gracefully to prevent rendering crashes
+      // Only convert to null if val is an object and empty
+      const value = typeof val === 'object' && val !== null && isEmptyArray(Object.keys(val)) ? null : val;
       return {
         ...obj,
-        [key]: val,
+        [key]: value,
       };
     }, {}),
   );

@@ -111,6 +111,10 @@ public class Application implements ApplicationContextAware {
         return getProperty("datart.ad-hoc.dir-name", "Ad-hoc Query SQLs");
     }
 
+    public static String adHocExampleDirName() {
+        return getProperty("datart.ad-hoc.example-dir-name", "Example Query SQLs");
+    }
+
     public static TenantManagementMode getCurrMode() {
         if (currMode == null) {
             String mode = Application.getProperty("datart.tenant-management-mode");

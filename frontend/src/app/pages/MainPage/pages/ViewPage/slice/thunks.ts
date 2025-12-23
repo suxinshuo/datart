@@ -435,11 +435,17 @@ export const getEditorProvideCompletionItems = createAsyncThunk<
         id: sourceId,
       });
       currentDBSchemas?.forEach(db => {
-        dbKeywords.add(db.dbName);
+        if (db.dbName) {
+          dbKeywords.add(db.dbName);
+        }
         db.tables?.forEach(table => {
-          tableKeywords.add(table.tableName);
+          if (table.tableName) {
+            tableKeywords.add(table.tableName);
+          }
           table.columns?.forEach(column => {
-            schemaKeywords.add(column.name as string);
+            if (column.name) {
+              schemaKeywords.add(column.name as string);
+            }
           });
         });
       });
@@ -449,7 +455,9 @@ export const getEditorProvideCompletionItems = createAsyncThunk<
       .concat(variables)
       .concat(publicVariables)
       .forEach(({ name }) => {
-        variableKeywords.add(name);
+        if (name) {
+          variableKeywords.add(name);
+        }
       });
 
     const getItems = (model, position) => {
@@ -471,16 +479,18 @@ export const getEditorProvideCompletionItems = createAsyncThunk<
         suggestions: dataSource
           .filter(({ keywords }) => !!keywords)
           .reduce<monaco.languages.CompletionItem[]>(
-            (arr, { detail, keywords }) =>
-              arr.concat(
-                keywords!.map(str => ({
+            (arr, { detail, keywords }) => {
+              const validKeywords = keywords!.filter(str => typeof str === 'string' && str);
+              return arr.concat(
+                validKeywords.map(str => ({
                   label: str,
                   detail,
                   kind: monaco.languages.CompletionItemKind.Keyword,
                   insertText: detail === 'Variable' ? `$${str}$` : str,
                   range,
                 })),
-              ),
+              );
+            },
             [],
           ),
       };

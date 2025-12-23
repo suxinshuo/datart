@@ -75,6 +75,17 @@ public class Dataframe implements Serializable {
         return dataframe;
     }
 
+    public static Dataframe execFail(String message) {
+        Dataframe dataframe = new Dataframe();
+        dataframe.setColumns(
+                Lists.newArrayList(Column.of(ValueType.STRING, "status"))
+        );
+        List<List<Object>> rows = Lists.newArrayList();
+        rows.add(Lists.newArrayList("fail: " + message));
+        dataframe.setRows(rows);
+        return dataframe;
+    }
+
     // 按照指定的列定义，将数据集按照表名称进行分割，以还原原始表结构
     public Dataframes splitByTable(Map<String, Column> newSchema) {
         Map<Integer, String> tableColumnIndex = new HashMap<>();
