@@ -21,6 +21,11 @@ public interface SourceConstants {
     String PROP_DYNAMIC_USER_INIT = "_DYNAMIC_USER_INIT";
 
     /**
+     * YARN ResourceManager 地址
+     */
+    String PROP_YARN_RM_URL = "_YARN_RM_URL";
+
+    /**
      * Spark 内部 query_id 变量名
      */
     String SPARK_ENV_QUERY_ID = "_QUERY_ID";

@@ -77,7 +77,7 @@ export const Outputs = memo(() => {
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
     let retryCount = 0;
-    const MAX_RETRIES = 1800; // Maximum of 60 minutes of polling (1800 * 2s)
+    const MAX_RETRIES = 10800; // Maximum of 6 hours of polling (10800 * 2s)
 
     // Stop polling if task is already completed
     if (

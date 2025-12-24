@@ -28,6 +28,11 @@ public enum SqlTaskProgress {
     RUNNING_START(25),
 
     /**
+     * 执行结束
+     */
+    RUNNING_COMPLETE(95),
+
+    /**
      * 运行完成
      */
     FINISH(100);

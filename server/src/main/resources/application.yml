@@ -97,7 +97,7 @@ datart:
         size: 10
         queue_capacity: 100
     execution:
-      max_time: 600000 # 10分钟
+      max_time: 1800000 # 30分钟
 #    result:
 #      retention_days: 7
 

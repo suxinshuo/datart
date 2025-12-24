@@ -24,10 +24,14 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.db.DbRuntimeException;
 import cn.hutool.setting.dialect.Props;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import datart.core.data.provider.SchemaItem;
 import datart.core.entity.SourceConstants;
 import datart.core.entity.User;
+import datart.core.entity.enums.SqlTaskProgress;
+import datart.data.provider.base.yarn.*;
+import datart.data.provider.jdbc.JdbcProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,6 +49,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
+
+    private static final ThreadLocal<Map<String, Thread>> SPARK_TASK_PROGRESS_POLLING_THREADS = new InheritableThreadLocal<>();
 
     private List<Tuple> parserConf(String confStr) {
         String confStrTrim = StringUtils.trim(confStr);
@@ -143,9 +149,138 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
         // 执行 select 1, 表示完成启动 application
         statement.execute("select 1");
 
-        // TODO: 启动一个子线程轮询获取计算 Spark 任务进度
+        ResultSet resultSet = statement.executeQuery("select '${spark.yarn.tags}'");
+        String appTag = "";
+        if (resultSet.next()) {
+            String tags = resultSet.getString(1);
+            log.info("Spark 任务标签: {}", tags);
+            if (StringUtils.isNotBlank(tags) && StringUtils.startsWithIgnoreCase(tags, "KYUUBI")) {
+                String[] tagArr = StringUtils.split(tags, ",");
+                appTag = Arrays.stream(tagArr)
+                        .filter(t -> !StringUtils.equalsIgnoreCase(t, "KYUUBI"))
+                        .findFirst()
+                        .orElse("");
+            }
+        }
+        if (StringUtils.isBlank(appTag)) {
+            log.warn("Spark 任务标签中未包含 Kyuubi 标签, 无法监控任务进度");
+        } else {
+            final String finalAppTag = appTag;
+            Thread sparkTaskProgressThread = new Thread(() -> pollSparkTaskProgress(taskId, finalAppTag));
+            sparkTaskProgressThread.start();
+            // 记录线程, 后续执行完成时, 中断线程
+            Map<String, Thread> threadMap = SPARK_TASK_PROGRESS_POLLING_THREADS.get();
+            if (Objects.isNull(threadMap)) {
+                threadMap = Maps.newConcurrentMap();
+            }
+            threadMap.put(taskId, sparkTaskProgressThread);
+            SPARK_TASK_PROGRESS_POLLING_THREADS.set(threadMap);
+        }
 
         super.executeAllPreSqlHook(taskId, statement);
+    }
+
+    @Override
+    protected void executeCompleteHook(String taskId, Statement statement) {
+        try {
+            // 任务执行完成, 中断轮询线程
+            Thread sparkTaskProgressThread = SPARK_TASK_PROGRESS_POLLING_THREADS.get().remove(taskId);
+            if (Objects.nonNull(sparkTaskProgressThread)) {
+                sparkTaskProgressThread.interrupt();
+                log.info("任务运行完成, 已中断 Spark 任务进度轮询线程, 任务 ID: {}", taskId);
+            }
+        } catch (Exception e) {
+            log.warn("中断 Spark 任务进度轮询线程失败", e);
+        }
+        super.executeCompleteHook(taskId, statement);
+    }
+
+    private void pollSparkTaskProgress(String taskId, String appTag) {
+        log.info("开始轮询获取 Spark 任务进度, 标签: {}", appTag);
+        try {
+            List<YarnRmNode> yarnRmNodes = getYarnRmNodes();
+            if (CollUtil.isEmpty(yarnRmNodes)) {
+                log.warn("未配置 Yarn RM 节点, 无法轮询获取 Spark 任务进度");
+                return;
+            }
+            YarnRestClient yarnRestClient = new YarnRestClient(yarnRmNodes);
+            // 记录连续获取不到 app 的次数
+            int notFoundCount = 0;
+            while (!Thread.currentThread().isInterrupted() && notFoundCount < 6) {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
+                // 轮询获取计算 Spark 任务进度
+                List<YarnApp> yarnApps = yarnRestClient.getYarnAppsByTag(appTag);
+                if (CollUtil.isEmpty(yarnApps)) {
+                    notFoundCount++;
+                    continue;
+                }
+                // 取出第一个作为要获取的 application, 因为默认 tag 是唯一的
+                YarnApp yarnApp = yarnApps.get(0);
+                if (!StringUtils.equalsIgnoreCase(yarnApp.getFinalStatus(), "UNDEFINED")) {
+                    log.info("Spark 任务已完成, yarnApp: {}", yarnApp);
+                    break;
+                }
+                // TODO: 需要根据 JobGroup 来做进一步区分当前任务相关的 Job
+                List<? extends YarnAppJob> yarnAppJobs = yarnRestClient.getYarnAppJobs(yarnApp);
+                if (CollUtil.isEmpty(yarnAppJobs)) {
+                    log.warn("Spark 任务 {} 未获取到 job 信息", yarnApp.getId());
+                    notFoundCount++;
+                    continue;
+                }
+                notFoundCount = 0;
+                long totalNumTasks = 0L;
+                long totalCompletedTasks = 0L;
+                for (YarnAppJob yarnAppJob : yarnAppJobs) {
+                    if (!(yarnAppJob instanceof YarnAppSparkJob)) {
+                        continue;
+                    }
+                    YarnAppSparkJob yarnAppSparkJob = (YarnAppSparkJob) yarnAppJob;
+                    Long numTasks = yarnAppSparkJob.getNumTasks();
+                    Long numCompletedTasks = yarnAppSparkJob.getNumCompletedTasks();
+                    totalNumTasks += numTasks;
+                    totalCompletedTasks += numCompletedTasks;
+                }
+                int sparkAppAvailableProgress = SqlTaskProgress.RUNNING_COMPLETE.getProgress() - SqlTaskProgress.RUNNING_START.getProgress();
+                int progress = (int) (totalCompletedTasks / totalNumTasks * sparkAppAvailableProgress + SqlTaskProgress.RUNNING_START.getProgress());
+                log.info("Spark 任务 {} 进度: {} / {}, 计算进度: {}", yarnApp.getId(), totalCompletedTasks, totalNumTasks, progress);
+                // 更新进度
+                getProviderContext().updateTaskProgress(taskId, progress);
+            }
+        } catch (Exception e) {
+            log.warn("轮询获取 Spark 任务进度失败", e);
+        }
+    }
+
+    private List<YarnRmNode> getYarnRmNodes() {
+        JdbcProperties jdbcProp = this.jdbcProperties;
+        if (Objects.isNull(jdbcProp)) {
+            return Lists.newArrayList();
+        }
+        Properties prop = jdbcProp.getProperties();
+        if (Objects.isNull(prop)) {
+            return Lists.newArrayList();
+        }
+
+        String yarnRmUrl = prop.getProperty(SourceConstants.PROP_YARN_RM_URL);
+        if (StringUtils.isBlank(yarnRmUrl)) {
+            return Lists.newArrayList();
+        }
+        return Arrays.stream(StringUtils.split(yarnRmUrl, ",")).map(url -> {
+            String trimUrl = StringUtils.trim(url);
+            String[] ss = StringUtils.split(trimUrl, ":");
+            if (Objects.isNull(ss)) {
+                return null;
+            }
+            if (ss.length != 2) {
+                return null;
+            }
+            return new YarnRmNode(ss[0], Long.parseLong(ss[1]));
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     private SparkUrl parserUrl(String url) {

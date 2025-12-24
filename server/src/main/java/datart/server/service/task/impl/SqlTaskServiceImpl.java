@@ -365,13 +365,23 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
     @Override
     public void updateTaskProgress(String taskId, Integer progress) {
-        SqlTaskExample example = new SqlTaskExample();
-        example.createCriteria().andIdEqualTo(taskId);
+        // 查询当前进度
+        SqlTaskWithBLOBs sqlTask = sqlTaskMapper.selectByPrimaryKey(taskId);
+        Integer oldProgress = sqlTask.getProgress();
+        if (progress <= oldProgress) {
+            // 要更新的进度 <= 当前进度, 不更新
+            return;
+        }
 
-        SqlTaskWithBLOBs sqlTask = new SqlTaskWithBLOBs();
-        sqlTask.setProgress(progress);
-        sqlTask.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
-        sqlTask.setUpdateTime(new Date());
+        SqlTaskExample example = new SqlTaskExample();
+        example.createCriteria()
+                .andIdEqualTo(taskId)
+                .andProgressEqualTo(oldProgress);
+
+        SqlTaskWithBLOBs updateSqlTask = new SqlTaskWithBLOBs();
+        updateSqlTask.setProgress(progress);
+        updateSqlTask.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
+        updateSqlTask.setUpdateTime(new Date());
         sqlTaskMapper.updateByExampleSelective(sqlTask, example);
     }
 

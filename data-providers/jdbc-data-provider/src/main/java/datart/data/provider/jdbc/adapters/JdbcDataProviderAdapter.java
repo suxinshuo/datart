@@ -374,6 +374,12 @@ public class JdbcDataProviderAdapter implements Closeable {
         }
     }
 
+    protected void executeCompleteHook(String taskId, Statement statement) {
+        if (StringUtils.isNotBlank(taskId)) {
+            providerContext.updateTaskProgress(taskId, SqlTaskProgress.RUNNING_COMPLETE.getProgress());
+        }
+    }
+
     /**
      * 直接执行, 返回所有数据, 用于支持已经支持分页的数据库, 或者不需要分页的查询
      *
@@ -399,7 +405,10 @@ public class JdbcDataProviderAdapter implements Closeable {
                 }
 
                 try (ResultSet rs = statement.executeQuery(sql)) {
-                    return parseResultSet(rs);
+                    Dataframe dataframe = parseResultSet(rs);
+                    // 执行完成的回调函数
+                    executeCompleteHook(taskId, statement);
+                    return dataframe;
                 }
             }
         }
@@ -443,6 +452,8 @@ public class JdbcDataProviderAdapter implements Closeable {
                         }
                     }
                     dataframe = parseResultSet(resultSet, pageInfo.getPageSize());
+                    // 执行完成的回调函数
+                    executeCompleteHook(taskId, statement);
                     return dataframe;
                 }
             }
@@ -671,6 +682,7 @@ public class JdbcDataProviderAdapter implements Closeable {
                 continue;
             }
             if (StringUtils.startsWithIgnoreCase(lineSql, "set ")
+                    || StringUtils.startsWithIgnoreCase(lineSql, "create ")
                     || StringUtils.startsWithIgnoreCase(lineSql, "use ")
                     || StringUtils.startsWithIgnoreCase(lineSql, "switch ")) {
                 setSqls.add(lineSql);
