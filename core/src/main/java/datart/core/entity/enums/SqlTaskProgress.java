@@ -22,6 +22,12 @@ public enum SqlTaskProgress {
     START(20),
 
     /**
+     * 正式开始执行
+     * 已经执行完了前面的 set sql
+     */
+    RUNNING_START(25),
+
+    /**
      * 运行完成
      */
     FINISH(100);

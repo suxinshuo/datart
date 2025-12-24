@@ -164,6 +164,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
         // 生成任务 ID
         String taskId = UUIDGenerator.generate();
+        executeParam.setSqlTaskId(taskId);
 
         // 创建任务实体
         SqlTaskWithBLOBs task = new SqlTaskWithBLOBs();
@@ -360,6 +361,18 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             log.error("getSqlTaskResult error. taskId: {}", taskId, e);
             return new SqlTaskResultStrResponse("");
         }
+    }
+
+    @Override
+    public void updateTaskProgress(String taskId, Integer progress) {
+        SqlTaskExample example = new SqlTaskExample();
+        example.createCriteria().andIdEqualTo(taskId);
+
+        SqlTaskWithBLOBs sqlTask = new SqlTaskWithBLOBs();
+        sqlTask.setProgress(progress);
+        sqlTask.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
+        sqlTask.setUpdateTime(new Date());
+        sqlTaskMapper.updateByExampleSelective(sqlTask, example);
     }
 
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {

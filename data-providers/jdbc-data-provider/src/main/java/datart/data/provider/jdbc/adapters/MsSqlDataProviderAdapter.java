@@ -24,8 +24,8 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    public int executeCountSql(String sql) throws SQLException {
-        try (Connection connection = getConn()) {
+    public int executeCountSql(String taskId, String sql) throws SQLException {
+        try (Connection connection = getConn(taskId)) {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet resultSet = statement.executeQuery(sql);
             resultSet.last();
@@ -34,8 +34,8 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    protected Dataframe execute(List<String> setSqls, String selectSql, PageInfo pageInfo) throws SQLException {
+    protected Dataframe execute(String taskId, List<String> setSqls, String selectSql, PageInfo pageInfo) throws SQLException {
         selectSql = SqlStringUtils.rebuildSqlWithFragment(selectSql);
-        return super.execute(setSqls, selectSql, pageInfo);
+        return super.execute(taskId, setSqls, selectSql, pageInfo);
     }
 }

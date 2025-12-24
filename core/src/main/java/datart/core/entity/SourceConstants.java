@@ -21,6 +21,11 @@ public interface SourceConstants {
     String PROP_DYNAMIC_USER_INIT = "_DYNAMIC_USER_INIT";
 
     /**
+     * Spark 内部 query_id 变量名
+     */
+    String SPARK_ENV_QUERY_ID = "_QUERY_ID";
+
+    /**
      * doris 默认计算组
      */
     String DORIS_DEFAULT_COMPUTE_GROUP = "defaultComputeGroup";

@@ -24,11 +24,14 @@ import com.google.common.collect.Lists;
 import datart.core.base.PageInfo;
 import datart.core.base.consts.ValueType;
 import datart.core.base.exception.Exceptions;
+import datart.core.common.Application;
 import datart.core.common.BeanUtils;
 import datart.core.common.ReflectUtils;
 import datart.core.common.RequestContext;
 import datart.core.data.provider.*;
+import datart.core.entity.enums.SqlTaskProgress;
 import datart.data.provider.JdbcDataProvider;
+import datart.data.provider.base.IProviderContext;
 import datart.data.provider.calcite.dialect.CustomSqlDialect;
 import datart.data.provider.calcite.dialect.FetchAndOffsetSupport;
 import datart.data.provider.jdbc.DataTypeUtils;
@@ -84,16 +87,23 @@ public class JdbcDataProviderAdapter implements Closeable {
 
     protected SqlDialect sqlDialect;
 
+    protected IProviderContext providerContext;
+
     public final void init(JdbcProperties jdbcProperties, JdbcDriverInfo driverInfo) {
         try {
             this.jdbcProperties = jdbcProperties;
             this.driverInfo = driverInfo;
-            this.dataSource = postProcessDs(JdbcDataProvider.getDataSourceFactory().createDataSource(jdbcProperties));
+            this.dataSource = postProcessDs(createDataSource(this.jdbcProperties));
+            this.providerContext = Application.getBean(IProviderContext.class);
         } catch (Exception e) {
             log.error("data provider init error", e);
             Exceptions.e(e);
         }
         this.init = true;
+    }
+
+    protected DataSource createDataSource(JdbcProperties jdbcProperties) throws Exception {
+        return JdbcDataProvider.getDataSourceFactory().createDataSource(jdbcProperties);
     }
 
     /**
@@ -144,6 +154,94 @@ public class JdbcDataProviderAdapter implements Closeable {
             }
         }
         return schemaItems;
+    }
+
+    /**
+     * 使用同一个连接完成全部逻辑
+     */
+    public List<SchemaItem> readAllSchemasWithConn() throws SQLException {
+        List<SchemaItem> schemaItems = Lists.newLinkedList();
+        try (Connection conn = getConn()) {
+            DatabaseMetaData metaData = conn.getMetaData();
+            boolean isCatalog = isReadFromCatalog(conn);
+            String currDatabase = readCurrDatabase(conn, isCatalog);
+            String connSchema = conn.getSchema();
+
+            Set<String> databases = this.readAllDatabasesFromMetaData(metaData, isCatalog, currDatabase);
+            if (CollUtil.isEmpty(databases)) {
+                return schemaItems;
+            }
+
+            for (String database : databases) {
+                SchemaItem schemaItem = new SchemaItem();
+                schemaItems.add(schemaItem);
+                schemaItem.setDbName(database);
+                schemaItem.setTables(new LinkedList<>());
+                Set<String> tables = this.readAllTablesFromMetaData(metaData, isCatalog, database, connSchema);
+                if (CollUtil.isEmpty(tables)) {
+                    continue;
+                }
+                for (String table : tables) {
+                    TableInfo tableInfo = new TableInfo();
+                    schemaItem.getTables().add(tableInfo);
+                    tableInfo.setTableName(table);
+                    tableInfo.setColumns(this.readTableColumnFromMetaData(metaData, database, table));
+                }
+            }
+
+            return schemaItems;
+        }
+    }
+
+    private Set<String> readAllDatabasesFromMetaData(DatabaseMetaData metaData, boolean isCatalog, String currDatabase) throws SQLException {
+        Set<String> databases = new HashSet<>();
+        ResultSet rs = null;
+        if (isCatalog) {
+            rs = metaData.getCatalogs();
+        } else {
+            rs = metaData.getSchemas();
+            log.info("Database 'catalogs' is empty, get databases with 'schemas'");
+        }
+
+        if (StringUtils.isNotBlank(currDatabase)) {
+            return Collections.singleton(currDatabase);
+        }
+
+        while (rs.next()) {
+            String database = rs.getString(1);
+            databases.add(database);
+        }
+        return databases;
+    }
+
+    private Set<String> readAllTablesFromMetaData(DatabaseMetaData metadata, boolean isCatalog, String database, String connSchema) throws SQLException {
+        Set<String> tables = new HashSet<>();
+        String catalog = null;
+        String schema = null;
+        if (isCatalog) {
+            catalog = database;
+            schema = connSchema;
+        } else {
+            schema = database;
+        }
+        try (ResultSet rs = metadata.getTables(catalog, schema, "%", new String[]{"TABLE", "VIEW"})) {
+            while (rs.next()) {
+                String tableName = rs.getString(3);
+                tables.add(tableName);
+            }
+        }
+        return tables;
+    }
+
+    private Set<Column> readTableColumnFromMetaData(DatabaseMetaData metadata, String database, String table) throws SQLException {
+        Set<Column> columnSet = new HashSet<>();
+        try (ResultSet columns = metadata.getColumns(database, null, table, null)) {
+            while (columns.next()) {
+                Column column = readTableColumn(columns);
+                columnSet.add(column);
+            }
+        }
+        return columnSet;
     }
 
     public Set<String> readAllDatabases() throws SQLException {
@@ -249,20 +347,55 @@ public class JdbcDataProviderAdapter implements Closeable {
         return keyMap;
     }
 
+    private Dataframe checkAndRunNotSelect(Statement statement, String sql) {
+        Boolean sqlSelectTypeFlag = RequestContext.getSqlSelectTypeFlag();
+        if (Objects.nonNull(sqlSelectTypeFlag) && !sqlSelectTypeFlag) {
+            // 非 select 类型 sql
+            try {
+                statement.execute(sql);
+                return Dataframe.execSuccess();
+            } catch (Exception e) {
+                log.error("非 select 类型 sql 执行异常. selectSql: {}", sql, e);
+                return Dataframe.execFail(e.getMessage());
+            }
+        }
+        return null;
+    }
+
     /**
-     * 直接执行，返回所有数据，用于支持已经支持分页的数据库，或者不需要分页的查询。
+     * 所有 pre sql 执行完成的回调函数
      *
-     * @param sql 直接提交至数据源执行的SQL，通常已经包含了分页
-     * @return 全量数据
-     * @throws SQLException SQL执行异常
+     * @param taskId    任务 ID
+     * @param statement Statement
      */
-    protected Dataframe execute(List<String> setSqls, String sql) throws SQLException {
-        try (Connection conn = getConn()) {
+    protected void executeAllPreSqlHook(String taskId, Statement statement) throws SQLException {
+        if (StringUtils.isNotBlank(taskId)) {
+            providerContext.updateTaskProgress(taskId, SqlTaskProgress.RUNNING_START.getProgress());
+        }
+    }
+
+    /**
+     * 直接执行, 返回所有数据, 用于支持已经支持分页的数据库, 或者不需要分页的查询
+     *
+     * @param taskId  任务 ID
+     * @param preSqls pre sql
+     * @param sql     直接提交至数据源执行的 SQL, 通常已经包含了分页
+     * @return 全量数据
+     * @throws SQLException SQL 执行异常
+     */
+    protected Dataframe execute(String taskId, List<String> preSqls, String sql) throws SQLException {
+        try (Connection conn = getConn(taskId)) {
             try (Statement statement = conn.createStatement()) {
-                if (CollUtil.isNotEmpty(setSqls)) {
-                    for (String setSql : setSqls) {
-                        statement.execute(setSql);
+                if (CollUtil.isNotEmpty(preSqls)) {
+                    for (String preSql : preSqls) {
+                        statement.execute(preSql);
                     }
+                }
+                executeAllPreSqlHook(taskId, statement);
+
+                Dataframe checkDf = checkAndRunNotSelect(statement, sql);
+                if (Objects.nonNull(checkDf)) {
+                    return checkDf;
                 }
 
                 try (ResultSet rs = statement.executeQuery(sql)) {
@@ -273,35 +406,31 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     /**
-     * 用于未支持SQL分页的数据库，使用通用的分页方案进行分页。
+     * 用于未支持 SQL 分页的数据库, 使用通用的分页方案进行分页
      *
-     * @param selectSql 提交至数据源执行的SQL
+     * @param taskId    任务 ID
+     * @param preSqls   pre sql
+     * @param selectSql 提交至数据源执行的 SQL
      * @param pageInfo  需要执行的分页信息
      * @return 分页后的数据
-     * @throws SQLException SQL执行异常
+     * @throws SQLException SQL 执行异常
      */
-    protected Dataframe execute(List<String> setSqls, String selectSql, PageInfo pageInfo) throws SQLException {
+    protected Dataframe execute(String taskId, List<String> preSqls, String selectSql, PageInfo pageInfo) throws SQLException {
         Dataframe dataframe;
-        try (Connection conn = getConn()) {
+        try (Connection conn = getConn(taskId)) {
             try (Statement statement = conn.createStatement()) {
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
                 // 执行 set 语句
-                if (CollUtil.isNotEmpty(setSqls)) {
-                    for (String setSql : setSqls) {
-                        statement.execute(setSql);
+                if (CollUtil.isNotEmpty(preSqls)) {
+                    for (String preSql : preSqls) {
+                        statement.execute(preSql);
                     }
                 }
+                executeAllPreSqlHook(taskId, statement);
 
-                Boolean sqlSelectTypeFlag = RequestContext.getSqlSelectTypeFlag();
-                if (Objects.nonNull(sqlSelectTypeFlag) && !sqlSelectTypeFlag) {
-                    // 非 select 类型 sql
-                    try {
-                        statement.execute(selectSql);
-                        return Dataframe.execSuccess();
-                    } catch (Exception e) {
-                        log.error("非 select 类型 sql 执行异常. selectSql: {}", selectSql, e);
-                        return Dataframe.execFail(e.getMessage());
-                    }
+                Dataframe checkDf = checkAndRunNotSelect(statement, selectSql);
+                if (Objects.nonNull(checkDf)) {
+                    return checkDf;
                 }
 
                 try (ResultSet resultSet = statement.executeQuery(selectSql)) {
@@ -326,8 +455,8 @@ public class JdbcDataProviderAdapter implements Closeable {
      * @param sql 不包含分页的SQL
      * @return 总记录数
      */
-    public int executeCountSql(String sql) throws SQLException {
-        try (Connection connection = getConn()) {
+    public int executeCountSql(String taskId, String sql) throws SQLException {
+        try (Connection connection = getConn(taskId)) {
             PreparedStatement preparedStatement = connection.prepareStatement(String.format(COUNT_SQL, sql));
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
@@ -336,6 +465,10 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected Connection getConn() throws SQLException {
+        return dataSource.getConnection();
+    }
+
+    protected Connection getConn(String taskId) throws SQLException {
         return dataSource.getConnection();
     }
 
@@ -499,7 +632,7 @@ public class JdbcDataProviderAdapter implements Closeable {
                     .concurrencyOptimize(executeParam.isConcurrencyOptimize())
                     .build();
 
-            List<String> setSqls = extractSetSqls(script.getScript());
+            List<String> preSqls = extractPreSqls(script.getScript());
 
             SqlScriptRender render = new SqlScriptRender(script
                     , tempExecuteParam
@@ -507,7 +640,7 @@ public class JdbcDataProviderAdapter implements Closeable {
                     , jdbcProperties.isEnableSpecialSql()
                     , driverInfo.getQuoteIdentifiers());
             String sql = render.render(true, false, false);
-            data = execute(setSqls, sql);
+            data = execute(executeParam.getSqlTaskId(), preSqls, sql);
         }
 
 
@@ -520,7 +653,10 @@ public class JdbcDataProviderAdapter implements Closeable {
         return LocalDB.executeLocalQuery(script, executeParam, data.splitByTable(script.getSchema()));
     }
 
-    protected List<String> extractSetSqls(String scriptSql) {
+    /**
+     * 前面所有 功能型 的 sql
+     */
+    protected List<String> extractPreSqls(String scriptSql) {
         List<String> setSqls = Lists.newArrayList();
         String[] sqls = StringUtils.split(scriptSql, "\n");
         if (Objects.isNull(sqls) || sqls.length == 0) {
@@ -528,7 +664,15 @@ public class JdbcDataProviderAdapter implements Closeable {
         }
         for (String lineSql : sqls) {
             lineSql = StringUtils.trim(lineSql);
-            if (StringUtils.startsWithIgnoreCase(lineSql, "set ")) {
+            if (StringUtils.isBlank(lineSql)) {
+                continue;
+            }
+            if (StringUtils.startsWith(lineSql, "-- ")) {
+                continue;
+            }
+            if (StringUtils.startsWithIgnoreCase(lineSql, "set ")
+                    || StringUtils.startsWithIgnoreCase(lineSql, "use ")
+                    || StringUtils.startsWithIgnoreCase(lineSql, "switch ")) {
                 setSqls.add(lineSql);
                 continue;
             }
@@ -538,15 +682,16 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     /**
-     * 在数据源执行，组装完整SQL，提交至数据源执行
+     * 在数据源执行, 组装完整SQL, 提交至数据源执行
      */
     public Dataframe executeOnSource(QueryScript script, ExecuteParam executeParam) throws Exception {
 
         Dataframe dataframe;
         String sql;
 
-        // 把 set sql 剥离出来
-        List<String> setSqls = extractSetSqls(script.getScript());
+        // 把 pre sql 剥离出来
+        List<String> preSqls = extractPreSqls(script.getScript());
+        String taskId = executeParam.getSqlTaskId();
 
         SqlScriptRender render = new SqlScriptRender(script
                 , executeParam
@@ -556,16 +701,16 @@ public class JdbcDataProviderAdapter implements Closeable {
 
         if (supportPaging()) {
             sql = render.render(true, true, false);
-            log.info("setSqls: {}, sql: {}", setSqls, sql);
-            dataframe = execute(setSqls, sql);
+            log.info("taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
+            dataframe = execute(taskId, preSqls, sql);
         } else {
             sql = render.render(true, false, false);
-            log.info("setSqls: {}, sql: {}", setSqls, sql);
-            dataframe = execute(setSqls, sql, executeParam.getPageInfo());
+            log.info("taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
+            dataframe = execute(taskId, preSqls, sql, executeParam.getPageInfo());
         }
         // fix page info
         if (executeParam.getPageInfo().isCountTotal()) {
-            int total = executeCountSql(render.render(true, false, true));
+            int total = executeCountSql(taskId, render.render(true, false, true));
             executeParam.getPageInfo().setTotal(total);
             dataframe.setPageInfo(executeParam.getPageInfo());
         }
