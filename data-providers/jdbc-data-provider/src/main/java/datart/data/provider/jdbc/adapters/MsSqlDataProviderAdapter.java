@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
 
@@ -23,8 +24,8 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    public int executeCountSql(String sql) throws SQLException {
-        try (Connection connection = getConn()) {
+    public int executeCountSql(String taskId, String sql) throws SQLException {
+        try (Connection connection = getConn(taskId)) {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet resultSet = statement.executeQuery(sql);
             resultSet.last();
@@ -33,8 +34,8 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    protected Dataframe execute(String selectSql, PageInfo pageInfo) throws SQLException {
+    protected Dataframe execute(String taskId, List<String> setSqls, String selectSql, PageInfo pageInfo) throws SQLException {
         selectSql = SqlStringUtils.rebuildSqlWithFragment(selectSql);
-        return super.execute(selectSql, pageInfo);
+        return super.execute(taskId, setSqls, selectSql, pageInfo);
     }
 }

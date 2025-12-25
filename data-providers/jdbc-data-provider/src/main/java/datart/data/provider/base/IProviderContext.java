@@ -35,4 +35,12 @@ public interface IProviderContext {
      */
     String decrypt(String src);
 
+    /**
+     * 更新任务进度
+     *
+     * @param taskId   任务 ID
+     * @param progress 执行进度
+     */
+    void updateTaskProgress(String taskId, Integer progress);
+
 }

@@ -71,4 +71,12 @@ public interface SqlTaskService {
      */
     SqlTaskResultStrResponse getSqlTaskResult(String taskId);
 
+    /**
+     * 更新任务进度
+     *
+     * @param taskId   任务 ID
+     * @param progress 任务进度
+     */
+    void updateTaskProgress(String taskId, Integer progress);
+
 }

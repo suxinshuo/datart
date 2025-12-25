@@ -48,4 +48,6 @@ public class TestExecuteParam {
 
     private String viewId;
 
+    private String sqlTaskId;
+
 }
