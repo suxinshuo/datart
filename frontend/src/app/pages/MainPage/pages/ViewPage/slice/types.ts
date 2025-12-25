@@ -114,6 +114,7 @@ export interface ViewViewModel<T = object>
   currentTaskProgress?: number;
   enableAsyncExecution?: boolean;
   currentTaskErrorMessage?: string;
+  isCancelClicked?: boolean;
 }
 
 export interface QueryResult {

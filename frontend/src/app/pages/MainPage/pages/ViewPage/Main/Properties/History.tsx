@@ -186,6 +186,7 @@ export const History = memo(() => {
 
   // 格式化耗时
   const formatDuration = useCallback((duration: number) => {
+    if (!duration) return '-';
     if (duration < 1000) {
       return `${duration}ms`;
     } else if (duration < 60000) {

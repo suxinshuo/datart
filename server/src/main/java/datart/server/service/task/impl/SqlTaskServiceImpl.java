@@ -28,6 +28,7 @@ import datart.core.bo.task.RunningTaskBo;
 import datart.core.bo.task.SqlTaskChecker;
 import datart.core.bo.task.SqlTaskConsumerChecker;
 import datart.core.entity.enums.SqlTaskExecuteType;
+import datart.core.entity.enums.SqlTaskProgress;
 import datart.core.entity.enums.SqlTaskStatus;
 import datart.core.entity.enums.SqlTaskFailType;
 import datart.core.common.UUIDGenerator;
@@ -163,6 +164,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
         // 生成任务 ID
         String taskId = UUIDGenerator.generate();
+        executeParam.setSqlTaskId(taskId);
 
         // 创建任务实体
         SqlTaskWithBLOBs task = new SqlTaskWithBLOBs();
@@ -182,7 +184,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         task.setExecInstanceId(getInstantId());
         task.setCreateBy(getCurrentUser().getId());
         task.setCreateTime(new Date());
-        task.setProgress(0);
+        task.setProgress(SqlTaskProgress.QUEUED.getProgress());
         task.setExecuteType(SqlTaskExecuteType.AD_HOC.getCode());
 
         // 保存任务信息
@@ -361,6 +363,28 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         }
     }
 
+    @Override
+    public void updateTaskProgress(String taskId, Integer progress) {
+        // 查询当前进度
+        SqlTaskWithBLOBs sqlTask = sqlTaskMapper.selectByPrimaryKey(taskId);
+        Integer oldProgress = sqlTask.getProgress();
+        if (progress <= oldProgress) {
+            // 要更新的进度 <= 当前进度, 不更新
+            return;
+        }
+
+        SqlTaskExample example = new SqlTaskExample();
+        example.createCriteria()
+                .andIdEqualTo(taskId)
+                .andProgressEqualTo(oldProgress);
+
+        SqlTaskWithBLOBs updateSqlTask = new SqlTaskWithBLOBs();
+        updateSqlTask.setProgress(progress);
+        updateSqlTask.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
+        updateSqlTask.setUpdateTime(new Date());
+        sqlTaskMapper.updateByExampleSelective(updateSqlTask, example);
+    }
+
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {
         cancelSqlTask(taskId, failType, SystemConstant.SYSTEM_USER_ID);
     }
@@ -427,7 +451,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             // 更新任务状态为执行中
             Date runDate = new Date();
             task.setStatus(SqlTaskStatus.RUNNING.getCode());
-            task.setProgress(20);
+            task.setProgress(SqlTaskProgress.START.getProgress(true));
             task.setStartTime(runDate);
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
             task.setUpdateTime(runDate);
@@ -455,16 +479,20 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             result.setColumnCount(dataframe.getColumns().size());
             result.setCreateBy(task.getCreateBy());
             result.setCreateTime(endDate);
-            sqlTaskResultService.insertSelective(result);
+            if (!Thread.currentThread().isInterrupted()) {
+                sqlTaskResultService.insertSelective(result);
+            }
 
             // 更新任务状态为成功
             task.setStatus(SqlTaskStatus.SUCCESS.getCode());
             task.setEndTime(endDate);
             task.setDuration(endDate.getTime() - task.getStartTime().getTime());
-            task.setProgress(100);
+            task.setProgress(SqlTaskProgress.FINISH.getProgress());
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
             task.setUpdateTime(endDate);
-            sqlTaskMapper.updateByPrimaryKeySelective(task);
+            if (!Thread.currentThread().isInterrupted()) {
+                sqlTaskMapper.updateByPrimaryKeySelective(task);
+            }
         } catch (Exception e) {
             log.error("Execute task error. task: {}", task, e);
 
