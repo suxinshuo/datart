@@ -225,7 +225,6 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
                     log.info("Spark 任务已完成, yarnApp: {}", yarnApp);
                     break;
                 }
-                // TODO: 需要根据 JobGroup 来做进一步区分当前任务相关的 Job
                 List<? extends YarnAppJob> yarnAppJobs = yarnRestClient.getYarnAppJobs(yarnApp);
                 if (CollUtil.isEmpty(yarnAppJobs)) {
                     log.warn("Spark 任务 {} 未获取到 job 信息", yarnApp.getId());
@@ -233,6 +232,7 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
                     continue;
                 }
                 notFoundCount = 0;
+                String jobGroup = null;
                 long totalNumTasks = 0L;
                 long totalCompletedTasks = 0L;
                 for (YarnAppJob yarnAppJob : yarnAppJobs) {
@@ -240,6 +240,24 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
                         continue;
                     }
                     YarnAppSparkJob yarnAppSparkJob = (YarnAppSparkJob) yarnAppJob;
+                    // 只获取当前 JobGroup 的任务进度
+                    String appJobGroup = yarnAppSparkJob.getJobGroup();
+                    if (StringUtils.isBlank(jobGroup)) {
+                        // 获取 JobGroup
+                        String appTaskSql = yarnAppSparkJob.getDescription();
+                        String appTaskId = getTaskId(appTaskSql);
+                        if (!StringUtils.equals(taskId, appTaskId)) {
+                            continue;
+                        }
+                        jobGroup = appJobGroup;
+                        log.info("任务 taskId({}) 所属 Spark 任务 {} JobGroup: {}", taskId, yarnApp.getId(), jobGroup);
+                    } else {
+                        if (!StringUtils.equals(jobGroup, appJobGroup)) {
+                            // 不是当前 JobGroup, 跳过
+                            continue;
+                        }
+                    }
+
                     Long numTasks = yarnAppSparkJob.getNumTasks();
                     Long numCompletedTasks = yarnAppSparkJob.getNumCompletedTasks();
                     totalNumTasks += numTasks;

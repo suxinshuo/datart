@@ -370,7 +370,7 @@ public class JdbcDataProviderAdapter implements Closeable {
      */
     protected void executeAllPreSqlHook(String taskId, Statement statement) throws SQLException {
         if (StringUtils.isNotBlank(taskId)) {
-            providerContext.updateTaskProgress(taskId, SqlTaskProgress.RUNNING_START.getProgress());
+            providerContext.updateTaskProgress(taskId, SqlTaskProgress.RUNNING_START.getProgress(true));
         }
     }
 
@@ -398,6 +398,7 @@ public class JdbcDataProviderAdapter implements Closeable {
                     }
                 }
                 executeAllPreSqlHook(taskId, statement);
+                sql = getTaskSql(taskId, sql);
 
                 Dataframe checkDf = checkAndRunNotSelect(statement, sql);
                 if (Objects.nonNull(checkDf)) {
@@ -436,6 +437,7 @@ public class JdbcDataProviderAdapter implements Closeable {
                     }
                 }
                 executeAllPreSqlHook(taskId, statement);
+                selectSql = getTaskSql(taskId, selectSql);
 
                 Dataframe checkDf = checkAndRunNotSelect(statement, selectSql);
                 if (Objects.nonNull(checkDf)) {
@@ -468,11 +470,28 @@ public class JdbcDataProviderAdapter implements Closeable {
      */
     public int executeCountSql(String taskId, String sql) throws SQLException {
         try (Connection connection = getConn(taskId)) {
-            PreparedStatement preparedStatement = connection.prepareStatement(String.format(COUNT_SQL, sql));
+            String countSql = String.format(COUNT_SQL, sql);
+            countSql = getTaskSql(taskId, countSql);
+            PreparedStatement preparedStatement = connection.prepareStatement(countSql);
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
             return resultSet.getInt(1);
         }
+    }
+
+    protected String getTaskSql(String taskId, String sql) {
+        return String.format("-- TASK_ID: %s;\n%s", taskId, sql);
+    }
+
+    protected String getTaskId(String taskSql) {
+        String[] ss = StringUtils.split(taskSql, ";\n");
+        if (Objects.isNull(ss) || ss.length <= 1) {
+            return "";
+        }
+        if (!StringUtils.startsWith(ss[0], "-- TASK_ID:")) {
+            return "";
+        }
+        return StringUtils.substringAfter(ss[0], "-- TASK_ID:").trim();
     }
 
     protected Connection getConn() throws SQLException {

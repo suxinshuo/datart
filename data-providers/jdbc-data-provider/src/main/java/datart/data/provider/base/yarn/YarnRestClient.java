@@ -67,12 +67,13 @@ public class YarnRestClient {
         }
         String appsUrl = String.format(GET_APPS_BY_TAG_URL, yarnRmNode.getUrl() + ":" + yarnRmNode.getPort(), tag);
         String appsData = HttpUtil.get(appsUrl);
-        YarnAppsResponse yarnAppsResponse = JSONUtil.toBean(appsData, YarnAppsResponse.class);
+        YarnAppsResponse yarnAppsResponse = JSONUtil.toBean(appsData, new TypeReference<YarnAppsResponse>() {
+        }, true);
         YarnApps apps = yarnAppsResponse.getApps();
         if (Objects.isNull(apps)) {
             return Lists.newArrayList();
         }
-        return apps.getApps();
+        return apps.getApp();
     }
 
     public List<? extends YarnAppJob> getYarnAppJobs(YarnApp yarnApp) {
@@ -100,7 +101,7 @@ public class YarnRestClient {
             String rmStatusData = HttpUtil.get(rmStatusUrl);
             YarnClusterInfoResponse yarnClusterInfoResponse = JSONUtil.toBean(rmStatusData, YarnClusterInfoResponse.class);
             YarnClusterInfo clusterInfo = yarnClusterInfoResponse.getClusterInfo();
-            if (StringUtils.equalsIgnoreCase(clusterInfo.getState(), "ACTIVE")) {
+            if (StringUtils.equalsIgnoreCase(clusterInfo.getHaState(), "ACTIVE")) {
                 return yarnRmNode;
             }
         }

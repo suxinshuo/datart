@@ -451,7 +451,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             // 更新任务状态为执行中
             Date runDate = new Date();
             task.setStatus(SqlTaskStatus.RUNNING.getCode());
-            task.setProgress(SqlTaskProgress.START.getProgress());
+            task.setProgress(SqlTaskProgress.START.getProgress(true));
             task.setStartTime(runDate);
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
             task.setUpdateTime(runDate);

@@ -39,4 +39,34 @@ public enum SqlTaskProgress {
 
     private final Integer progress;
 
+    public Integer getProgress(boolean random) {
+        // +- 10
+        int randomValue = 0;
+        if (Math.random() > 0.5) {
+            randomValue += (int) (Math.random() * 10);
+        } else {
+            randomValue -= (int) (Math.random() * 10);
+        }
+
+        if (random) {
+            int randomProgress = progress + randomValue;
+            return getAvailableProgress(randomProgress);
+        }
+        return getAvailableProgress(progress);
+    }
+
+    public Integer getProgress() {
+        return getProgress(false);
+    }
+
+    private Integer getAvailableProgress(Integer progress) {
+        if (progress < 0) {
+            return 0;
+        }
+        if (progress > 100) {
+            return 100;
+        }
+        return progress;
+    }
+
 }

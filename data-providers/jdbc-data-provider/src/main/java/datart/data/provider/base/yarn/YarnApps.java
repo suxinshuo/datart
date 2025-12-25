@@ -28,6 +28,6 @@ import java.util.List;
 @Data
 public class YarnApps {
 
-    private List<YarnApp> apps;
+    private List<YarnApp> app;
 
 }
