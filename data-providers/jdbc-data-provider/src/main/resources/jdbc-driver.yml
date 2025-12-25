@@ -168,8 +168,8 @@ PRESTO:
 SPARK:
   db-type: SPARK
   name: SPARK
-  driver-class: org.apache.hive.jdbc.HiveDriver
-  url-prefix: jdbc:hive2://
+  driver-class: org.apache.kyuubi.jdbc.KyuubiHiveDriver
+  url-prefix: jdbc:kyuubi://
   sql-dialect: datart.data.provider.calcite.dialect.SparkSqlDialectSupport
   adapter-class: datart.data.provider.jdbc.adapters.SparkDataProviderAdapter
 
