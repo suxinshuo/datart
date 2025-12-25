@@ -24,11 +24,9 @@ import com.google.common.collect.Lists;
 import datart.core.base.PageInfo;
 import datart.core.base.consts.ValueType;
 import datart.core.base.exception.Exceptions;
-import datart.core.common.Application;
-import datart.core.common.BeanUtils;
-import datart.core.common.ReflectUtils;
-import datart.core.common.RequestContext;
+import datart.core.common.*;
 import datart.core.data.provider.*;
+import datart.core.entity.SourceConstants;
 import datart.core.entity.enums.SqlTaskProgress;
 import datart.data.provider.JdbcDataProvider;
 import datart.data.provider.base.IProviderContext;
@@ -136,22 +134,25 @@ public class JdbcDataProviderAdapter implements Closeable {
     public List<SchemaItem> readAllSchemas() throws SQLException {
         List<SchemaItem> schemaItems = Lists.newLinkedList();
         Set<String> databases = this.readAllDatabases();
-        if (CollUtil.isNotEmpty(databases)) {
-            for (String database : databases) {
-                SchemaItem schemaItem = new SchemaItem();
-                schemaItems.add(schemaItem);
-                schemaItem.setDbName(database);
-                schemaItem.setTables(new LinkedList<>());
-                Set<String> tables = this.readAllTables(database);
-                if (CollUtil.isNotEmpty(tables)) {
-                    for (String table : tables) {
-                        TableInfo tableInfo = new TableInfo();
-                        schemaItem.getTables().add(tableInfo);
-                        tableInfo.setTableName(table);
-                        tableInfo.setColumns(this.readTableColumn(database, table));
-                    }
+        if (CollUtil.isEmpty(databases)) {
+            return schemaItems;
+        }
+        int i = 0;
+        for (String database : databases) {
+            SchemaItem schemaItem = new SchemaItem();
+            schemaItems.add(schemaItem);
+            schemaItem.setDbName(database);
+            schemaItem.setTables(new LinkedList<>());
+            Set<String> tables = this.readAllTables(database);
+            if (CollUtil.isNotEmpty(tables)) {
+                for (String table : tables) {
+                    TableInfo tableInfo = new TableInfo();
+                    schemaItem.getTables().add(tableInfo);
+                    tableInfo.setTableName(table);
+                    tableInfo.setColumns(this.readTableColumn(database, table));
                 }
             }
+            log.info("获取数据库表结构任务进度: {}/{}, 当前处理数据库: {}", ++i, databases.size(), database);
         }
         return schemaItems;
     }
@@ -161,7 +162,9 @@ public class JdbcDataProviderAdapter implements Closeable {
      */
     public List<SchemaItem> readAllSchemasWithConn() throws SQLException {
         List<SchemaItem> schemaItems = Lists.newLinkedList();
-        try (Connection conn = getConn()) {
+        String querySchemaTaskId = SourceConstants.SPARK_SCHEMA_TASK + UUIDGenerator.generate();
+        log.info("查询所有数据库开始. taskId: {}", querySchemaTaskId);
+        try (Connection conn = getConn(querySchemaTaskId)) {
             DatabaseMetaData metaData = conn.getMetaData();
             boolean isCatalog = isReadFromCatalog(conn);
             String currDatabase = readCurrDatabase(conn, isCatalog);
@@ -172,6 +175,7 @@ public class JdbcDataProviderAdapter implements Closeable {
                 return schemaItems;
             }
 
+            int i = 0;
             for (String database : databases) {
                 SchemaItem schemaItem = new SchemaItem();
                 schemaItems.add(schemaItem);
@@ -185,8 +189,9 @@ public class JdbcDataProviderAdapter implements Closeable {
                     TableInfo tableInfo = new TableInfo();
                     schemaItem.getTables().add(tableInfo);
                     tableInfo.setTableName(table);
-                    tableInfo.setColumns(this.readTableColumnFromMetaData(metaData, database, table));
+                    tableInfo.setColumns(this.readTableColumnFromMetaData(metaData, isCatalog, database, connSchema, table));
                 }
+                log.info("获取数据库表结构任务({})进度: {}/{}, 当前处理数据库: {}", querySchemaTaskId, ++i, databases.size(), database);
             }
 
             return schemaItems;
@@ -233,9 +238,18 @@ public class JdbcDataProviderAdapter implements Closeable {
         return tables;
     }
 
-    private Set<Column> readTableColumnFromMetaData(DatabaseMetaData metadata, String database, String table) throws SQLException {
+    private Set<Column> readTableColumnFromMetaData(DatabaseMetaData metadata, boolean isCatalog, String database,
+                                                    String connSchema, String table) throws SQLException {
         Set<Column> columnSet = new HashSet<>();
-        try (ResultSet columns = metadata.getColumns(database, null, table, null)) {
+        String catalog = null;
+        String schema = null;
+        if (isCatalog) {
+            catalog = database;
+            schema = connSchema;
+        } else {
+            schema = database;
+        }
+        try (ResultSet columns = metadata.getColumns(catalog, schema, table, null)) {
             while (columns.next()) {
                 Column column = readTableColumn(columns);
                 columnSet.add(column);

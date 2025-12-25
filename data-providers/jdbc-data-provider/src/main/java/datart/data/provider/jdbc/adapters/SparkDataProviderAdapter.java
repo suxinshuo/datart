@@ -71,6 +71,12 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
     protected Connection getConn(String taskId) throws SQLException {
         String url = this.getJdbcProperties().getUrl();
         SparkUrl sparkUrl = parserUrl(url);
+
+        // 如果是查询 Schema 信息, 强制设置 share level = connection
+        if (StringUtils.startsWith(taskId, SourceConstants.SPARK_SCHEMA_TASK)) {
+            sparkUrl.setShareLevel(EngineShareLevel.CONNECTION);
+        }
+
         EngineShareLevel shareLevel = sparkUrl.getShareLevel();
         if (EngineShareLevel.commonShare().contains(shareLevel)) {
             // 如果是所有人共享, 还走原先的逻辑, 从线程池获取连接
@@ -134,10 +140,17 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    protected void executeAllPreSqlHook(String taskId, Statement statement) throws SQLException {
-        // 执行 select 1, 表示完成启动 application
-        statement.execute("select 1");
+    protected boolean isReadFromCatalog(Connection conn) throws SQLException {
+        return false;
+    }
 
+    @Override
+    protected String readCurrDatabase(Connection conn, boolean isCatalog) throws SQLException {
+        return "";
+    }
+
+    @Override
+    protected void executeAllPreSqlHook(String taskId, Statement statement) throws SQLException {
         ResultSet resultSet = statement.executeQuery("select '${spark.yarn.tags}'");
         String appTag = "";
         if (resultSet.next()) {
@@ -333,8 +346,17 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
         private List<Tuple> kyuubiConf;
         private List<Tuple> sparkConf;
 
+        private static final String KYUUBI_ENGINE_SHARE_LEVEL_CONF = "kyuubi.engine.share.level";
+
         public static SparkUrl empty() {
             return new SparkUrl();
+        }
+
+        public void setShareLevel(EngineShareLevel shareLevel) {
+            if (CollUtil.isEmpty(this.kyuubiConf)) {
+                this.kyuubiConf = Lists.newArrayList();
+            }
+            this.kyuubiConf.add(new Tuple(KYUUBI_ENGINE_SHARE_LEVEL_CONF, shareLevel.name()));
         }
 
         public EngineShareLevel getShareLevel() {
@@ -343,7 +365,7 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
                 return EngineShareLevel.defaultLevel();
             }
             Optional<Tuple> shareLevelTuple = kyuubiConf.stream()
-                    .filter(t -> StringUtils.equals(t.get(0), "kyuubi.engine.share.level"))
+                    .filter(t -> StringUtils.equals(t.get(0), KYUUBI_ENGINE_SHARE_LEVEL_CONF))
                     .findFirst();
             if (shareLevelTuple.isPresent()) {
                 return EngineShareLevel.of(shareLevelTuple.get().get(1));

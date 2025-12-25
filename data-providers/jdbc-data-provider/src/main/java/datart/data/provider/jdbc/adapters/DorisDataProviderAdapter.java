@@ -20,6 +20,7 @@ package datart.data.provider.jdbc.adapters;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import datart.core.data.provider.*;
 import datart.core.data.provider.sql.OrderOperator;
 import datart.core.entity.SourceConstants;
@@ -29,6 +30,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.sql.DataSource;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -66,8 +68,8 @@ public class DorisDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    public List<SchemaItem> readAllSchemas() throws SQLException {
-        return readAllSchemasWithConn();
+    protected Map<String, List<ForeignKey>> getImportedKeys(DatabaseMetaData metadata, String database, String table) throws SQLException {
+        return Maps.newHashMap();
     }
 
     private String getDefaultCatalog() {

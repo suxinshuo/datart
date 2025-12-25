@@ -26,9 +26,9 @@ public interface SourceConstants {
     String PROP_YARN_RM_URL = "_YARN_RM_URL";
 
     /**
-     * Spark 内部 query_id 变量名
+     * Spark 获取 Schema 的任务前缀
      */
-    String SPARK_ENV_QUERY_ID = "_QUERY_ID";
+    String SPARK_SCHEMA_TASK = "QUERY_SCHEMA_";
 
     /**
      * doris 默认计算组
