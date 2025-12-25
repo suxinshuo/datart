@@ -17,6 +17,7 @@
  */
 package datart.server.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import datart.core.base.consts.Const;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotAllowedException;
@@ -36,6 +37,7 @@ import datart.server.base.params.BaseCreateParam;
 import datart.server.base.params.BaseUpdateParam;
 import datart.server.base.params.FolderCreateParam;
 import datart.server.base.params.FolderUpdateParam;
+import datart.server.base.params.folder.FolderCreateDirectlyParam;
 import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.FolderTransferModel;
@@ -47,37 +49,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class FolderServiceImpl extends BaseService implements FolderService {
 
-    private final FolderMapperExt folderMapper;
+    @Resource
+    private FolderMapperExt folderMapper;
 
-    private final RoleService roleService;
+    @Resource
+    private RoleService roleService;
 
-    private final RelRoleResourceMapperExt rrrMapper;
+    @Resource
+    private RelRoleResourceMapperExt rrrMapper;
 
-    private final DashboardMapperExt dashboardMapper;
+    @Resource
+    private DashboardMapperExt dashboardMapper;
 
-    private final DatachartMapperExt datachartMapper;
+    @Resource
+    private DatachartMapperExt datachartMapper;
 
-    private final StoryboardMapperExt storyboardMapper;
-
-    public FolderServiceImpl(FolderMapperExt folderMapper,
-                             DashboardMapperExt dashboardMapper,
-                             DatachartMapperExt datachartMapper,
-                             RoleService roleService,
-                             RelRoleResourceMapperExt rrrMapper,
-                             StoryboardMapperExt storyboardMapper) {
-        this.folderMapper = folderMapper;
-        this.roleService = roleService;
-        this.rrrMapper = rrrMapper;
-        this.dashboardMapper = dashboardMapper;
-        this.datachartMapper = datachartMapper;
-        this.storyboardMapper = storyboardMapper;
-    }
+    @Resource
+    private StoryboardMapperExt storyboardMapper;
 
     @Override
     public void requirePermission(Folder folder, int permission) {
@@ -417,4 +412,66 @@ public class FolderServiceImpl extends BaseService implements FolderService {
         roleService.grantPermission(Collections.singletonList(permissionInfo));
     }
 
+    @Override
+    public List<Folder> getTopFoldersByName(String orgId, String name) {
+        FolderExample example = new FolderExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andParentIdIsNull()
+                .andRelTypeEqualTo(ResourceType.FOLDER.name())
+                .andNameEqualTo(name);
+        return folderMapper.selectByExample(example);
+    }
+
+    @Override
+    public Folder createDirectly(FolderCreateDirectlyParam param) {
+        Folder folder = new Folder();
+        BeanUtils.copyProperties(param, folder);
+
+        folder.setId(UUIDGenerator.generate());
+
+        folderMapper.insertSelective(folder);
+
+        return folder;
+    }
+
+    @Override
+    public List<Folder> getFoldersByParentIdAndName(String orgId, String parentId, String name, Boolean filterPermission) {
+        FolderExample example = new FolderExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andParentIdEqualTo(parentId)
+                .andRelTypeEqualTo(ResourceType.FOLDER.name())
+                .andNameEqualTo(name);
+        example.setOrderByClause("`id`");
+        List<Folder> folders = folderMapper.selectByExample(example);
+
+        if (Objects.isNull(filterPermission) || !filterPermission) {
+            return folders;
+        }
+
+        // 根据权限过滤
+        return folders.stream().filter(folder -> {
+            try {
+                requirePermission(folder, Const.READ);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public Folder getLastFolderByParentId(String orgId, String parentId) {
+        FolderExample example = new FolderExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andParentIdEqualTo(parentId);
+        example.setOrderByClause("`index` desc");
+        List<Folder> folders = folderMapper.selectByExample(example);
+        if (CollUtil.isNotEmpty(folders)) {
+            return folders.get(0);
+        }
+        return null;
+    }
 }

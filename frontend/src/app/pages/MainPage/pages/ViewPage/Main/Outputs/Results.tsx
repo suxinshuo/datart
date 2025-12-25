@@ -21,11 +21,12 @@ import {
   EyeInvisibleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { Tooltip } from 'antd';
+import { Spin, Tooltip } from 'antd';
 import { Popup, ToolbarButton, Tree } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { APP_CURRENT_VERSION } from 'app/migration/constants';
 import classnames from 'classnames';
+import { transparentize } from 'polished';
 import { memo, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
@@ -75,7 +76,10 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
   const t = useI18NPrefix('view');
 
   const dataSource = useMemo(
-    () => previewResults.map(o => ({ ...o, [ROW_KEY]: uuidv4() })),
+    () =>
+      previewResults
+        ? previewResults.map(o => ({ ...o, [ROW_KEY]: uuidv4() }))
+        : [],
     [previewResults],
   );
 
@@ -265,6 +269,11 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
         onSchemaTypeChange={modelChange}
         hasCategory
       />
+      {stage === ViewViewModelStages.Running && (
+        <LoadingMask>
+          <Spin />
+        </LoadingMask>
+      )}
     </TableWrapper>
   ) : (
     <InitialDesc>
@@ -289,8 +298,22 @@ const InitialDesc = styled.div`
 `;
 
 const TableWrapper = styled.div`
+  position: relative;
   flex: 1;
   overflow: hidden;
   font-family: ${FONT_FAMILY};
   background-color: ${p => p.theme.componentBackground};
+`;
+
+const LoadingMask = styled.div`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${p => transparentize(0.5, p.theme.componentBackground)};
 `;

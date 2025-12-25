@@ -42,4 +42,10 @@ public class TestExecuteParam {
 
     private int size = 100;
 
+    private boolean asyncEnabled = false;
+
+    private Integer priority;
+
+    private String viewId;
+
 }

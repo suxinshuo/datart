@@ -19,6 +19,8 @@
 package datart.server.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.TypeReference;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
@@ -108,21 +110,29 @@ public class SourceServiceImpl extends BaseService implements SourceService {
     }
 
     @Override
-    public List<Source> listSources(String orgId, boolean active) throws PermissionDeniedException {
+    public List<Source> listSources(String orgId, boolean active) {
+        return listSources(orgId, active, true);
+    }
+
+    @Override
+    public List<Source> listSources(String orgId, boolean active, boolean filterPermission) throws PermissionDeniedException {
 
         List<Source> sources = sourceMapper.listByOrg(orgId, active);
 
         Map<String, Source> filtered = new HashMap<>();
 
-        List<Source> permitted = sources.stream().filter(source -> {
-            try {
-                requirePermission(source, Const.READ);
-                return true;
-            } catch (Exception e) {
-                filtered.put(source.getId(), source);
-                return false;
-            }
-        }).collect(Collectors.toList());
+        List<Source> permitted = sources;
+        if (filterPermission) {
+            permitted = sources.stream().filter(source -> {
+                try {
+                    requirePermission(source, Const.READ);
+                    return true;
+                } catch (Exception e) {
+                    filtered.put(source.getId(), source);
+                    return false;
+                }
+            }).collect(Collectors.toList());
+        }
 
         while (!filtered.isEmpty()) {
             boolean updated = false;
@@ -171,7 +181,9 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             if (StringUtils.isEmpty(sourceSchemas.getSchemas())) {
                 return schemaInfo;
             }
-            schemaInfo.setSchemaItems(OBJECT_MAPPER.readerForListOf(SchemaItem.class).readValue(sourceSchemas.getSchemas()));
+            List<SchemaItem> schemaItems = JSONUtil.toBean(sourceSchemas.getSchemas(), new TypeReference<List<SchemaItem>>() {
+            }, false);
+            schemaInfo.setSchemaItems(schemaItems);
         } catch (Exception e) {
             log.error("source schema parse error ", e);
         }

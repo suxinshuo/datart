@@ -63,6 +63,10 @@ public class ExecuteParam implements Serializable {
 
     private int cacheExpires;
 
+    private boolean staticAnalysis;
+
+    private Dataframe sqlTaskResult;
+
     @Override
     public String toString() {
         return JSON.toJSONString(JSON.toJSONString(this));
