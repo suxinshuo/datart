@@ -382,7 +382,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         updateSqlTask.setProgress(progress);
         updateSqlTask.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
         updateSqlTask.setUpdateTime(new Date());
-        sqlTaskMapper.updateByExampleSelective(sqlTask, example);
+        sqlTaskMapper.updateByExampleSelective(updateSqlTask, example);
     }
 
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {
@@ -479,7 +479,9 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             result.setColumnCount(dataframe.getColumns().size());
             result.setCreateBy(task.getCreateBy());
             result.setCreateTime(endDate);
-            sqlTaskResultService.insertSelective(result);
+            if (!Thread.currentThread().isInterrupted()) {
+                sqlTaskResultService.insertSelective(result);
+            }
 
             // 更新任务状态为成功
             task.setStatus(SqlTaskStatus.SUCCESS.getCode());
@@ -488,7 +490,9 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             task.setProgress(SqlTaskProgress.FINISH.getProgress());
             task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
             task.setUpdateTime(endDate);
-            sqlTaskMapper.updateByPrimaryKeySelective(task);
+            if (!Thread.currentThread().isInterrupted()) {
+                sqlTaskMapper.updateByPrimaryKeySelective(task);
+            }
         } catch (Exception e) {
             log.error("Execute task error. task: {}", task, e);
 

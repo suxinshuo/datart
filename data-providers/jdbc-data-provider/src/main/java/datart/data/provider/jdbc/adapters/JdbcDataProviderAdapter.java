@@ -398,18 +398,20 @@ public class JdbcDataProviderAdapter implements Closeable {
                     }
                 }
                 executeAllPreSqlHook(taskId, statement);
-                sql = getTaskSql(taskId, sql);
+                try {
+                    sql = getTaskSql(taskId, sql);
 
-                Dataframe checkDf = checkAndRunNotSelect(statement, sql);
-                if (Objects.nonNull(checkDf)) {
-                    return checkDf;
-                }
+                    Dataframe checkDf = checkAndRunNotSelect(statement, sql);
+                    if (Objects.nonNull(checkDf)) {
+                        return checkDf;
+                    }
 
-                try (ResultSet rs = statement.executeQuery(sql)) {
-                    Dataframe dataframe = parseResultSet(rs);
+                    try (ResultSet rs = statement.executeQuery(sql)) {
+                        return parseResultSet(rs);
+                    }
+                } finally {
                     // 执行完成的回调函数
                     executeCompleteHook(taskId, statement);
-                    return dataframe;
                 }
             }
         }
@@ -426,7 +428,6 @@ public class JdbcDataProviderAdapter implements Closeable {
      * @throws SQLException SQL 执行异常
      */
     protected Dataframe execute(String taskId, List<String> preSqls, String selectSql, PageInfo pageInfo) throws SQLException {
-        Dataframe dataframe;
         try (Connection conn = getConn(taskId)) {
             try (Statement statement = conn.createStatement()) {
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
@@ -437,26 +438,28 @@ public class JdbcDataProviderAdapter implements Closeable {
                     }
                 }
                 executeAllPreSqlHook(taskId, statement);
-                selectSql = getTaskSql(taskId, selectSql);
+                try {
+                    selectSql = getTaskSql(taskId, selectSql);
 
-                Dataframe checkDf = checkAndRunNotSelect(statement, selectSql);
-                if (Objects.nonNull(checkDf)) {
-                    return checkDf;
-                }
-
-                try (ResultSet resultSet = statement.executeQuery(selectSql)) {
-                    try {
-                        resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));
-                    } catch (Exception e) {
-                        int count = 0;
-                        while (count < (pageInfo.getPageNo() - 1) * pageInfo.getPageSize() && resultSet.next()) {
-                            count++;
-                        }
+                    Dataframe checkDf = checkAndRunNotSelect(statement, selectSql);
+                    if (Objects.nonNull(checkDf)) {
+                        return checkDf;
                     }
-                    dataframe = parseResultSet(resultSet, pageInfo.getPageSize());
+
+                    try (ResultSet resultSet = statement.executeQuery(selectSql)) {
+                        try {
+                            resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));
+                        } catch (Exception e) {
+                            int count = 0;
+                            while (count < (pageInfo.getPageNo() - 1) * pageInfo.getPageSize() && resultSet.next()) {
+                                count++;
+                            }
+                        }
+                        return parseResultSet(resultSet, pageInfo.getPageSize());
+                    }
+                } finally {
                     // 执行完成的回调函数
                     executeCompleteHook(taskId, statement);
-                    return dataframe;
                 }
             }
         }

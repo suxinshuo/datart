@@ -135,17 +135,6 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
 
     @Override
     protected void executeAllPreSqlHook(String taskId, Statement statement) throws SQLException {
-        // 设置 QUERY_ID 属性
-        if (StringUtils.isNotBlank(taskId)) {
-            String setQueryIdSql = String.format("set %s=%s", SourceConstants.SPARK_ENV_QUERY_ID, taskId);
-            boolean setQueryIdStatus = statement.execute(setQueryIdSql);
-            if (!setQueryIdStatus) {
-                log.warn("Spark 设置 QUERY_ID 失败");
-            } else {
-                log.info("Spark 设置 QUERY_ID({}) 成功", taskId);
-            }
-        }
-
         // 执行 select 1, 表示完成启动 application
         statement.execute("select 1");
 
@@ -264,14 +253,18 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
                     totalCompletedTasks += numCompletedTasks;
                 }
                 int sparkAppAvailableProgress = SqlTaskProgress.RUNNING_COMPLETE.getProgress() - SqlTaskProgress.RUNNING_START.getProgress();
-                int progress = (int) (totalCompletedTasks / totalNumTasks * sparkAppAvailableProgress + SqlTaskProgress.RUNNING_START.getProgress());
+                double completedRatio = (double) totalCompletedTasks / totalNumTasks;
+                int progress = (int) Math.floor(completedRatio * sparkAppAvailableProgress + SqlTaskProgress.RUNNING_START.getProgress());
                 log.info("Spark 任务 {} 进度: {} / {}, 计算进度: {}", yarnApp.getId(), totalCompletedTasks, totalNumTasks, progress);
                 // 更新进度
-                getProviderContext().updateTaskProgress(taskId, progress);
+                if (!Thread.currentThread().isInterrupted()) {
+                    getProviderContext().updateTaskProgress(taskId, progress);
+                }
             }
         } catch (Exception e) {
             log.warn("轮询获取 Spark 任务进度失败", e);
         }
+        log.info("结束轮询获取 Spark 任务进度, 标签: {}", appTag);
     }
 
     private List<YarnRmNode> getYarnRmNodes() {
