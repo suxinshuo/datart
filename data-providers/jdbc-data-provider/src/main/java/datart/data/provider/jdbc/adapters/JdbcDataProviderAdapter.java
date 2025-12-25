@@ -662,7 +662,7 @@ public class JdbcDataProviderAdapter implements Closeable {
             data = executeParam.getSqlTaskResult();
         } else {
             List<SelectColumn> selectColumns = null;
-            // 构建执行参数，查询源表全量数据
+            // 构建执行参数, 查询源表全量数据
             if (!CollectionUtils.isEmpty(script.getSchema())) {
                 selectColumns = script.getSchema().values().parallelStream().map(column -> {
                     SelectColumn selectColumn = new SelectColumn();
@@ -753,7 +753,7 @@ public class JdbcDataProviderAdapter implements Closeable {
             dataframe = execute(taskId, preSqls, sql);
         } else {
             sql = render.render(true, false, false);
-            log.info("taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
+            log.info("page taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
             dataframe = execute(taskId, preSqls, sql, executeParam.getPageInfo());
         }
         // fix page info

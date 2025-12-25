@@ -170,6 +170,7 @@ SPARK:
   name: SPARK
   driver-class: org.apache.hive.jdbc.HiveDriver
   url-prefix: jdbc:hive2://
+  sql-dialect: datart.data.provider.calcite.dialect.SparkSqlDialectSupport
   adapter-class: datart.data.provider.jdbc.adapters.SparkDataProviderAdapter
 
 SQLSTREAM:
@@ -203,6 +204,5 @@ DORIS:
   literal-quote: "'"
   identifier-quote: "`"
   adapter-class: "datart.data.provider.jdbc.adapters.DorisDataProviderAdapter"
+  sql-dialect: "datart.data.provider.calcite.dialect.DorisSqlDialectSupport"
   url-prefix: "jdbc:mysql://"
-
-
