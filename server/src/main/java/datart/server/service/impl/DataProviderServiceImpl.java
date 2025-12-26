@@ -242,6 +242,12 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
         //datasource and view
         View view = retrieve(viewExecuteParam.getViewId(), View.class, checkViewPermission);
         Source source = retrieve(view.getSourceId(), Source.class, false);
+
+        // 校验 Source 类型
+        if (!viewExecuteParam.isStaticAnalysis()) {
+            checkVizSourceType(source);
+        }
+
         DataProviderSource providerSource = parseDataProviderConfig(source);
 
         boolean scriptPermission = true;

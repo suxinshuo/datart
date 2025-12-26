@@ -71,3 +71,6 @@ CREATE TABLE `sql_task_log`  (
   INDEX `idx_task_id`(`task_id`) USING BTREE,
   INDEX `idx_log_time`(`log_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- 修改字段类型
+ALTER TABLE `view` MODIFY COLUMN `model` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL;
