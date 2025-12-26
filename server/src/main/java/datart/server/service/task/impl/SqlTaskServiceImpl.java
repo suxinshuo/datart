@@ -69,6 +69,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
     // 执行中的任务映射, 用于跟踪和中断任务
     private final Map<String, RunningTaskBo> runningTasks = Maps.newConcurrentMap();
+    private final Map<String, Long> cancelTasks = Maps.newConcurrentMap();
 
     @Resource
     private SqlTaskMapper sqlTaskMapper;
@@ -115,6 +116,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         // 启动一个线程, 轮询运行中的任务, 检查是否超过最大运行时间, 如果超时, 就终止
         new Thread(new SqlTaskChecker(
                 runningTasks,
+                cancelTasks,
                 sqlTaskMapper,
                 maxRunningTime,
                 this::cancelSqlTask
@@ -390,7 +392,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     }
 
     private void cancelSqlTask(String taskId, SqlTaskFailType failType, String operatorUserId) {
-        log.info("cancelSqlTask, taskId: {}, failType: {}", taskId, failType);
+        log.info("取消任务执行, taskId: {}, failType: {}", taskId, failType);
         // 从数据库查询任务信息
         SqlTaskWithBLOBs task = sqlTaskMapper.selectByPrimaryKey(taskId);
 
@@ -410,6 +412,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         // 尝试中断执行线程
         if (runningTasks.containsKey(taskId)) {
             RunningTaskBo runningTask = runningTasks.remove(taskId);
+            cancelTasks.put(taskId, System.currentTimeMillis());
             Thread runningThread = runningTask.getRunThread();
             if (Objects.nonNull(runningThread) && runningThread.isAlive()) {
                 try {
@@ -425,100 +428,98 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     private void processTasks() {
         log.info("processTasks consumer start");
         while (!Thread.currentThread().isInterrupted()) {
+            SqlTaskWithBLOBs task = null;
             try {
                 // 从队列获取任务
-                QueueTaskBo task = taskQueue.take();
-                log.info("从队列获取到任务, task: {}", task);
+                QueueTaskBo queueTask = taskQueue.take();
+                log.info("从队列获取到任务, queueTask: {}", queueTask);
+                task = queueTask.getSqlTask();
 
-                // 执行任务
-                executeTask(task);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                log.error("Process task error", e);
-            }
-        }
-    }
+                String username = queueTask.getUsername();
+                securityManager.runAs(username);
 
-    // 执行任务
-    private void executeTask(QueueTaskBo queueTask) {
-        SqlTaskWithBLOBs task = queueTask.getSqlTask();
-        try {
-            String username = queueTask.getUsername();
-            securityManager.runAs(username);
-
-            // 更新任务状态为执行中
-            Date runDate = new Date();
-            task.setStatus(SqlTaskStatus.RUNNING.getCode());
-            task.setProgress(SqlTaskProgress.START.getProgress(true));
-            task.setStartTime(runDate);
-            task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
-            task.setUpdateTime(runDate);
-            sqlTaskMapper.updateByPrimaryKeySelective(task);
-
-            // 记录当前执行线程
-            runningTasks.put(task.getId(), RunningTaskBo.builder()
-                    .taskId(task.getId())
-                    .runThread(Thread.currentThread())
-                    .startTime(task.getStartTime())
-                    .build());
-
-            // 执行 SQL
-            Dataframe dataframe = dataProviderService.testExecute(JSONUtil.toBean(task.getExecuteParam(), TestExecuteParam.class));
-
-            Date endDate = new Date();
-
-            // 保存执行结果
-            SqlTaskResult result = new SqlTaskResult();
-            result.setId(UUIDGenerator.generate());
-            result.setTaskId(task.getId());
-            // 将 Dataframe 转换为 JSON 字符串
-            result.setData(JSONUtil.toJsonStr(dataframe));
-            result.setRowCount(dataframe.getRows().size());
-            result.setColumnCount(dataframe.getColumns().size());
-            result.setCreateBy(task.getCreateBy());
-            result.setCreateTime(endDate);
-            if (!Thread.currentThread().isInterrupted()) {
-                sqlTaskResultService.insertSelective(result);
-            }
-
-            // 更新任务状态为成功
-            task.setStatus(SqlTaskStatus.SUCCESS.getCode());
-            task.setEndTime(endDate);
-            task.setDuration(endDate.getTime() - task.getStartTime().getTime());
-            task.setProgress(SqlTaskProgress.FINISH.getProgress());
-            task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
-            task.setUpdateTime(endDate);
-            if (!Thread.currentThread().isInterrupted()) {
+                // 更新任务状态为执行中
+                Date runDate = new Date();
+                task.setStatus(SqlTaskStatus.RUNNING.getCode());
+                task.setProgress(SqlTaskProgress.START.getProgress(true));
+                task.setStartTime(runDate);
+                task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
+                task.setUpdateTime(runDate);
                 sqlTaskMapper.updateByPrimaryKeySelective(task);
-            }
-        } catch (Exception e) {
-            log.error("Execute task error. task: {}", task, e);
 
-            // 如果之前已经更新为手动终止, 则不更新状态
-            SqlTaskWithBLOBs nowTask = sqlTaskMapper.selectByPrimaryKey(task.getId());
-            SqlTaskFailType nowSlTaskFailType = SqlTaskFailType.fromCode(nowTask.getFailType());
-            if (Objects.equals(SqlTaskStatus.FAILED.getCode(), nowTask.getStatus())
-                    && SqlTaskFailType.getManualTypes().contains(nowSlTaskFailType)) {
-                log.info("任务已手动终止, 不更新状态. nowTask: {}", nowTask);
-                return;
-            }
+                // 记录当前执行线程
+                runningTasks.put(task.getId(), RunningTaskBo.builder()
+                        .taskId(task.getId())
+                        .runThread(Thread.currentThread())
+                        .startTime(task.getStartTime())
+                        .build());
 
-            // 更新任务状态为失败
-            Date failedDate = new Date();
-            task.setStatus(SqlTaskStatus.FAILED.getCode());
-            task.setFailType(SqlTaskFailType.EXECUTION_FAILED.getCode());
-            task.setErrorMessage(e.getMessage());
-            task.setEndTime(failedDate);
-            task.setDuration(System.currentTimeMillis() - task.getStartTime().getTime());
-            task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
-            task.setUpdateTime(failedDate);
-            sqlTaskMapper.updateByPrimaryKeySelective(task);
-        } finally {
-            // 移除执行线程记录
-            runningTasks.remove(task.getId());
-            securityManager.releaseRunAs();
+                // 执行 SQL
+                Dataframe dataframe = dataProviderService.testExecute(JSONUtil.toBean(task.getExecuteParam(), TestExecuteParam.class));
+                log.info("任务({}) 执行完成", task.getId());
+
+                Date endDate = new Date();
+
+                // 保存执行结果
+                SqlTaskResult result = new SqlTaskResult();
+                result.setId(UUIDGenerator.generate());
+                result.setTaskId(task.getId());
+                // 将 Dataframe 转换为 JSON 字符串
+                result.setData(JSONUtil.toJsonStr(dataframe));
+                result.setRowCount(dataframe.getRows().size());
+                result.setColumnCount(dataframe.getColumns().size());
+                result.setCreateBy(task.getCreateBy());
+                result.setCreateTime(endDate);
+                sqlTaskResultService.insertSelective(result);
+
+                // 更新任务状态为成功
+                task.setStatus(SqlTaskStatus.SUCCESS.getCode());
+                task.setEndTime(endDate);
+                task.setDuration(endDate.getTime() - task.getStartTime().getTime());
+                task.setProgress(SqlTaskProgress.FINISH.getProgress());
+                task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
+                task.setUpdateTime(endDate);
+                sqlTaskMapper.updateByPrimaryKeySelective(task);
+            } catch (Exception e) {
+                if ((e instanceof InterruptedException)
+                        || (Objects.nonNull(task) && cancelTasks.containsKey(task.getId()))) {
+                    Thread.currentThread().interrupt();
+                    log.info("当前线程被中断/任务被取消, task: {}", task);
+                    break;
+                }
+
+                log.error("执行任务失败, task: {}", task, e);
+                if (Objects.isNull(task)) {
+                    continue;
+                }
+
+                // 如果之前已经更新为手动终止, 则不更新状态
+                SqlTaskWithBLOBs nowTask = sqlTaskMapper.selectByPrimaryKey(task.getId());
+                SqlTaskFailType nowSqlTaskFailType = SqlTaskFailType.fromCode(nowTask.getFailType());
+                if (Objects.equals(SqlTaskStatus.FAILED.getCode(), nowTask.getStatus())
+                        && SqlTaskFailType.getManualTypes().contains(nowSqlTaskFailType)) {
+                    log.info("任务已手动终止, 不更新状态. nowTask: {}", nowTask);
+                    continue;
+                }
+
+                // 更新任务状态为失败
+                Date failedDate = new Date();
+                task.setStatus(SqlTaskStatus.FAILED.getCode());
+                task.setFailType(SqlTaskFailType.EXECUTION_FAILED.getCode());
+                task.setErrorMessage(e.getMessage());
+                task.setEndTime(failedDate);
+                task.setDuration(System.currentTimeMillis() - task.getStartTime().getTime());
+                task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
+                task.setUpdateTime(failedDate);
+                sqlTaskMapper.updateByPrimaryKeySelective(task);
+            } finally {
+                // 移除执行线程记录
+                if (Objects.nonNull(task)) {
+                    runningTasks.remove(task.getId());
+                    log.info("任务({}) 更新状态完成", task.getId());
+                }
+                securityManager.releaseRunAs();
+            }
         }
     }
 

@@ -138,6 +138,7 @@ public class JdbcDataProviderAdapter implements Closeable {
             return schemaItems;
         }
         int i = 0;
+        long startTime = System.currentTimeMillis();
         for (String database : databases) {
             SchemaItem schemaItem = new SchemaItem();
             schemaItems.add(schemaItem);
@@ -152,7 +153,8 @@ public class JdbcDataProviderAdapter implements Closeable {
                     tableInfo.setColumns(this.readTableColumn(database, table));
                 }
             }
-            log.info("获取数据库表结构任务进度: {}/{}, 当前处理数据库: {}", ++i, databases.size(), database);
+            log.info("获取数据库表结构任务进度: {}/{}, 当前处理数据库: {}, 总耗时: {}", ++i, databases.size(), database,
+                    System.currentTimeMillis() - startTime);
         }
         return schemaItems;
     }
@@ -164,6 +166,7 @@ public class JdbcDataProviderAdapter implements Closeable {
         List<SchemaItem> schemaItems = Lists.newLinkedList();
         String querySchemaTaskId = SourceConstants.SPARK_SCHEMA_TASK + UUIDGenerator.generate();
         log.info("查询所有数据库开始. taskId: {}", querySchemaTaskId);
+        long startTime = System.currentTimeMillis();
         try (Connection conn = getConn(querySchemaTaskId)) {
             DatabaseMetaData metaData = conn.getMetaData();
             boolean isCatalog = isReadFromCatalog(conn);
@@ -182,16 +185,16 @@ public class JdbcDataProviderAdapter implements Closeable {
                 schemaItem.setDbName(database);
                 schemaItem.setTables(new LinkedList<>());
                 Set<String> tables = this.readAllTablesFromMetaData(metaData, isCatalog, database, connSchema);
-                if (CollUtil.isEmpty(tables)) {
-                    continue;
+                if (CollUtil.isNotEmpty(tables)) {
+                    for (String table : tables) {
+                        TableInfo tableInfo = new TableInfo();
+                        schemaItem.getTables().add(tableInfo);
+                        tableInfo.setTableName(table);
+                        tableInfo.setColumns(this.readTableColumnFromMetaData(metaData, isCatalog, database, connSchema, table));
+                    }
                 }
-                for (String table : tables) {
-                    TableInfo tableInfo = new TableInfo();
-                    schemaItem.getTables().add(tableInfo);
-                    tableInfo.setTableName(table);
-                    tableInfo.setColumns(this.readTableColumnFromMetaData(metaData, isCatalog, database, connSchema, table));
-                }
-                log.info("获取数据库表结构任务({})进度: {}/{}, 当前处理数据库: {}", querySchemaTaskId, ++i, databases.size(), database);
+                log.info("获取数据库表结构任务({})进度: {}/{}, 当前处理数据库: {}, 总耗时: {}", querySchemaTaskId, ++i,
+                        databases.size(), database, System.currentTimeMillis() - startTime);
             }
 
             return schemaItems;

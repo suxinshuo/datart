@@ -4,6 +4,7 @@
 
     <property name="LOG_HOME" value="./logs"/>
     <property name="SQL_LEVEL" value="INFO"/>
+    <property name="KYUUBI_LEVEL" value="INFO"/>
     <property name="CONSOLE_LOG_PATTERN"
               value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) [req_id=%X{request_id}] [%thread] %clr(%-50.50logger{49}){cyan} : %msg%n"/>
     <property name="FILE_LOG_PATTERN"
@@ -40,16 +41,30 @@
         </encoder>
     </appender>
 
+    <appender name="kyuubi" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}-kyuubi.log</FileNamePattern>
+            <MaxHistory>30</MaxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
     <root level="INFO">
         <appender-ref ref="console"/>
         <appender-ref ref="root"/>
     </root>
 
-    <logger name="datart.data.provider.jdbc.adapters" level="${SQL_LEVEL}" addtivity="false">
+    <logger name="datart.data.provider.jdbc.adapters" level="${SQL_LEVEL}" additivity="false">
         <appender-ref ref="sql"/>
     </logger>
-    <logger name="datart.data.provider.local.LocalDB" level="${SQL_LEVEL}" addtivity="false">
+    <logger name="datart.data.provider.local.LocalDB" level="${SQL_LEVEL}" additivity="false">
         <appender-ref ref="sql"/>
+    </logger>
+    <logger name="org.apache.kyuubi" level="${KYUUBI_LEVEL}" additivity="false">
+        <appender-ref ref="kyuubi"/>
     </logger>
 
 </configuration>

@@ -84,7 +84,7 @@ public class SqlScriptRender extends ScriptRender {
         QueryScriptProcessResult result = getScriptProcessor().process(queryScript);
         String originSql = result.getOriginSql();
         SqlTypeEnum sqlTypeEnum = SqlValidateUtils.getSqlType(originSql);
-        log.info("SQL 类型: {}", sqlTypeEnum);
+        log.debug("SQL 类型: {}", sqlTypeEnum);
         String selectSql;
 
         // 默认为 select 类型 sql
