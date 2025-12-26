@@ -25,7 +25,6 @@ import cn.hutool.db.DbRuntimeException;
 import cn.hutool.setting.dialect.Props;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import datart.core.data.provider.SchemaItem;
 import datart.core.entity.SourceConstants;
 import datart.core.entity.User;
@@ -68,19 +67,16 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    protected Connection getConn(String taskId) throws SQLException {
+    protected Connection getConn(String taskId, String sparkShareLevel) throws SQLException {
         String url = this.getJdbcProperties().getUrl();
         SparkUrl sparkUrl = parserUrl(url);
 
         // 如果是查询 Schema 信息, 强制设置 share level = connection
         if (StringUtils.startsWith(taskId, SourceConstants.SPARK_SCHEMA_TASK)) {
             sparkUrl.setShareLevel(EngineShareLevel.CONNECTION);
-        }
-
-        EngineShareLevel shareLevel = sparkUrl.getShareLevel();
-        if (EngineShareLevel.commonShare().contains(shareLevel)) {
-            // 如果是所有人共享, 还走原先的逻辑, 从线程池获取连接
-            return super.getConn();
+        } else {
+            // 根据用户传过来的 sparkShareLevel 来设置
+            sparkUrl.setShareLevel(EngineShareLevel.of(sparkShareLevel));
         }
 
         final Props prop = new Props();
@@ -111,7 +107,7 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
         }
 
         // url 增加任务 taskId
-        String sparkAppName = getSparkAppName(shareLevel, taskId, user);
+        String sparkAppName = getSparkAppName(sparkUrl.getShareLevel(), taskId, user);
         List<Tuple> sparkConf = Optional.ofNullable(sparkUrl.getSparkConf()).orElse(Lists.newLinkedList());
         sparkConf.add(new Tuple("spark.app.name", sparkAppName));
         String finalUrl = sparkUrl.toString();
@@ -403,20 +399,15 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
 
         CONNECTION, USER, GROUP, SERVER;
 
-        /**
-         * 所有人共享, 这种情况下连接共享线程池
-         *
-         * @return Set<EngineShareLevel>
-         */
-        public static Set<EngineShareLevel> commonShare() {
-            return Sets.newHashSet(SERVER);
-        }
-
         public static EngineShareLevel defaultLevel() {
             return USER;
         }
 
         public static EngineShareLevel of(String code) {
+            if (StringUtils.isBlank(code)) {
+                return defaultLevel();
+            }
+
             return Arrays.stream(values())
                     .filter(e -> StringUtils.equals(code, e.name()))
                     .findFirst()

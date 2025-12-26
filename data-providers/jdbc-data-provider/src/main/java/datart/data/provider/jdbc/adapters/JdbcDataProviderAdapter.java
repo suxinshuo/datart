@@ -30,6 +30,7 @@ import datart.core.entity.SourceConstants;
 import datart.core.entity.enums.SqlTaskProgress;
 import datart.data.provider.JdbcDataProvider;
 import datart.data.provider.base.IProviderContext;
+import datart.data.provider.base.entity.ExecuteSqlParam;
 import datart.data.provider.calcite.dialect.CustomSqlDialect;
 import datart.data.provider.calcite.dialect.FetchAndOffsetSupport;
 import datart.data.provider.jdbc.DataTypeUtils;
@@ -400,13 +401,15 @@ public class JdbcDataProviderAdapter implements Closeable {
     /**
      * 直接执行, 返回所有数据, 用于支持已经支持分页的数据库, 或者不需要分页的查询
      *
-     * @param taskId  任务 ID
-     * @param preSqls pre sql
-     * @param sql     直接提交至数据源执行的 SQL, 通常已经包含了分页
+     * @param param 执行参数
      * @return 全量数据
      * @throws SQLException SQL 执行异常
      */
-    protected Dataframe execute(String taskId, List<String> preSqls, String sql) throws SQLException {
+    protected Dataframe execute(ExecuteSqlParam param) throws SQLException {
+        String taskId = param.getTaskId();
+        List<String> preSqls = param.getPreSqls();
+        String sql = param.getSql();
+
         try (Connection conn = getConn(taskId)) {
             try (Statement statement = conn.createStatement()) {
                 if (CollUtil.isNotEmpty(preSqls)) {
@@ -437,14 +440,16 @@ public class JdbcDataProviderAdapter implements Closeable {
     /**
      * 用于未支持 SQL 分页的数据库, 使用通用的分页方案进行分页
      *
-     * @param taskId    任务 ID
-     * @param preSqls   pre sql
-     * @param selectSql 提交至数据源执行的 SQL
-     * @param pageInfo  需要执行的分页信息
+     * @param param    执行参数
+     * @param pageInfo 需要执行的分页信息
      * @return 分页后的数据
      * @throws SQLException SQL 执行异常
      */
-    protected Dataframe execute(String taskId, List<String> preSqls, String selectSql, PageInfo pageInfo) throws SQLException {
+    protected Dataframe execute(ExecuteSqlParam param, PageInfo pageInfo) throws SQLException {
+        String taskId = param.getTaskId();
+        List<String> preSqls = param.getPreSqls();
+        String selectSql = param.getSql();
+
         try (Connection conn = getConn(taskId)) {
             try (Statement statement = conn.createStatement()) {
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
@@ -485,10 +490,12 @@ public class JdbcDataProviderAdapter implements Closeable {
     /**
      * 单独执行一次查询获取总数据量，用于分页
      *
-     * @param sql 不包含分页的SQL
+     * @param param 执行参数
      * @return 总记录数
      */
-    public int executeCountSql(String taskId, String sql) throws SQLException {
+    public int executeCountSql(ExecuteSqlParam param) throws SQLException {
+        String taskId = param.getTaskId();
+        String sql = param.getSql();
         try (Connection connection = getConn(taskId)) {
             String countSql = String.format(COUNT_SQL, sql);
             countSql = getTaskSql(taskId, countSql);
@@ -519,6 +526,10 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected Connection getConn(String taskId) throws SQLException {
+        return getConn(taskId, null);
+    }
+
+    protected Connection getConn(String taskId, String sparkShareLevel) throws SQLException {
         return dataSource.getConnection();
     }
 
@@ -690,7 +701,13 @@ public class JdbcDataProviderAdapter implements Closeable {
                     , jdbcProperties.isEnableSpecialSql()
                     , driverInfo.getQuoteIdentifiers());
             String sql = render.render(true, false, false);
-            data = execute(executeParam.getSqlTaskId(), preSqls, sql);
+            data = execute(
+                    ExecuteSqlParam.builder()
+                            .taskId(executeParam.getSqlTaskId())
+                            .preSqls(preSqls)
+                            .sql(sql)
+                            .build()
+            );
         }
 
 
@@ -753,15 +770,37 @@ public class JdbcDataProviderAdapter implements Closeable {
         if (supportPaging()) {
             sql = render.render(true, true, false);
             log.info("taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
-            dataframe = execute(taskId, preSqls, sql);
+            dataframe = execute(
+                    ExecuteSqlParam.builder()
+                            .taskId(taskId)
+                            .preSqls(preSqls)
+                            .sql(sql)
+                            .sparkShareLevel(executeParam.getSparkShareLevel())
+                            .build()
+            );
         } else {
             sql = render.render(true, false, false);
             log.info("page taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
-            dataframe = execute(taskId, preSqls, sql, executeParam.getPageInfo());
+            dataframe = execute(
+                    ExecuteSqlParam.builder()
+                            .taskId(taskId)
+                            .preSqls(preSqls)
+                            .sql(sql)
+                            .sparkShareLevel(executeParam.getSparkShareLevel())
+                            .build(),
+                    executeParam.getPageInfo()
+            );
         }
         // fix page info
         if (executeParam.getPageInfo().isCountTotal()) {
-            int total = executeCountSql(taskId, render.render(true, false, true));
+            String countSql = render.render(true, false, true);
+            int total = executeCountSql(
+                    ExecuteSqlParam.builder()
+                            .taskId(taskId)
+                            .sql(countSql)
+                            .sparkShareLevel(executeParam.getSparkShareLevel())
+                            .build()
+            );
             executeParam.getPageInfo().setTotal(total);
             dataframe.setPageInfo(executeParam.getPageInfo());
         }

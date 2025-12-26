@@ -24,6 +24,7 @@ import datart.core.data.provider.Column;
 import datart.core.data.provider.Dataframe;
 import datart.core.data.provider.ExecuteParam;
 import datart.core.data.provider.QueryScript;
+import datart.data.provider.base.entity.ExecuteSqlParam;
 import datart.data.provider.jdbc.SqlScriptRender;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -92,10 +93,21 @@ public class OracleDataProviderAdapter extends JdbcDataProviderAdapter {
         log.debug(wrappedSql);
 
         String taskId = executeParam.getSqlTaskId();
-        Dataframe dataframe = execute(taskId, preSqls, wrappedSql);
+        Dataframe dataframe = execute(
+                ExecuteSqlParam.builder()
+                        .taskId(taskId)
+                        .preSqls(preSqls)
+                        .sql(wrappedSql)
+                        .build()
+        );
         // fix page info
         if (executeParam.getPageInfo().isCountTotal()) {
-            int total = executeCountSql(taskId, render.render(true, false, true));
+            int total = executeCountSql(
+                    ExecuteSqlParam.builder()
+                            .taskId(taskId)
+                            .sql(render.render(true, false, true))
+                            .build()
+            );
             executeParam.getPageInfo().setTotal(total);
             dataframe.setPageInfo(executeParam.getPageInfo());
         }

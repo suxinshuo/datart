@@ -223,6 +223,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .serverAggregate((boolean) providerSource.getProperties().getOrDefault(SERVER_AGGREGATE, false))
                 .cacheEnable(false)
                 .sqlTaskId(testExecuteParam.getSqlTaskId())
+                .sparkShareLevel(testExecuteParam.getSparkShareLevel())
                 .build();
         return dataProviderManager.execute(providerSource, queryScript, executeParam);
     }
