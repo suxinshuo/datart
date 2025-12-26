@@ -71,20 +71,20 @@ public class ParamFactory {
 
         List<AggregateOperator> aggregateOperators = new ArrayList<>();
         AggregateOperator aggregateOperator = new AggregateOperator();
-        aggregateOperator.setColumn("val");
+        aggregateOperator.setColumnExt("val");
         aggregateOperator.setSqlOperator(AggregateOperator.SqlOperator.SUM);
         aggregateOperator.setAlias("SUM(val)");
         aggregateOperators.add(aggregateOperator);
 
         List<GroupByOperator> groupByOperators = new ArrayList<>();
         GroupByOperator group = new GroupByOperator();
-        group.setColumn("id");
+        group.setColumnExt("id");
         group.setAlias("id");
         groupByOperators.add(group);
 
         List<OrderOperator> orderOperators = new ArrayList<>();
         OrderOperator orderOperator = new OrderOperator();
-        orderOperator.setColumn("age");
+        orderOperator.setColumnExt("age");
         orderOperator.setOperator(OrderOperator.SqlOperator.DESC);
         orderOperator.setAggOperator(AggregateOperator.SqlOperator.COUNT);
         orderOperators.add(orderOperator);
