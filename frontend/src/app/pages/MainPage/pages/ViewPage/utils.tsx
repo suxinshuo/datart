@@ -178,30 +178,45 @@ export function getColumnWidthMap(
   const ICON_WIDTH = 24;
   const ICON_MARGIN = SPACE_UNIT;
 
+  const MAX_WIDTH_BY_TYPE = {
+    [DataViewFieldType.NUMERIC]: 200,
+    [DataViewFieldType.DATE]: 180,
+    [DataViewFieldType.STRING]: 400,
+  };
+
+  const MIN_SAMPLES = Math.min(dataSource.length, 100);
+
   return Object.keys(model).reduce((map, name) => {
-    if (!map[name]) {
-      // header width
-      map[name] =
-        getTextWidth(name, `${FONT_WEIGHT_MEDIUM}`) +
-        HEADER_PADDING +
-        ICON_WIDTH * 2 +
-        ICON_MARGIN;
-    }
+    const column = model[name];
+    const columnType = column.type || DataViewFieldType.STRING;
+
+    const headerWidth =
+      getTextWidth(name, `${FONT_WEIGHT_MEDIUM}`) +
+      HEADER_PADDING +
+      ICON_WIDTH * 2 +
+      ICON_MARGIN;
+
+    const maxTypeWidth =
+      MAX_WIDTH_BY_TYPE[columnType] ||
+      MAX_WIDTH_BY_TYPE[DataViewFieldType.STRING];
+    const maxWidth = Math.max(headerWidth, maxTypeWidth);
+
+    map[name] = headerWidth;
+
     if (dataSource.length > 0) {
-      map[name] = dataSource.reduce((width, o) => {
-        // column width
-        return Math.min(
-          // MAX_RESULT_TABLE_COLUMN_WIDTH,
-          Math.max(
-            width,
-            map[name],
-            o[name] !== null && o[name] !== undefined
-              ? getTextWidth(`${o[name]}`) + CELL_PADDING
-              : 0,
-          ),
-        );
-      }, 0);
+      let maxContentWidth = 0;
+      for (let i = 0; i < MIN_SAMPLES; i++) {
+        const row = dataSource[i];
+        const value = row[name];
+        if (value !== null && value !== undefined) {
+          const contentWidth = getTextWidth(`${value}`) + CELL_PADDING;
+          maxContentWidth = Math.max(maxContentWidth, contentWidth);
+        }
+      }
+
+      map[name] = Math.min(Math.max(headerWidth, maxContentWidth), maxWidth);
     }
+
     return map;
   }, {});
 }
