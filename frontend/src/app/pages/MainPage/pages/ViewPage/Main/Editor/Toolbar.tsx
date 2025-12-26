@@ -30,7 +30,13 @@ import { ToolbarButton } from 'app/components';
 import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { CommonFormTypes } from 'globalConstants';
-import React, { memo, useCallback, useContext, useEffect } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import { format } from 'sql-formatter';
@@ -122,6 +128,16 @@ export const Toolbar = memo(
       selectCurrentEditingViewAttr(state, { name: 'enableAsyncExecution' }),
     ) as boolean;
 
+    const sparkShareLevel = useSelector(state =>
+      selectCurrentEditingViewAttr(state, { name: 'sparkShareLevel' }),
+    ) as 'CONNECTION' | 'USER' | 'SERVER';
+
+    // Determine if current data source is Spark
+    const isSparkSource = useMemo(() => {
+      const currentSource = sources.find(source => source.id === sourceId);
+      return JSON.parse(currentSource?.config || '{}').dbType?.toLowerCase() === 'spark';
+    }, [sources, sourceId]);
+
     const toggleAsyncExecution = useCallback(() => {
       dispatch(
         actions.changeCurrentEditingView({
@@ -190,6 +206,13 @@ export const Toolbar = memo(
     const sizeMenuClick = useCallback(
       ({ key }) => {
         dispatch(actions.changeCurrentEditingView({ size: Number(key) }));
+      },
+      [dispatch, actions],
+    );
+
+    const handleSparkShareLevelChange = useCallback(
+      (value: 'CONNECTION' | 'USER' | 'SERVER') => {
+        dispatch(actions.changeCurrentEditingView({ sparkShareLevel: value }));
       },
       [dispatch, actions],
     );
@@ -264,6 +287,24 @@ export const Toolbar = memo(
                       disabled={isArchived}
                     />
                   </Tooltip>
+                  {isSparkSource && (
+                    <Select
+                      value={sparkShareLevel || 'USER'}
+                      onChange={handleSparkShareLevelChange}
+                      style={{ width: 200 }}
+                      disabled={isArchived}
+                    >
+                      <Select.Option value="CONNECTION">
+                        CONNECTION - {t('sparkShareLevel.CONNECTION_DESC')}
+                      </Select.Option>
+                      <Select.Option value="USER">
+                        USER - {t('sparkShareLevel.USER_DESC')}
+                      </Select.Option>
+                      <Select.Option value="SERVER">
+                        SERVER - {t('sparkShareLevel.SERVER_DESC')}
+                      </Select.Option>
+                    </Select>
+                  )}
                 </Space>
               </>
             )}

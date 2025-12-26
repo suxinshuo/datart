@@ -115,6 +115,8 @@ export interface ViewViewModel<T = object>
   enableAsyncExecution?: boolean;
   currentTaskErrorMessage?: string;
   isCancelClicked?: boolean;
+  // Spark Resource Isolation Level
+  sparkShareLevel?: 'CONNECTION' | 'USER' | 'SERVER';
 }
 
 export interface QueryResult {

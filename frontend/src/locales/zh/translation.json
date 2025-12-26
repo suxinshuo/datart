@@ -1283,7 +1283,12 @@
       "saveFragment": "保存片段",
       "readonlyTip": "回收站中不可编辑",
       "saveSuccess": "保存成功",
-      "asyncExecution": "异步执行"
+      "asyncExecution": "异步执行",
+      "sparkShareLevel": {
+        "CONNECTION_DESC": "每个任务独立资源",
+        "USER_DESC": "每个用户独立资源",
+        "SERVER_DESC": "所有用户共享资源"
+      }
     },
     "properties": {
       "reference": "数据源信息",

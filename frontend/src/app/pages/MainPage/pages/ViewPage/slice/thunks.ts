@@ -172,7 +172,8 @@ const buildSqlExecutionRequest = (
   scriptProps: StructViewQueryProps | undefined,
   allDatabaseSchemas: any,
 ) => {
-  const { id, sourceId, size, fragment, variables, type } = currentEditingView;
+  const { id, sourceId, size, fragment, variables, type, sparkShareLevel } =
+    currentEditingView;
   let sql = '';
   let structure: StructViewQueryProps | null = null;
   let script = '';
@@ -243,6 +244,8 @@ const buildSqlExecutionRequest = (
     ),
     // Add viewId if it exists, otherwise it will be undefined
     viewId: id,
+    // Add Spark resource isolation level if provided
+    sparkShareLevel: sparkShareLevel || 'USER',
   };
 
   return requestData;
