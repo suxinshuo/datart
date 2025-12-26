@@ -21,14 +21,28 @@ import sqlReservedWords from 'app/assets/javascripts/sqlReservedWords';
 import migrationViewConfig from 'app/migration/ViewConfig/migrationViewConfig';
 import { migrateViewConfig } from 'app/migration/ViewConfig/migrationViewDetailConfig';
 import beginViewModelMigration from 'app/migration/ViewConfig/migrationViewModelConfig';
-import { selectOrgId } from 'app/pages/MainPage/slice/selectors';
+import { getCascadeAccess } from 'app/pages/MainPage/Access';
+import {
+  selectIsOrgOwner,
+  selectOrgId,
+  selectPermissionMap,
+} from 'app/pages/MainPage/slice/selectors';
 import i18n from 'i18next';
 import { monaco } from 'react-monaco-editor';
 import { RootState } from 'types';
 import { request2 } from 'utils/request';
-import { errorHandle, getErrorMessage, rejectHandle } from 'utils/utils';
+import {
+  errorHandle,
+  getErrorMessage,
+  getPath,
+  rejectHandle,
+} from 'utils/utils';
 import { viewActions } from '.';
 import { View } from '../../../../../types/View';
+import {
+  PermissionLevels,
+  ResourceTypes,
+} from '../../PermissionPage/constants';
 import { selectVariables } from '../../VariablePage/slice/selectors';
 import { Variable } from '../../VariablePage/slice/types';
 import { ViewViewModelStages } from '../constants';
@@ -467,7 +481,35 @@ export const getSqlTaskStatus = createAsyncThunk<
           currentEditingView.stage === ViewViewModelStages.Running &&
           !isNewView(currentEditingView.id) // Only auto save for persisted views
         ) {
-          dispatch(saveView({}));
+          // Check if user has manage permission before auto saving
+          const isOwner = selectIsOrgOwner(getState());
+          const permissionMap = selectPermissionMap(getState());
+          const views = selectViews(getState());
+
+          // Build view path for permission check
+          const path = views
+            ? getPath(
+                views as Array<{ id: string; parentId: string }>,
+                {
+                  id: currentEditingView.id,
+                  parentId: currentEditingView.parentId,
+                },
+                ResourceTypes.View,
+              )
+            : [];
+
+          const hasManagePermission = getCascadeAccess(
+            isOwner,
+            permissionMap,
+            ResourceTypes.View,
+            path,
+            PermissionLevels.Manage,
+          );
+
+          // Only auto save if user has manage permission
+          if (hasManagePermission) {
+            dispatch(saveView({}));
+          }
         }
       } else if (response.data.status === SqlTaskStatus.FAILED) {
         dispatch(
@@ -477,6 +519,42 @@ export const getSqlTaskStatus = createAsyncThunk<
               response.data.errorMessage || i18n.t('view.sqlExecutionFailed'),
           }),
         );
+
+        // Auto save the view after failed execution - only if it's not a new view
+        if (
+          currentEditingView.currentTaskId === taskId &&
+          !isNewView(currentEditingView.id) // Only auto save for persisted views
+        ) {
+          // Check if user has manage permission before auto saving
+          const isOwner = selectIsOrgOwner(getState());
+          const permissionMap = selectPermissionMap(getState());
+          const views = selectViews(getState());
+
+          // Build view path for permission check
+          const path = views
+            ? getPath(
+                views as Array<{ id: string; parentId: string }>,
+                {
+                  id: currentEditingView.id,
+                  parentId: currentEditingView.parentId,
+                },
+                ResourceTypes.View,
+              )
+            : [];
+
+          const hasManagePermission = getCascadeAccess(
+            isOwner,
+            permissionMap,
+            ResourceTypes.View,
+            path,
+            PermissionLevels.Manage,
+          );
+
+          // Only auto save if user has manage permission
+          if (hasManagePermission) {
+            dispatch(saveView({}));
+          }
+        }
       }
     }
 

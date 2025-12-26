@@ -111,4 +111,4 @@ datart:
 
   task:
     consumer:
-      count: 10 # 异步执行任务的消费者数量
+      count: 4 # 异步执行任务的消费者数量
