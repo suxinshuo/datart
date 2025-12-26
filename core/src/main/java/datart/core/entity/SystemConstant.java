@@ -8,6 +8,11 @@ package datart.core.entity;
  */
 public interface SystemConstant {
 
+    /**
+     * 请求 ID.
+     */
+    String REQUEST_ID = "request_id";
+
     String SYSTEM_USER_ID = "system_user_id";
 
 }
