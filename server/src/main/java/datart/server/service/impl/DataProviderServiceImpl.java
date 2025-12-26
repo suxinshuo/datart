@@ -19,7 +19,6 @@
 package datart.server.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
@@ -41,6 +40,7 @@ import datart.core.entity.Source;
 import datart.core.entity.SqlTaskResult;
 import datart.core.entity.View;
 import datart.core.mappers.ext.RelSubjectColumnsMapperExt;
+import datart.core.utils.JsonUtils;
 import datart.security.util.AESUtil;
 import datart.server.base.dto.VariableValue;
 import datart.server.base.params.TestExecuteParam;
@@ -287,7 +287,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 if (CollUtil.isEmpty(sqlTaskResults) || StringUtils.isBlank(sqlTaskResults.get(0).getData())) {
                     Exceptions.tr(BaseException.class, "message.source.task.not-found");
                 }
-                sqlTaskResult = JSONUtil.toBean(sqlTaskResults.get(0).getData(), Dataframe.class);
+                sqlTaskResult = JsonUtils.toBean(sqlTaskResults.get(0).getData(), Dataframe.class);
             }
         }
 

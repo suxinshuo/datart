@@ -111,7 +111,30 @@ export const Resource = memo(() => {
   const { filteredData, onExpand, debouncedSearch, expandedRowKeys } =
     useSearchAndExpand(
       databaseTreeModel,
-      (keywords, data) => (data.title as string).includes(keywords),
+      (keywords, data) => {
+        // Check if search keyword contains '.'
+        if (keywords.includes('.')) {
+          const [dbName, tableName] = keywords.split('.');
+          const nodeValue = data['value'] as string[];
+
+          // For database nodes (level 1)
+          if (nodeValue.length === 1) {
+            return nodeValue[0] === dbName;
+          }
+
+          // For table nodes (level 2) or column nodes (level 3)
+          if (nodeValue.length >= 2) {
+            return (
+              nodeValue[0] === dbName &&
+              (tableName === '' || nodeValue[1].includes(tableName))
+            );
+          }
+
+          return false;
+        }
+
+        return (data.title as string).includes(keywords);
+      },
       DEFAULT_DEBOUNCE_WAIT,
       true,
     );
