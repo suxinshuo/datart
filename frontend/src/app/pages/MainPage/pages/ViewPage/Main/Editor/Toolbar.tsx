@@ -135,7 +135,10 @@ export const Toolbar = memo(
     // Determine if current data source is Spark
     const isSparkSource = useMemo(() => {
       const currentSource = sources.find(source => source.id === sourceId);
-      return JSON.parse(currentSource?.config || '{}').dbType?.toLowerCase() === 'spark';
+      return (
+        JSON.parse(currentSource?.config || '{}').dbType?.toLowerCase() ===
+        'spark'
+      );
     }, [sources, sourceId]);
 
     const toggleAsyncExecution = useCallback(() => {
@@ -323,7 +326,7 @@ export const Toolbar = memo(
                   onChange={handleSparkShareLevelChange}
                   style={{ width: 130 }}
                   disabled={isArchived}
-                  size={"small"}
+                  size={'small'}
                 >
                   <Select.Option value="CONNECTION">
                     <Tooltip title={t('sparkShareLevel.CONNECTION_DESC')}>
