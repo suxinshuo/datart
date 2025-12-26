@@ -410,7 +410,7 @@ public class JdbcDataProviderAdapter implements Closeable {
         List<String> preSqls = param.getPreSqls();
         String sql = param.getSql();
 
-        try (Connection conn = getConn(taskId)) {
+        try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
             try (Statement statement = conn.createStatement()) {
                 if (CollUtil.isNotEmpty(preSqls)) {
                     for (String preSql : preSqls) {
@@ -450,7 +450,7 @@ public class JdbcDataProviderAdapter implements Closeable {
         List<String> preSqls = param.getPreSqls();
         String selectSql = param.getSql();
 
-        try (Connection conn = getConn(taskId)) {
+        try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
             try (Statement statement = conn.createStatement()) {
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
                 // 执行 set 语句
@@ -496,7 +496,7 @@ public class JdbcDataProviderAdapter implements Closeable {
     public int executeCountSql(ExecuteSqlParam param) throws SQLException {
         String taskId = param.getTaskId();
         String sql = param.getSql();
-        try (Connection connection = getConn(taskId)) {
+        try (Connection connection = getConn(taskId, param.getSparkShareLevel())) {
             String countSql = String.format(COUNT_SQL, sql);
             countSql = getTaskSql(taskId, countSql);
             PreparedStatement preparedStatement = connection.prepareStatement(countSql);

@@ -287,24 +287,6 @@ export const Toolbar = memo(
                       disabled={isArchived}
                     />
                   </Tooltip>
-                  {isSparkSource && (
-                    <Select
-                      value={sparkShareLevel || 'USER'}
-                      onChange={handleSparkShareLevelChange}
-                      style={{ width: 200 }}
-                      disabled={isArchived}
-                    >
-                      <Select.Option value="CONNECTION">
-                        CONNECTION - {t('sparkShareLevel.CONNECTION_DESC')}
-                      </Select.Option>
-                      <Select.Option value="USER">
-                        USER - {t('sparkShareLevel.USER_DESC')}
-                      </Select.Option>
-                      <Select.Option value="SERVER">
-                        SERVER - {t('sparkShareLevel.SERVER_DESC')}
-                      </Select.Option>
-                    </Select>
-                  )}
                 </Space>
               </>
             )}
@@ -332,6 +314,35 @@ export const Toolbar = memo(
                   : 'default'
               }
             />
+
+            {isSparkSource && (
+              <div>
+                <span>资源隔离级别: </span>
+                <Select
+                  value={sparkShareLevel || 'USER'}
+                  onChange={handleSparkShareLevelChange}
+                  style={{ width: 130 }}
+                  disabled={isArchived}
+                  size={"small"}
+                >
+                  <Select.Option value="CONNECTION">
+                    <Tooltip title={t('sparkShareLevel.CONNECTION_DESC')}>
+                      <div style={{ width: '100%' }}>CONNECTION</div>
+                    </Tooltip>
+                  </Select.Option>
+                  <Select.Option value="USER">
+                    <Tooltip title={t('sparkShareLevel.USER_DESC')}>
+                      <div style={{ width: '100%' }}>USER</div>
+                    </Tooltip>
+                  </Select.Option>
+                  <Select.Option value="SERVER">
+                    <Tooltip title={t('sparkShareLevel.SERVER_DESC')}>
+                      <div style={{ width: '100%' }}>SERVER</div>
+                    </Tooltip>
+                  </Select.Option>
+                </Select>
+              </div>
+            )}
           </Space>
         </Operates>
 
