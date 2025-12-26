@@ -95,7 +95,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     @Resource(name = "sqlTaskExecutor")
     private ThreadPoolTaskExecutor sqlTaskExecutor;
 
-    @Value("${datart.task.queue_capacity:30}")
+    @Value("${datart.task.queue_capacity:100}")
     private int queueCapacity;
 
     @Value("${datart.task.execution.max_time:600000}")

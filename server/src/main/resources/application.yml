@@ -89,12 +89,12 @@ datart:
     example-dir-name: "示例"
 
   task:
-    queue_capacity: 30
+    queue_capacity: 100
     consumer:
       count: 4
     thread:
       pool:
-        size: 10
+        size: 20
         queue_capacity: 100
     execution:
       max_time: 1800000 # 30分钟

@@ -108,3 +108,7 @@ datart:
     timeout-seconds: 60
     webdriver-type: CHROME
     webdriver-path: ${datart.webdriver-path:}
+
+  task:
+    consumer:
+      count: 10 # 异步执行任务的消费者数量

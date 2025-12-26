@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 public class ThreadPoolConfig {
 
-    @Value("${datart.task.thread.pool.size:10}")
+    @Value("${datart.task.thread.pool.size:20}")
     private int threadPoolSize;
 
     @Value("${datart.task.thread.pool.queue_capacity:100}")
