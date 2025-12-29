@@ -36,7 +36,9 @@
     "validation": {
       "required": " is required",
       "invalidPassword": "Password must be 6-20 characters",
-      "passwordNotMatch": "Password and confirm password do not match"
+      "passwordNotMatch": "Password and confirm password do not match",
+      "noFolderPermission": "No Folder Permission",
+      "noFolderPermissionDesc": "You do not have permission to access any folders. Please contact your administrator to obtain the necessary permissions."
     },
     "time": {
       "minute": "Minute",

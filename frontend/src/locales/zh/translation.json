@@ -36,7 +36,9 @@
     "validation": {
       "required": "不能为空",
       "invalidPassword": "密码长度为6-20位",
-      "passwordNotMatch": "两次输入的密码不一致"
+      "passwordNotMatch": "两次输入的密码不一致",
+      "noFolderPermission": "无文件夹权限",
+      "noFolderPermissionDesc": "您当前没有访问任何文件夹的权限，请联系管理员获取相应权限"
     },
     "time": {
       "minute": "分钟",
