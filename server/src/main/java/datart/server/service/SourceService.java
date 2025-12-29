@@ -36,6 +36,8 @@ public interface SourceService extends BaseCRUDService<Source, SourceMapperExt>,
 
     List<Source> listSources(String orgId, boolean active);
 
+    List<Source> listSources(String orgId, boolean active, boolean filterPermission);
+
     /**
      * 通过 source id 列表查询 source 列表
      *

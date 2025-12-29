@@ -23,6 +23,7 @@ import com.alibaba.fastjson.support.config.FastJsonConfig;
 import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
 import datart.server.config.interceptor.BasicValidRequestInterceptor;
 import datart.server.config.interceptor.LoginInterceptor;
+import datart.server.config.interceptor.ReqIDInjectHandlerInterceptor;
 import datart.server.controller.BaseController;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 @Configuration
@@ -40,14 +42,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Value("${datart.server.path-prefix}")
     private String pathPrefix;
 
-    private final LoginInterceptor loginInterceptor;
+    @Resource
+    private LoginInterceptor loginInterceptor;
 
-    public WebMvcConfig(LoginInterceptor loginInterceptor) {
-        this.loginInterceptor = loginInterceptor;
-    }
+    @Resource
+    private ReqIDInjectHandlerInterceptor reqIDInjectHandlerInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(reqIDInjectHandlerInterceptor).addPathPatterns(getPathPrefix() + "/**");
         registry.addInterceptor(loginInterceptor).addPathPatterns(getPathPrefix() + "/**");
         //i18n locale interceptor
         registry.addInterceptor(new BasicValidRequestInterceptor()).addPathPatterns("/**");

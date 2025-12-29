@@ -70,6 +70,13 @@ public class ViewExecuteParam {
 
     private boolean analytics;
 
+    private String sqlTaskId;
+
+    /**
+     * 静态分析, 分析历史 source 执行结果
+     */
+    private boolean staticAnalysis = false;
+
     public boolean isEmpty() {
         return CollectionUtils.isEmpty(columns)
                 && CollectionUtils.isEmpty(aggregators)

@@ -39,21 +39,23 @@ public interface ViewService extends VizCRUDService<View, ViewMapperExt>, Resour
     /**
      * 查找组织下指定名称的顶层文件夹
      *
-     * @param orgId 组织 ID
-     * @param name  文件夹名称
+     * @param orgId            组织 ID
+     * @param name             文件夹名称
+     * @param filterPermission 是否过滤权限
      * @return 组织下指定名称的顶层文件夹列表
      */
-    List<View> getTopFolderViewsByName(String orgId, String name);
+    List<View> getTopFolderViewsByName(String orgId, String name, Boolean filterPermission);
 
     /**
      * 查找指定父目录下指定名称的文件夹
      *
-     * @param orgId    组织 ID
-     * @param parentId 父目录 ID
-     * @param name     文件夹名称
+     * @param orgId            组织 ID
+     * @param parentId         父目录 ID
+     * @param name             文件夹名称
+     * @param filterPermission 是否过滤权限
      * @return 指定父目录下指定名称的文件夹列表
      */
-    List<View> getFolderViewsByParentIdAndName(String orgId, String parentId, String name);
+    List<View> getFolderViewsByParentIdAndName(String orgId, String parentId, String name, Boolean filterPermission);
 
     View updateView(BaseUpdateParam updateParam);
 

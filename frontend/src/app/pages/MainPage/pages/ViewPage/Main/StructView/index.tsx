@@ -76,6 +76,7 @@ export const StructView = memo(
     const { initActions } = useContext(EditorContext);
     const { showSaveForm } = useContext(SaveFormContext);
     const t = useI18NPrefix(`view.structView`);
+    const tView = useI18NPrefix(`view`);
 
     const structure = useSelector(state =>
       selectCurrentEditingViewAttr(state, { name: 'script' }),
@@ -221,6 +222,12 @@ export const StructView = memo(
     const handleInterimRunSql = useCallback(
       async (type?: 'MAIN' | 'JOINS', joinIndex?: number) => {
         try {
+          // Check if view is currently being saved, if so, don't allow running SQL
+          if (stage === ViewViewModelStages.Saving) {
+            message.warning(tView('saveInProgress'));
+            return;
+          }
+
           let joins: JoinTableProps[] = [];
 
           if (joinIndex !== undefined) {
@@ -272,7 +279,7 @@ export const StructView = memo(
           errorInfo.message && message.error(errorInfo.message);
         }
       },
-      [dispatch, id, structure, form],
+      [dispatch, id, structure, form, stage, tView],
     );
 
     const handleDeleteConditions = useCallback(

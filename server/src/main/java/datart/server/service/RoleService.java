@@ -38,6 +38,8 @@ public interface RoleService extends BaseCRUDService<Role, RoleMapperExt> {
 
     List<PermissionInfo> grantPermission(GrantPermissionParam grantPermissionParam);
 
+    List<PermissionInfo> grantPermission(GrantPermissionParam grantPermissionParam, Boolean checkPermission);
+
     SubjectPermissions getSubjectPermissions(String orgId, SubjectType subjectType, String subjectId);
 
     ResourcePermissions getResourcePermission(String orgId, ResourceType resourceType, String resourceId);

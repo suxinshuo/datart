@@ -168,8 +168,10 @@ PRESTO:
 SPARK:
   db-type: SPARK
   name: SPARK
-  driver-class: org.apache.hive.jdbc.HiveDriver
-  url-prefix: jdbc:hive2://
+  driver-class: org.apache.kyuubi.jdbc.KyuubiHiveDriver
+  url-prefix: jdbc:kyuubi://
+  sql-dialect: datart.data.provider.calcite.dialect.SparkSqlDialectSupport
+  adapter-class: datart.data.provider.jdbc.adapters.SparkDataProviderAdapter
 
 SQLSTREAM:
   db-type: SQLSTREAM
@@ -195,4 +197,12 @@ VERTICA:
   driver-class: com.vertica.jdbc.Driver
   url-prefix: jdbc:vertica://
 
-
+DORIS:
+  db-type: "doris"
+  name: "doris"
+  driver-class: "com.mysql.cj.jdbc.Driver"
+  literal-quote: "'"
+  identifier-quote: "`"
+  adapter-class: "datart.data.provider.jdbc.adapters.DorisDataProviderAdapter"
+  sql-dialect: "datart.data.provider.calcite.dialect.DorisSqlDialectSupport"
+  url-prefix: "jdbc:mysql://"

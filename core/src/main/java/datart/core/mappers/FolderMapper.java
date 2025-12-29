@@ -1,18 +1,29 @@
 package datart.core.mappers;
 
 import datart.core.entity.Folder;
+import datart.core.entity.FolderExample;
 import datart.core.mappers.ext.CRUDMapper;
+import java.util.List;
 import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.DeleteProvider;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.InsertProvider;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.SelectProvider;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.UpdateProvider;
 import org.apache.ibatis.type.JdbcType;
 
 public interface FolderMapper extends CRUDMapper {
+    @SelectProvider(type=FolderSqlProvider.class, method="countByExample")
+    long countByExample(FolderExample example);
+
+    @DeleteProvider(type=FolderSqlProvider.class, method="deleteByExample")
+    int deleteByExample(FolderExample example);
+
     @Delete({
         "delete from folder",
         "where id = #{id,jdbcType=VARCHAR}"
@@ -36,6 +47,20 @@ public interface FolderMapper extends CRUDMapper {
     @InsertProvider(type=FolderSqlProvider.class, method="insertSelective")
     int insertSelective(Folder record);
 
+    @SelectProvider(type=FolderSqlProvider.class, method="selectByExample")
+    @Results({
+        @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
+        @Result(column="name", property="name", jdbcType=JdbcType.VARCHAR),
+        @Result(column="org_id", property="orgId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="rel_type", property="relType", jdbcType=JdbcType.VARCHAR),
+        @Result(column="sub_type", property="subType", jdbcType=JdbcType.VARCHAR),
+        @Result(column="rel_id", property="relId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="avatar", property="avatar", jdbcType=JdbcType.VARCHAR),
+        @Result(column="parent_id", property="parentId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="index", property="index", jdbcType=JdbcType.DOUBLE)
+    })
+    List<Folder> selectByExample(FolderExample example);
+
     @Select({
         "select",
         "id, `name`, org_id, rel_type, sub_type, rel_id, avatar, parent_id, `index`",
@@ -54,6 +79,12 @@ public interface FolderMapper extends CRUDMapper {
         @Result(column="index", property="index", jdbcType=JdbcType.DOUBLE)
     })
     Folder selectByPrimaryKey(String id);
+
+    @UpdateProvider(type=FolderSqlProvider.class, method="updateByExampleSelective")
+    int updateByExampleSelective(@Param("record") Folder record, @Param("example") FolderExample example);
+
+    @UpdateProvider(type=FolderSqlProvider.class, method="updateByExample")
+    int updateByExample(@Param("record") Folder record, @Param("example") FolderExample example);
 
     @UpdateProvider(type=FolderSqlProvider.class, method="updateByPrimaryKeySelective")
     int updateByPrimaryKeySelective(Folder record);

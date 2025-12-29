@@ -14,6 +14,8 @@ import lombok.*;
 @EqualsAndHashCode(callSuper = true)
 public class ViewCreateDirectlyParam extends BaseCreateParam {
 
+    private String operatorUserId;
+
     private String name;
 
     private String description;

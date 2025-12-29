@@ -70,9 +70,9 @@
         </table>
 
         <table tableName="folder"
-               enableCountByExample="false" enableUpdateByExample="false"
-               enableDeleteByExample="false" enableSelectByExample="false"
-               selectByExampleQueryId="false">
+               enableCountByExample="true" enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true"
+               selectByExampleQueryId="true">
             <property name="ignoreQualifiersAtRuntime" value="true"/>
         </table>
 
@@ -169,9 +169,9 @@
         </table>
 
         <table tableName="storyboard"
-               enableCountByExample="false" enableUpdateByExample="false"
-               enableDeleteByExample="false" enableSelectByExample="false"
-               selectByExampleQueryId="false">
+               enableCountByExample="true" enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true"
+               selectByExampleQueryId="true">
             <property name="ignoreQualifiersAtRuntime" value="true"/>
             <columnOverride column="config" javaType="java.lang.String" jdbcType="VARCHAR"/>
             <columnOverride column="is_folder" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
@@ -248,6 +248,27 @@
         </table>
 
         <table tableName="doris_user_mapping"
+               enableCountByExample="true" enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true"
+               selectByExampleQueryId="true">
+            <property name="ignoreQualifiersAtRuntime" value="true"/>
+        </table>
+
+        <table tableName="sql_task"
+               enableCountByExample="true" enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true"
+               selectByExampleQueryId="true">
+            <property name="ignoreQualifiersAtRuntime" value="true"/>
+        </table>
+
+        <table tableName="sql_task_result"
+               enableCountByExample="true" enableUpdateByExample="true"
+               enableDeleteByExample="true" enableSelectByExample="true"
+               selectByExampleQueryId="true">
+            <property name="ignoreQualifiersAtRuntime" value="true"/>
+        </table>
+
+        <table tableName="sql_task_log"
                enableCountByExample="true" enableUpdateByExample="true"
                enableDeleteByExample="true" enableSelectByExample="true"
                selectByExampleQueryId="true">

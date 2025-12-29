@@ -42,4 +42,17 @@ public class TestExecuteParam {
 
     private int size = 100;
 
+    private boolean asyncEnabled = false;
+
+    private Integer priority;
+
+    private String viewId;
+
+    private String sqlTaskId;
+
+    /**
+     * Spark 任务资源隔离级别
+     */
+    private String sparkShareLevel;
+
 }

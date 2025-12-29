@@ -13,12 +13,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class DorisUserMappingFactory {
 
-    public DorisUserMapping getDorisUserMapping(DorisUserMappingCreateParam createParam, String userId) {
+    public DorisUserMapping getDorisUserMapping(DorisUserMappingCreateParam createParam, String createUserId) {
         DorisUserMapping dorisUserMapping = new DorisUserMapping();
         BeanUtils.copyProperties(createParam, dorisUserMapping);
 
-        dorisUserMapping.setCreateBy(userId);
-        dorisUserMapping.setUpdateBy(userId);
+        dorisUserMapping.setCreateBy(createUserId);
+        dorisUserMapping.setUpdateBy(createUserId);
 
         dorisUserMapping.setId(UUIDGenerator.generate());
 
