@@ -66,6 +66,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const [advancedVisible, setAdvancedVisible] = useState(false);
   const [concurrencyControl, setConcurrencyControl] = useState(true);
   const [cache, setCache] = useState(false);
+  const [currentParentId, setCurrentParentId] = useState<string>();
   const selectViewFolderTree = useMemo(makeSelectViewFolderTree, []);
   const [expensiveQuery, setExpensiveQuery] = useState(false); // beta.2 add expensiveQuery
   const {
@@ -123,6 +124,10 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
         ...initialValues,
         parentId: initialValues.parentId || firstAvailableFolderId || void 0,
       });
+
+      setCurrentParentId(
+        initialValues.parentId || firstAvailableFolderId || void 0,
+      );
     }
   }, [initialValues, folderTree]);
 
@@ -138,6 +143,41 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
     };
     return folderTree ? checkAvailable(folderTree) : false;
   }, [folderTree]);
+
+  const getExpandedKeys = useCallback(
+    (selectedId: string, nodes: any[]): string[] => {
+      const path: string[] = [];
+      const findPath = (
+        targetId: string,
+        currentNodes: any[],
+        currentPath: string[],
+      ): boolean => {
+        for (const node of currentNodes) {
+          const newPath = [...currentPath, node.id];
+          if (node.id === targetId) {
+            path.push(...currentPath);
+            return true;
+          }
+          if (node.children && node.children.length > 0) {
+            if (findPath(targetId, node.children, newPath)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      findPath(selectedId, nodes, []);
+      return path;
+    },
+    [],
+  );
+
+  const expandedKeys = useMemo(() => {
+    if (currentParentId && folderTree) {
+      return getExpandedKeys(currentParentId, folderTree);
+    }
+    return [];
+  }, [folderTree, currentParentId, getExpandedKeys]);
 
   const toggleAdvanced = useCallback(() => {
     setAdvancedVisible(!advancedVisible);
@@ -216,6 +256,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
           treeData={folderTree || []}
           allowClear
           disabled={!hasAvailableFolders}
+          treeDefaultExpandedKeys={expandedKeys}
           onChange={() => {
             formRef.current?.validateFields();
           }}
