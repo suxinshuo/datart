@@ -61,7 +61,8 @@ import Container from './Container';
 export const Resource = memo(() => {
   const t = useI18NPrefix('view.resource');
   const dispatch = useDispatch();
-  const { editorCompletionItemProviderRef } = useContext(EditorContext);
+  const { editorInstance, editorCompletionItemProviderRef } =
+    useContext(EditorContext);
   const isDatabaseSchemaLoading = useSelector(selectDatabaseSchemaLoading);
   const sourceId = useSelector<RootState>(state =>
     selectCurrentEditingViewAttr(state, { name: 'sourceId' }),
@@ -110,7 +111,30 @@ export const Resource = memo(() => {
   const { filteredData, onExpand, debouncedSearch, expandedRowKeys } =
     useSearchAndExpand(
       databaseTreeModel,
-      (keywords, data) => (data.title as string).includes(keywords),
+      (keywords, data) => {
+        // Check if search keyword contains '.'
+        if (keywords.includes('.')) {
+          const [dbName, tableName] = keywords.split('.');
+          const nodeValue = data['value'] as string[];
+
+          // For database nodes (level 1)
+          if (nodeValue.length === 1) {
+            return nodeValue[0] === dbName;
+          }
+
+          // For table nodes (level 2) or column nodes (level 3)
+          if (nodeValue.length >= 2) {
+            return (
+              nodeValue[0] === dbName &&
+              (tableName === '' || nodeValue[1].includes(tableName))
+            );
+          }
+
+          return false;
+        }
+
+        return (data.title as string).includes(keywords);
+      },
       DEFAULT_DEBOUNCE_WAIT,
       true,
     );
@@ -189,6 +213,81 @@ export const Resource = memo(() => {
     );
   }, [handleMenuClick, t]);
 
+  const onDragStart = useCallback(info => {
+    const { event, node } = info;
+    event.dataTransfer.setData(
+      'application/sql-drag',
+      JSON.stringify({
+        title: node.title,
+        value: node.value,
+        type: node.type,
+      }),
+    );
+    event.dataTransfer.effectAllowed = 'copy';
+  }, []);
+
+  useEffect(() => {
+    // Add global drag over handler to allow dropping into editor
+    const handleGlobalDragOver = e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    };
+
+    const handleGlobalDrop = e => {
+      const dragData = e.dataTransfer.getData('application/sql-drag');
+      if (dragData && editorInstance) {
+        e.preventDefault();
+        const { title, value } = JSON.parse(dragData);
+        let insertText = title;
+
+        // Handle different node types
+        if (Array.isArray(value)) {
+          switch (value.length) {
+            case 1: // Database
+              insertText = `\`${title}\``;
+              break;
+            case 2: // Table
+              insertText = `\`${title}\``;
+              break;
+            case 3: // Column
+              insertText = `\`${title}\``;
+              break;
+            default:
+              insertText = title;
+          }
+        }
+
+        // Get current position and create range
+        const position = editorInstance.getPosition();
+        if (position) {
+          const range = {
+            startLineNumber: position.lineNumber,
+            startColumn: position.column,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+          };
+
+          // Insert into editor
+          editorInstance.executeEdits('drag-drop', [
+            {
+              range,
+              text: insertText,
+              forceMoveMarkers: true,
+            },
+          ]);
+        }
+      }
+    };
+
+    document.addEventListener('dragover', handleGlobalDragOver);
+    document.addEventListener('drop', handleGlobalDrop);
+
+    return () => {
+      document.removeEventListener('dragover', handleGlobalDragOver);
+      document.removeEventListener('drop', handleGlobalDrop);
+    };
+  }, [editorInstance]);
+
   return (
     <Container title="reference">
       <SearchBar>
@@ -217,6 +316,8 @@ export const Resource = memo(() => {
           defaultExpandedKeys={expandedRowKeys}
           height={height}
           onExpand={onExpand}
+          draggable={true}
+          onDragStart={onDragStart}
         />
       </TreeWrapper>
     </Container>

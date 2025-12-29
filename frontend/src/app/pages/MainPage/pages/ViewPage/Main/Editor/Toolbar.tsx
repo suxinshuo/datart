@@ -29,6 +29,7 @@ import { Divider, Dropdown, Menu, Select, Space, Switch, Tooltip } from 'antd';
 import { ToolbarButton } from 'app/components';
 import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import useResizeObserver from 'app/hooks/useResizeObserver';
 import { CommonFormTypes } from 'globalConstants';
 import React, {
   memo,
@@ -132,6 +133,15 @@ export const Toolbar = memo(
       selectCurrentEditingViewAttr(state, { name: 'sparkShareLevel' }),
     ) as 'CONNECTION' | 'USER' | 'SERVER';
 
+    const { width, ref: operatesRef } = useResizeObserver({
+      refreshMode: 'debounce',
+      refreshRate: 100,
+    });
+
+    const showSparkShareLevel = useMemo(() => {
+      return width && width > 600;
+    }, [width]);
+
     // Determine if current data source is Spark
     const isSparkSource = useMemo(() => {
       const currentSource = sources.find(source => source.id === sourceId);
@@ -228,7 +238,7 @@ export const Toolbar = memo(
 
     return (
       <Container>
-        <Operates>
+        <Operates ref={operatesRef}>
           <Space split={<Divider type="vertical" className="divider" />}>
             {type === 'SQL' && (
               <>
@@ -318,7 +328,7 @@ export const Toolbar = memo(
               }
             />
 
-            {isSparkSource && (
+            {isSparkSource && showSparkShareLevel && (
               <div>
                 <span>资源隔离级别: </span>
                 <Select
@@ -437,6 +447,7 @@ const Container = styled.div`
 const Operates = styled.div`
   display: flex;
   flex: 1;
+  overflow: hidden;
 `;
 
 const Actions = styled.div`

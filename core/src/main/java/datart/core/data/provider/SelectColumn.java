@@ -32,7 +32,7 @@ public class SelectColumn extends ColumnOperator implements Alias {
     public static SelectColumn of(String alias, String... names) {
         SelectColumn selectColumn = new SelectColumn();
         selectColumn.setAlias(alias);
-        selectColumn.setColumn(names);
+        selectColumn.setColumnExt(names);
         return selectColumn;
     }
 

@@ -24,10 +24,7 @@ import datart.core.base.exception.NotFoundException;
 import datart.core.base.exception.ParamException;
 import datart.core.common.DateUtils;
 import datart.core.common.UUIDGenerator;
-import datart.core.entity.Datachart;
-import datart.core.entity.Folder;
-import datart.core.entity.Variable;
-import datart.core.entity.View;
+import datart.core.entity.*;
 import datart.core.mappers.ext.DatachartMapperExt;
 import datart.core.mappers.ext.FolderMapperExt;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
@@ -47,44 +44,38 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.util.*;
 
 @Service
 public class DatachartServiceImpl extends BaseService implements DatachartService {
 
-    private final RoleService roleService;
+    @Resource
+    private RoleService roleService;
 
-    private final FileService fileService;
+    @Resource
+    private FileService fileService;
 
-    private final FolderMapperExt folderMapper;
+    @Resource
+    private FolderMapperExt folderMapper;
 
-    private final RelRoleResourceMapperExt rrrMapper;
+    @Resource
+    private RelRoleResourceMapperExt rrrMapper;
 
-    private final FolderService folderService;
+    @Resource
+    private FolderService folderService;
 
-    private final DatachartMapperExt datachartMapper;
+    @Resource
+    private DatachartMapperExt datachartMapper;
 
-    private final ViewService viewService;
+    @Resource
+    private ViewService viewService;
 
-    private final VariableService variableService;
+    @Resource
+    private SourceService sourceService;
 
-    public DatachartServiceImpl(RoleService roleService,
-                                FileService fileService,
-                                FolderMapperExt folderMapper,
-                                RelRoleResourceMapperExt rrrMapper,
-                                FolderService folderService,
-                                DatachartMapperExt datachartMapper,
-                                ViewService viewService,
-                                VariableService variableService) {
-        this.roleService = roleService;
-        this.fileService = fileService;
-        this.folderMapper = folderMapper;
-        this.rrrMapper = rrrMapper;
-        this.folderService = folderService;
-        this.datachartMapper = datachartMapper;
-        this.viewService = viewService;
-        this.variableService = variableService;
-    }
+    @Resource
+    private VariableService variableService;
 
     @Override
     public RoleService getRoleService() {
@@ -157,6 +148,10 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
         if (!CollectionUtils.isEmpty(folderMapper.checkVizName(param.getOrgId(), param.getParentId(), param.getName()))) {
             Exceptions.tr(ParamException.class, "error.param.exists.name");
         }
+
+        // check source type
+        checkSourceType(param.getViewId());
+
         Datachart datachart = DatachartService.super.create(createParam);
         // create folder
         Folder folder = new Folder();
@@ -171,6 +166,14 @@ public class DatachartServiceImpl extends BaseService implements DatachartServic
         folderMapper.insert(folder);
 
         return folder;
+    }
+
+    private void checkSourceType(String viewId) {
+        // 检验只能 Doris 数据源可以保存
+        View view = viewService.retrieve(viewId);
+        String sourceId = view.getSourceId();
+        Source source = sourceService.retrieve(sourceId);
+        checkVizSourceType(source);
     }
 
     @Override

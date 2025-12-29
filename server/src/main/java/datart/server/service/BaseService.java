@@ -18,18 +18,26 @@
 
 package datart.server.service;
 
+import cn.hutool.core.lang.TypeReference;
+import datart.core.base.exception.Exceptions;
+import datart.core.base.exception.NotAllowedException;
 import datart.core.common.Application;
 import datart.core.common.MessageResolver;
 import datart.core.entity.BaseEntity;
+import datart.core.entity.Source;
 import datart.core.entity.User;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
+import datart.core.utils.JsonUtils;
+import datart.data.provider.JdbcDataProvider;
 import datart.security.manager.DatartSecurityManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 public class BaseService extends MessageResolver {
@@ -109,6 +117,25 @@ public class BaseService extends MessageResolver {
 
     public DatartSecurityManager getSecurityManager() {
         return securityManager;
+    }
+
+    /**
+     * 检查 Viz 的数据源类型
+     *
+     * @param source 数据源
+     */
+    protected void checkVizSourceType(Source source) {
+        if (!StringUtils.equalsIgnoreCase("JDBC", source.getType())) {
+            Exceptions.tr(NotAllowedException.class, "message.viz.source-type.not-allowed", source.getType());
+        }
+        String config = source.getConfig();
+        Map<String, Object> confProp = JsonUtils.toBean(config, new TypeReference<Map<String, Object>>() {
+        }, false);
+        Object dbType = confProp.get(JdbcDataProvider.DB_TYPE);
+        if (Objects.isNull(dbType) || !StringUtils.equalsIgnoreCase("DORIS", dbType.toString())) {
+            Exceptions.tr(NotAllowedException.class, "message.viz.source-type.not-allowed",
+                    Objects.nonNull(dbType) ? dbType.toString() : "");
+        }
     }
 
 }

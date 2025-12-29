@@ -680,7 +680,7 @@ public class JdbcDataProviderAdapter implements Closeable {
             if (!CollectionUtils.isEmpty(script.getSchema())) {
                 selectColumns = script.getSchema().values().parallelStream().map(column -> {
                     SelectColumn selectColumn = new SelectColumn();
-                    selectColumn.setColumn(column.getName());
+                    selectColumn.setColumnExt(column.getName());
                     selectColumn.setAlias(column.columnKey());
                     return selectColumn;
                 }).collect(Collectors.toList());

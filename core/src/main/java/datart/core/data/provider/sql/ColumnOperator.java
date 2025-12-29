@@ -44,8 +44,16 @@ public abstract class ColumnOperator implements Operator {
         }
     }
 
-    public void setColumn(String... column) {
+    public void setColumnExt(String... column) {
         this.column = column;
+    }
+
+    public void setColumn(String[] column) {
+        this.column = column;
+    }
+
+    public String[] getColumn() {
+        return column;
     }
 
     @Override

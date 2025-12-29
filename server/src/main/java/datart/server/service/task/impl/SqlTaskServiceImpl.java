@@ -20,7 +20,6 @@ package datart.server.service.task.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.json.JSON;
-import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import datart.core.bo.task.QueueTaskBo;
@@ -35,6 +34,7 @@ import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
 import datart.core.data.provider.Dataframe;
 import datart.core.mappers.SqlTaskMapper;
+import datart.core.utils.JsonUtils;
 import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.service.BaseService;
@@ -182,7 +182,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         task.setTimeout((int) maxRunningTime);
         task.setMaxSize(executeParam.getSize());
         task.setOrgId(source.getOrgId());
-        task.setExecuteParam(JSONUtil.toJsonStr(executeParam));
+        task.setExecuteParam(JsonUtils.toJsonStr(executeParam));
         task.setExecInstanceId(getInstantId());
         task.setCreateBy(getCurrentUser().getId());
         task.setCreateTime(new Date());
@@ -244,7 +244,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
             if (CollUtil.isNotEmpty(sqlTaskResults)) {
                 String resultData = sqlTaskResults.get(0).getData();
-                response.setTaskResult(JSONUtil.toBean(resultData, JSON.class));
+                response.setTaskResult(JsonUtils.toBean(resultData, JSON.class));
             }
         } else if (SqlTaskStatus.FAILED.equals(status)) {
             // 如果任务执行失败, 返回错误信息
@@ -338,7 +338,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         }
         String resultData = sqlTaskResults.get(0).getData();
         try {
-            Dataframe dataframe = JSONUtil.toBean(resultData, Dataframe.class);
+            Dataframe dataframe = JsonUtils.toBean(resultData, Dataframe.class);
             // dataframe 转 字符串 格式
             StringJoiner columnSj = new StringJoiner(",", "=== 列名(以','分隔) ===\n", "");
             dataframe.getColumns().stream().map(c -> {
@@ -455,7 +455,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                         .build());
 
                 // 执行 SQL
-                Dataframe dataframe = dataProviderService.testExecute(JSONUtil.toBean(task.getExecuteParam(), TestExecuteParam.class));
+                Dataframe dataframe = dataProviderService.testExecute(JsonUtils.toBean(task.getExecuteParam(), TestExecuteParam.class));
                 log.info("任务({}) 执行完成", task.getId());
 
                 Date endDate = new Date();
@@ -465,7 +465,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 result.setId(UUIDGenerator.generate());
                 result.setTaskId(task.getId());
                 // 将 Dataframe 转换为 JSON 字符串
-                result.setData(JSONUtil.toJsonStr(dataframe));
+                result.setData(JsonUtils.toJsonStr(dataframe));
                 result.setRowCount(dataframe.getRows().size());
                 result.setColumnCount(dataframe.getColumns().size());
                 result.setCreateBy(task.getCreateBy());

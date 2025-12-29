@@ -20,7 +20,6 @@ package datart.server.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.TypeReference;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
@@ -41,6 +40,7 @@ import datart.core.entity.ext.UserBaseInfo;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
 import datart.core.mappers.ext.SourceMapperExt;
 import datart.core.mappers.ext.SourceSchemasMapperExt;
+import datart.core.utils.JsonUtils;
 import datart.security.base.PermissionInfo;
 import datart.security.base.ResourceType;
 import datart.security.base.SubjectType;
@@ -181,7 +181,7 @@ public class SourceServiceImpl extends BaseService implements SourceService {
             if (StringUtils.isEmpty(sourceSchemas.getSchemas())) {
                 return schemaInfo;
             }
-            List<SchemaItem> schemaItems = JSONUtil.toBean(sourceSchemas.getSchemas(), new TypeReference<List<SchemaItem>>() {
+            List<SchemaItem> schemaItems = JsonUtils.toBean(sourceSchemas.getSchemas(), new TypeReference<List<SchemaItem>>() {
             }, false);
             schemaInfo.setSchemaItems(schemaItems);
         } catch (Exception e) {
