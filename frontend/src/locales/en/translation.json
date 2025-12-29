@@ -1298,7 +1298,8 @@
       "variable": "Variables",
       "model": "Data Model",
       "columnPermissions": "Column Permissions",
-      "history": "History"
+      "history": "History",
+      "sqlAssistant": "Programming Assistant"
     },
     "history": {
       "empty": "No history records found",
