@@ -26,7 +26,8 @@ public class SqlTaskConsumerChecker implements Runnable {
             int maxPoolSize = sqlTaskExecutor.getMaxPoolSize();
             int diffCount = consumerCount - activeCount;
             if (diffCount > 0 && consumerCount < maxPoolSize) {
-                log.info("SqlTaskConsumerChecker run, activeCount:{}, diffCount:{}, maxPoolSize:{}", activeCount, diffCount, maxPoolSize);
+                log.info("SqlTaskConsumerChecker run, consumerCount: {}, activeCount: {}, diffCount: {}, maxPoolSize: {}",
+                        consumerCount, activeCount, diffCount, maxPoolSize);
                 for (int i = 0; i < diffCount; i++) {
                     sqlTaskExecutor.execute(() -> processTasks.run());
                 }

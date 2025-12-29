@@ -177,6 +177,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.kyuubi</groupId>
+            <artifactId>kyuubi-hive-jdbc-shaded</artifactId>
+            <version>1.10.2</version>
+            <scope>provided</scope>
+        </dependency>
 
     </dependencies>
 

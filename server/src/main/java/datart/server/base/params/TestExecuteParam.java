@@ -48,4 +48,11 @@ public class TestExecuteParam {
 
     private String viewId;
 
+    private String sqlTaskId;
+
+    /**
+     * Spark 任务资源隔离级别
+     */
+    private String sparkShareLevel;
+
 }

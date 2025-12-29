@@ -67,6 +67,10 @@ public class ExecuteParam implements Serializable {
 
     private Dataframe sqlTaskResult;
 
+    private String sqlTaskId;
+
+    private String sparkShareLevel;
+
     @Override
     public String toString() {
         return JSON.toJSONString(JSON.toJSONString(this));

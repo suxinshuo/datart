@@ -22,7 +22,7 @@ echo "working dir ${BASE_DIR}"
 
 cd "${BASE_DIR}"
 
-CLASS_PATH="${BASE_DIR}/lib/*"
+CLASS_PATH="${BASE_DIR}/lib/*:${BASE_DIR}/lib_ext/*"
 
 START_CLASS="datart.DatartServerApplication"
 
