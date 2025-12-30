@@ -17,59 +17,59 @@ const Heading = styled(({ level, ...props }: MarkdownHeadingProps) => {
   ${props =>
     props.level === 1 &&
     `
-    font-size: 24px;
-    margin-top: 24px;
+    font-size: 22px;
+    margin-top: 22px;
   `}
 
   ${props =>
     props.level === 2 &&
     `
-    font-size: 20px;
+    font-size: 18px;
   `}
-  
+
   ${props =>
     props.level === 3 &&
     `
-    font-size: 18px;
+    font-size: 16px;
   `}
-  
+
   ${props =>
     props.level === 4 &&
     `
-    font-size: 16px;
+    font-size: 14px;
   `}
-  
+
   ${props =>
     props.level === 5 &&
     `
-    font-size: 14px;
+    font-size: 12px;
   `}
-  
+
   ${props =>
     props.level === 6 &&
     `
-    font-size: 13px;
+    font-size: 11px;
     color: #7E8299;
   `}
-  
+
   /* 响应式设计 */
   @media (max-width: 768px) {
     ${props =>
       props.level === 1 &&
       `
-      font-size: 22px;
+      font-size: 20px;
     `}
 
     ${props =>
       props.level === 2 &&
       `
-      font-size: 18px;
+      font-size: 16px;
     `}
-    
+
     ${props =>
       props.level === 3 &&
       `
-      font-size: 16px;
+      font-size: 14px;
     `}
   }
 `;
