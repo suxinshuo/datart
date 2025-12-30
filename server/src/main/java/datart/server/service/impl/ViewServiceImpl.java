@@ -482,9 +482,6 @@ public class ViewServiceImpl extends BaseService implements ViewService {
                 rscMapper.batchInsert(columnPermission);
             }
         }
-        if (StringUtils.isNotBlank(view.getSourceId())) {
-            Application.getBean(DataProviderService.class).updateSource(retrieve(view.getSourceId(), Source.class, false));
-        }
         BeanUtils.copyProperties(updateParam, view);
         view.setType(viewUpdateParam.getType().name());
         view.setUpdateBy(getCurrentUser().getId());

@@ -87,6 +87,9 @@ public class SqlAssistantServiceImpl extends BaseService implements SqlAssistant
                          new InputStreamReader(httpResponse.bodyStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    if (StringUtils.isBlank(line)) {
+                        continue;
+                    }
                     if (!StringUtils.startsWith(line, "data:")) {
                         Map<String, Object> map = null;
                         try {
