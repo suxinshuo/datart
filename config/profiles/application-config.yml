@@ -112,3 +112,11 @@ datart:
   task:
     consumer:
       count: 4 # 异步执行任务的消费者数量
+
+  assistant:
+    dify:
+      url: https://tify-api.itigerinner.com/v1/chat-messages
+      token:
+        function: app-jfSmxwOWFEm1Aenir6LFeLPG
+        analysis:
+        other:

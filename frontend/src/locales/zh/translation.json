@@ -1326,6 +1326,16 @@
         "unknown": "未知"
       }
     },
+    "sqlAssistant": {
+      "function": "查函数",
+      "analysis": "分析结果",
+      "other": "其他",
+      "chatTypeNotSupport": "图表类型不支持",
+      "replying": "正在回复...",
+      "replyFailed": "回复失败，请重试",
+      "inputQuestion": "请输入您的问题...",
+      "send": "发送"
+    },
     "resource": {
       "title": "数据源信息",
       "search": "搜索数据库 / 表 / 字段关键字",

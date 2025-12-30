@@ -34,16 +34,10 @@ import {
 } from 'styles/StyleConstants';
 import { getToken } from 'utils/auth';
 import Container from './Container';
+import useI18NPrefix from "../../../../../../hooks/useI18NPrefix";
 
 const { TextArea } = Input;
 const { Option } = Select;
-
-// 问题类型选项
-const QUESTION_TYPES = [
-  { value: 'function', label: '查函数' },
-  { value: 'analysis', label: '分析结果' },
-  { value: 'other', label: '其他' },
-];
 
 // 消息类型定义
 type MessageType = 'user' | 'assistant';
@@ -368,115 +362,10 @@ const LoadingIndicator = styled.div`
   color: ${p => p.theme.textColorSnd};
 `;
 
-// 图表组件
-interface ChartComponentProps {
-  chartType: 'line' | 'bar' | 'pie';
-  chartData: any;
-}
-
-const ChartComponent = memo(({ chartType, chartData }: ChartComponentProps) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartInstanceRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!chartRef.current) return;
-
-    // 初始化图表
-    const chart = init(chartRef.current);
-    chartInstanceRef.current = chart;
-
-    // 根据图表类型设置不同的配置
-    let option = {};
-
-    switch (chartType) {
-      case 'line':
-        option = {
-          tooltip: {
-            trigger: 'axis',
-          },
-          xAxis: chartData?.xAxis || {},
-          yAxis: chartData?.yAxis || {},
-          series: chartData?.series || [],
-        };
-        break;
-      case 'bar':
-        option = {
-          tooltip: {
-            trigger: 'axis',
-            axisPointer: {
-              type: 'shadow',
-            },
-          },
-          xAxis: chartData?.xAxis || {},
-          yAxis: chartData?.yAxis || {},
-          series: chartData?.series || [],
-        };
-        break;
-      case 'pie':
-        option = {
-          tooltip: {
-            trigger: 'item',
-          },
-          legend: {
-            orient: 'vertical',
-            left: 'left',
-          },
-          series: chartData?.series || [],
-        };
-        break;
-      default:
-        option = {
-          title: {
-            text: '图表类型不支持',
-            left: 'center',
-            top: 'center',
-          },
-        };
-    }
-
-    // 设置图表配置
-    chart.setOption(option);
-
-    // 使用 ResizeObserver 监听容器尺寸变化
-    const resizeObserver = new ResizeObserver(() => {
-      chart.resize();
-    });
-
-    if (chartRef.current) {
-      resizeObserver.observe(chartRef.current);
-    }
-
-    // 多次延迟调整，确保在缓存加载时也能正确渲染
-    const timers: NodeJS.Timeout[] = [];
-    const delays = [0, 100, 300, 500];
-
-    delays.forEach(delay => {
-      const timer = setTimeout(() => {
-        chart.resize();
-      }, delay);
-      timers.push(timer);
-    });
-
-    // 响应式处理
-    const resizeHandler = () => {
-      chart.resize();
-    };
-    window.addEventListener('resize', resizeHandler);
-
-    // 清理函数
-    return () => {
-      timers.forEach(timer => clearTimeout(timer));
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', resizeHandler);
-      chart.dispose();
-    };
-  }, [chartType, chartData]);
-
-  return <ChartWrapper ref={chartRef} />;
-});
-
 // 主组件
 export const SQLAssistant = memo(() => {
+  const t = useI18NPrefix('view.sqlAssistant');
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [uid, setUid] = useState<string>('');
   const [inputValue, setInputValue] = useState('');
@@ -484,9 +373,118 @@ export const SQLAssistant = memo(() => {
     useState<QuestionType>('function');
   const [isSending, setIsSending] = useState(false);
 
+  // 问题类型选项
+  const QUESTION_TYPES = [
+    { value: 'function', label: t('function') },
+    { value: 'analysis', label: t('analysis') },
+    { value: 'other', label: t('other') },
+  ];
+
   // 引用
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<any>(null);
+
+  // 图表组件
+  const ChartComponent = memo(({ chartType, chartData }: { chartType: 'line' | 'bar' | 'pie'; chartData: any }) => {
+    const chartRef = useRef<HTMLDivElement>(null);
+    const chartInstanceRef = useRef<any>(null);
+
+    useEffect(() => {
+      if (!chartRef.current) return;
+
+      // 初始化图表
+      const chart = init(chartRef.current);
+      chartInstanceRef.current = chart;
+
+      // 根据图表类型设置不同的配置
+      let option = {};
+
+      switch (chartType) {
+        case 'line':
+          option = {
+            tooltip: {
+              trigger: 'axis',
+            },
+            xAxis: chartData?.xAxis || {},
+            yAxis: chartData?.yAxis || {},
+            series: chartData?.series || [],
+          };
+          break;
+        case 'bar':
+          option = {
+            tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'shadow',
+              },
+            },
+            xAxis: chartData?.xAxis || {},
+            yAxis: chartData?.yAxis || {},
+            series: chartData?.series || [],
+          };
+          break;
+        case 'pie':
+          option = {
+            tooltip: {
+              trigger: 'item',
+            },
+            legend: {
+              orient: 'vertical',
+              left: 'left',
+            },
+            series: chartData?.series || [],
+          };
+          break;
+        default:
+          option = {
+            title: {
+              text: t('chatTypeNotSupport'),
+              left: 'center',
+              top: 'center',
+            },
+          };
+      }
+
+      // 设置图表配置
+      chart.setOption(option);
+
+      // 使用 ResizeObserver 监听容器尺寸变化
+      const resizeObserver = new ResizeObserver(() => {
+        chart.resize();
+      });
+
+      if (chartRef.current) {
+        resizeObserver.observe(chartRef.current);
+      }
+
+      // 多次延迟调整，确保在缓存加载时也能正确渲染
+      const timers: NodeJS.Timeout[] = [];
+      const delays = [0, 100, 300, 500];
+
+      delays.forEach(delay => {
+        const timer = setTimeout(() => {
+          chart.resize();
+        }, delay);
+        timers.push(timer);
+      });
+
+      // 响应式处理
+      const resizeHandler = () => {
+        chart.resize();
+      };
+      window.addEventListener('resize', resizeHandler);
+
+      // 清理函数
+      return () => {
+        timers.forEach(timer => clearTimeout(timer));
+        resizeObserver.disconnect();
+        window.removeEventListener('resize', resizeHandler);
+        chart.dispose();
+      };
+    }, [chartType, chartData]);
+
+    return <ChartWrapper ref={chartRef} />;
+  });
 
   useEffect(() => {
     const { uid: loadedUid, messages: loadedMessages } = loadFromStorage();
@@ -768,7 +766,7 @@ export const SQLAssistant = memo(() => {
                 {message.status === 'sending' && (
                   <LoadingIndicator>
                     <LoadingOutlined spin size={12} />
-                    <span>正在回复...</span>
+                    <span>{t('replying')}</span>
                   </LoadingIndicator>
                 )}
 
@@ -780,7 +778,7 @@ export const SQLAssistant = memo(() => {
                       marginTop: SPACE_XS,
                     }}
                   >
-                    回复失败，请重试
+                    {t('replyFailed')}
                   </div>
                 )}
               </MessageBubble>
@@ -794,7 +792,6 @@ export const SQLAssistant = memo(() => {
             <QuestionTypeSelect
               value={selectedQuestionType}
               onChange={value => setSelectedQuestionType(value as QuestionType)}
-              placeholder="选择问题类型"
             >
               {QUESTION_TYPES.map(type => (
                 <Option key={type.value} value={type.value}>
@@ -807,7 +804,7 @@ export const SQLAssistant = memo(() => {
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="请输入您的 SQL 问题..."
+              placeholder={t('inputQuestion')}
               autoSize={{ minRows: 1, maxRows: 6 }}
             />
           </InputWrapper>
@@ -819,7 +816,7 @@ export const SQLAssistant = memo(() => {
               onClick={handleSendMessage}
               loading={isSending}
             >
-              发送
+              {t('send')}
             </SendButton>
           </SendButtonWrapper>
         </InputContainer>

@@ -32,4 +32,7 @@ public class SqlAssistantChatParam {
     @ApiModelProperty(value = "问题内容", required = true)
     private String content;
 
+    @ApiModelProperty(value = "SQL 类型", required = false)
+    private String sqlType = "doris";
+
 }

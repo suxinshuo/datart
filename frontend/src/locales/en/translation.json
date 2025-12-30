@@ -1327,6 +1327,16 @@
         "unknown": "Unknown"
       }
     },
+    "sqlAssistant": {
+      "function": "Lookup function",
+      "analysis": "Analysis results",
+      "other": "Other",
+      "chatTypeNotSupport": "Chart type not supported",
+      "replying": "Replying...",
+      "replyFailed": "Reply failed, please try again",
+      "inputQuestion": "Please enter your question...",
+      "send": "Send"
+    },
     "resource": {
       "title": "Source info",
       "search": "Search database / table / column",
