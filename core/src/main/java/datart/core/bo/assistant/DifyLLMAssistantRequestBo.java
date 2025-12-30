@@ -21,7 +21,7 @@ public class DifyLLMAssistantRequestBo {
 
     private String content;
 
-    @Alias(("sql_type"))
+    @Alias("sql_type")
     private String sqlType = "doris";
 
 }

@@ -33,8 +33,8 @@ import {
   SPACE_XS,
 } from 'styles/StyleConstants';
 import { getToken } from 'utils/auth';
+import useI18NPrefix from '../../../../../../hooks/useI18NPrefix';
 import Container from './Container';
-import useI18NPrefix from "../../../../../../hooks/useI18NPrefix";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -385,106 +385,114 @@ export const SQLAssistant = memo(() => {
   const inputRef = useRef<any>(null);
 
   // 图表组件
-  const ChartComponent = memo(({ chartType, chartData }: { chartType: 'line' | 'bar' | 'pie'; chartData: any }) => {
-    const chartRef = useRef<HTMLDivElement>(null);
-    const chartInstanceRef = useRef<any>(null);
+  const ChartComponent = memo(
+    ({
+      chartType,
+      chartData,
+    }: {
+      chartType: 'line' | 'bar' | 'pie';
+      chartData: any;
+    }) => {
+      const chartRef = useRef<HTMLDivElement>(null);
+      const chartInstanceRef = useRef<any>(null);
 
-    useEffect(() => {
-      if (!chartRef.current) return;
+      useEffect(() => {
+        if (!chartRef.current) return;
 
-      // 初始化图表
-      const chart = init(chartRef.current);
-      chartInstanceRef.current = chart;
+        // 初始化图表
+        const chart = init(chartRef.current);
+        chartInstanceRef.current = chart;
 
-      // 根据图表类型设置不同的配置
-      let option = {};
+        // 根据图表类型设置不同的配置
+        let option = {};
 
-      switch (chartType) {
-        case 'line':
-          option = {
-            tooltip: {
-              trigger: 'axis',
-            },
-            xAxis: chartData?.xAxis || {},
-            yAxis: chartData?.yAxis || {},
-            series: chartData?.series || [],
-          };
-          break;
-        case 'bar':
-          option = {
-            tooltip: {
-              trigger: 'axis',
-              axisPointer: {
-                type: 'shadow',
+        switch (chartType) {
+          case 'line':
+            option = {
+              tooltip: {
+                trigger: 'axis',
               },
-            },
-            xAxis: chartData?.xAxis || {},
-            yAxis: chartData?.yAxis || {},
-            series: chartData?.series || [],
-          };
-          break;
-        case 'pie':
-          option = {
-            tooltip: {
-              trigger: 'item',
-            },
-            legend: {
-              orient: 'vertical',
-              left: 'left',
-            },
-            series: chartData?.series || [],
-          };
-          break;
-        default:
-          option = {
-            title: {
-              text: t('chatTypeNotSupport'),
-              left: 'center',
-              top: 'center',
-            },
-          };
-      }
+              xAxis: chartData?.xAxis || {},
+              yAxis: chartData?.yAxis || {},
+              series: chartData?.series || [],
+            };
+            break;
+          case 'bar':
+            option = {
+              tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                  type: 'shadow',
+                },
+              },
+              xAxis: chartData?.xAxis || {},
+              yAxis: chartData?.yAxis || {},
+              series: chartData?.series || [],
+            };
+            break;
+          case 'pie':
+            option = {
+              tooltip: {
+                trigger: 'item',
+              },
+              legend: {
+                orient: 'vertical',
+                left: 'left',
+              },
+              series: chartData?.series || [],
+            };
+            break;
+          default:
+            option = {
+              title: {
+                text: t('chatTypeNotSupport'),
+                left: 'center',
+                top: 'center',
+              },
+            };
+        }
 
-      // 设置图表配置
-      chart.setOption(option);
+        // 设置图表配置
+        chart.setOption(option);
 
-      // 使用 ResizeObserver 监听容器尺寸变化
-      const resizeObserver = new ResizeObserver(() => {
-        chart.resize();
-      });
-
-      if (chartRef.current) {
-        resizeObserver.observe(chartRef.current);
-      }
-
-      // 多次延迟调整，确保在缓存加载时也能正确渲染
-      const timers: NodeJS.Timeout[] = [];
-      const delays = [0, 100, 300, 500];
-
-      delays.forEach(delay => {
-        const timer = setTimeout(() => {
+        // 使用 ResizeObserver 监听容器尺寸变化
+        const resizeObserver = new ResizeObserver(() => {
           chart.resize();
-        }, delay);
-        timers.push(timer);
-      });
+        });
 
-      // 响应式处理
-      const resizeHandler = () => {
-        chart.resize();
-      };
-      window.addEventListener('resize', resizeHandler);
+        if (chartRef.current) {
+          resizeObserver.observe(chartRef.current);
+        }
 
-      // 清理函数
-      return () => {
-        timers.forEach(timer => clearTimeout(timer));
-        resizeObserver.disconnect();
-        window.removeEventListener('resize', resizeHandler);
-        chart.dispose();
-      };
-    }, [chartType, chartData]);
+        // 多次延迟调整，确保在缓存加载时也能正确渲染
+        const timers: NodeJS.Timeout[] = [];
+        const delays = [0, 100, 300, 500];
 
-    return <ChartWrapper ref={chartRef} />;
-  });
+        delays.forEach(delay => {
+          const timer = setTimeout(() => {
+            chart.resize();
+          }, delay);
+          timers.push(timer);
+        });
+
+        // 响应式处理
+        const resizeHandler = () => {
+          chart.resize();
+        };
+        window.addEventListener('resize', resizeHandler);
+
+        // 清理函数
+        return () => {
+          timers.forEach(timer => clearTimeout(timer));
+          resizeObserver.disconnect();
+          window.removeEventListener('resize', resizeHandler);
+          chart.dispose();
+        };
+      }, [chartType, chartData]);
+
+      return <ChartWrapper ref={chartRef} />;
+    },
+  );
 
   useEffect(() => {
     const { uid: loadedUid, messages: loadedMessages } = loadFromStorage();
