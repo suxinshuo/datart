@@ -387,6 +387,7 @@ public class JdbcDataProviderAdapter implements Closeable {
      * @param statement Statement
      */
     protected void executeAllPreSqlHook(String taskId, Statement statement) throws SQLException {
+        log.info("前置 SQL 执行完成, taskId: {}", taskId);
         if (StringUtils.isNotBlank(taskId)) {
             providerContext.updateTaskProgress(taskId, SqlTaskProgress.RUNNING_START.getProgress(true));
         }

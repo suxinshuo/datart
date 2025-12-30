@@ -76,6 +76,10 @@ datart:
   server:
     path-prefix: /api/v1
 
+  user:
+    doris:
+      default-compute-group: defaultComputeGroup
+
   ad-hoc:
     dir-name: "Ad-hoc Query SQLs" # adhoc 目录名称
     example-dir-name: "Example Query SQLs" # adhoc 示例目录名称

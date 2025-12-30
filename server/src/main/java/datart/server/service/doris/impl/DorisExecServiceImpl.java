@@ -1,5 +1,6 @@
 package datart.server.service.doris.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.db.Db;
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.ds.simple.SimpleDataSource;
@@ -41,6 +42,13 @@ public class DorisExecServiceImpl implements DorisExecService {
                 String defaultComputeGroup = createUserBo.getDorisDefaultComputeGroup();
                 db.execute("CREATE USER IF NOT EXISTS " + userName + " IDENTIFIED BY '" + password + "'");
                 db.execute("GRANT USAGE_PRIV ON COMPUTE GROUP " + defaultComputeGroup + " TO " + userName);
+                // 分配默认权限
+                List<String> dorisDefaultAuthCatalogs = createUserBo.getDorisDefaultAuthCatalogs();
+                if (CollUtil.isNotEmpty(dorisDefaultAuthCatalogs)) {
+                    for (String authCatalog : dorisDefaultAuthCatalogs) {
+                        db.execute("GRANT SELECT_PRIV ON " + authCatalog + ".*.* TO '" + userName + "'@'%'");
+                    }
+                }
                 log.info("创建用户并分配计算组成功, userName: {}, defaultComputeGroup: {}", userName, defaultComputeGroup);
             }
         } catch (SQLException e) {
