@@ -40,6 +40,8 @@ public class SqlAssistantServiceImpl extends BaseService implements SqlAssistant
 
     @Override
     public void chat(String username, SqlAssistantChatParam chatParam, OutputStream outputStream) {
+        log.info("访问开发助手, username: {}, chatParam: {}", username, chatParam);
+
         OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
         try {
             String questionType = chatParam.getQuestionType();
@@ -72,7 +74,8 @@ public class SqlAssistantServiceImpl extends BaseService implements SqlAssistant
             DifyRequestBo requestBo = DifyRequestBo.builder()
                     .inputs(null)
                     .query(JsonUtils.toJsonStr(llmRequestBo))
-                    .user(chatParam.getUid())
+                    .user(username)
+                    .conversationId(chatParam.getConversationId())
                     .build();
 
             try (HttpResponse httpResponse = HttpUtil.createPost(difyUrl)
@@ -90,9 +93,15 @@ public class SqlAssistantServiceImpl extends BaseService implements SqlAssistant
                     DifyResponseBo responseBo = JsonUtils.toBean(line, DifyResponseBo.class);
                     if (Objects.isNull(responseBo)
                             || !StringUtils.equals(responseBo.getEvent(), "message")
-                            || StringUtils.isBlank(responseBo.getAnswer())) {
+                            || Objects.isNull(responseBo.getAnswer())) {
                         continue;
                     }
+
+                    String conversationId = responseBo.getConversationId();
+                    if (StringUtils.isNotBlank(conversationId)) {
+                        sendOutMessage(writer, "conversation_id: " + conversationId);
+                    }
+
                     sendOutMessage(writer, responseBo.getAnswer());
                 }
             }

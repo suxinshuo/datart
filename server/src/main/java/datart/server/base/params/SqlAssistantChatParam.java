@@ -23,8 +23,8 @@ import lombok.Data;
 @Data
 public class SqlAssistantChatParam {
 
-    @ApiModelProperty(value = "用户唯一 ID, 一个聊天窗口对应一个", required = true)
-    private String uid;
+    @ApiModelProperty(value = "对话 ID, 一个聊天窗口对应一个", required = false)
+    private String conversationId;
 
     @ApiModelProperty(value = "问题类型: function|analysis|other", required = true)
     private String questionType;

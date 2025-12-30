@@ -21,9 +21,6 @@ import { Button, Input, Select } from 'antd';
 import { init } from 'echarts';
 import { BASE_API_URL } from 'globalConstants';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import styled from 'styled-components/macro';
 import {
   BORDER_RADIUS,
@@ -35,6 +32,7 @@ import {
 import { getToken } from 'utils/auth';
 import useI18NPrefix from '../../../../../../hooks/useI18NPrefix';
 import Container from './Container';
+import { MarkdownRenderer } from './MarkdownComponents/MarkdownRenderer';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -65,33 +63,12 @@ interface Message {
 
 // 本地存储键名
 const STORAGE_KEY = 'sql_assistant_conversations';
-const UID_STORAGE_KEY = 'sql_assistant_uid';
 const THREE_DAYS_IN_MS = 3 * 24 * 60 * 60 * 1000;
 
 interface ConversationStorage {
-  uid: string;
+  conversationId: string;
   messages: Message[];
 }
-
-const generateUID = (): string => {
-  return `${Date.now()}-${Math.random()
-    .toString(36)
-    .substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
-};
-
-const getOrGenerateUID = (): string => {
-  try {
-    let uid = localStorage.getItem(UID_STORAGE_KEY);
-    if (!uid) {
-      uid = generateUID();
-      localStorage.setItem(UID_STORAGE_KEY, uid);
-    }
-    return uid;
-  } catch (error) {
-    console.error('Failed to get or generate UID:', error);
-    return generateUID();
-  }
-};
 
 const cleanupOldMessages = (messages: Message[]): Message[] => {
   const now = Date.now();
@@ -99,10 +76,10 @@ const cleanupOldMessages = (messages: Message[]): Message[] => {
   return messages.filter(message => message.timestamp >= threeDaysAgo);
 };
 
-const saveToStorage = (uid: string, messages: Message[]): void => {
+const saveToStorage = (conversationId: string, messages: Message[]): void => {
   try {
     const storageData: ConversationStorage = {
-      uid,
+      conversationId,
       messages: cleanupOldMessages(messages),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
@@ -111,19 +88,15 @@ const saveToStorage = (uid: string, messages: Message[]): void => {
   }
 };
 
-const loadFromStorage = (): { uid: string; messages: Message[] } => {
+const loadFromStorage = (): { conversationId: string; messages: Message[] } => {
   try {
     const savedData = localStorage.getItem(STORAGE_KEY);
     if (savedData) {
       const parsedData: ConversationStorage = JSON.parse(savedData);
       const cleanedMessages = cleanupOldMessages(parsedData.messages);
 
-      if (parsedData.uid) {
-        localStorage.setItem(UID_STORAGE_KEY, parsedData.uid);
-      }
-
       return {
-        uid: parsedData.uid || getOrGenerateUID(),
+        conversationId: parsedData.conversationId || '',
         messages: cleanedMessages,
       };
     }
@@ -132,7 +105,7 @@ const loadFromStorage = (): { uid: string; messages: Message[] } => {
   }
 
   return {
-    uid: getOrGenerateUID(),
+    conversationId: '',
     messages: [],
   };
 };
@@ -367,7 +340,7 @@ export const SQLAssistant = memo(() => {
   const t = useI18NPrefix('view.sqlAssistant');
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [uid, setUid] = useState<string>('');
+  const [conversationId, setConversationId] = useState<string>('');
   const [inputValue, setInputValue] = useState('');
   const [selectedQuestionType, setSelectedQuestionType] =
     useState<QuestionType>('function');
@@ -495,16 +468,16 @@ export const SQLAssistant = memo(() => {
   );
 
   useEffect(() => {
-    const { uid: loadedUid, messages: loadedMessages } = loadFromStorage();
-    setUid(loadedUid);
+    const { conversationId, messages: loadedMessages } = loadFromStorage();
+    setConversationId(conversationId);
     setMessages(loadedMessages);
   }, []);
 
   useEffect(() => {
-    if (uid) {
-      saveToStorage(uid, messages);
+    if (conversationId) {
+      saveToStorage(conversationId, messages);
     }
-  }, [messages, uid]);
+  }, [messages, conversationId]);
 
   // 滚动到底部
   useEffect(() => {
@@ -545,7 +518,7 @@ export const SQLAssistant = memo(() => {
           'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
-          uid,
+          conversationId,
           questionType,
           content,
         }),
@@ -594,25 +567,32 @@ export const SQLAssistant = memo(() => {
                   if (line.startsWith('data: ')) {
                     const lineBreakLine = line.replace(/\$line_break\$/g, '\n');
                     const data = lineBreakLine.slice(6);
-                    if (data.trim()) {
-                      accumulatedContent += data;
-                      // 创建一个局部副本以避免闭包问题
-                      const currentContent = accumulatedContent;
 
-                      setMessages(prev => {
-                        const updatedMessages = [...prev];
-                        const assistantMessage = updatedMessages.find(
-                          msg => msg.id === messageId,
-                        );
-
-                        if (!assistantMessage) return prev;
-
-                        assistantMessage.content =
-                          parseContentToMedia(currentContent);
-
-                        return updatedMessages;
-                      });
+                    if (data.startsWith('conversation_id: ')) {
+                      const conversationId = data.slice(
+                        'conversation_id: '.length,
+                      );
+                      setConversationId(conversationId);
+                      continue;
                     }
+
+                    accumulatedContent += data;
+                    // 创建一个局部副本以避免闭包问题
+                    const currentContent = accumulatedContent;
+
+                    setMessages(prev => {
+                      const updatedMessages = [...prev];
+                      const assistantMessage = updatedMessages.find(
+                        msg => msg.id === messageId,
+                      );
+
+                      if (!assistantMessage) return prev;
+
+                      assistantMessage.content =
+                        parseContentToMedia(currentContent);
+
+                      return updatedMessages;
+                    });
                   }
                 }
               }
@@ -653,7 +633,7 @@ export const SQLAssistant = memo(() => {
           setIsSending(false);
         });
     },
-    [uid],
+    [conversationId],
   );
 
   // 发送消息
@@ -727,37 +707,7 @@ export const SQLAssistant = memo(() => {
                 {message.content.map((media, index) => (
                   <MediaContentWrapper key={index}>
                     {media.type === 'markdown' && (
-                      <ReactMarkdown
-                        components={{
-                          code({
-                            node,
-                            inline,
-                            className,
-                            children,
-                            ...props
-                          }) {
-                            const match = /language-(\w+)/.exec(
-                              className || '',
-                            );
-                            return !inline && match ? (
-                              <SyntaxHighlighter
-                                style={tomorrow}
-                                language={match[1]}
-                                PreTag="div"
-                                {...props}
-                              >
-                                {String(children).replace(/\n$/, '')}
-                              </SyntaxHighlighter>
-                            ) : (
-                              <code className={className} {...props}>
-                                {children}
-                              </code>
-                            );
-                          },
-                        }}
-                      >
-                        {media.content}
-                      </ReactMarkdown>
+                      <MarkdownRenderer content={media.content} />
                     )}
 
                     {media.type === 'chart' && (

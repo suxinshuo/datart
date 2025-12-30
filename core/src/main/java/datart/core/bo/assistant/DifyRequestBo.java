@@ -28,4 +28,7 @@ public class DifyRequestBo {
 
     private String user;
 
+    @Alias("conversation_id")
+    private String conversationId;
+
 }
