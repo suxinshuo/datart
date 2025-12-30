@@ -71,6 +71,77 @@ interface Message {
 
 // 本地存储键名
 const STORAGE_KEY = 'sql_assistant_conversations';
+const UID_STORAGE_KEY = 'sql_assistant_uid';
+const THREE_DAYS_IN_MS = 3 * 24 * 60 * 60 * 1000;
+
+interface ConversationStorage {
+  uid: string;
+  messages: Message[];
+}
+
+const generateUID = (): string => {
+  return `${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
+};
+
+const getOrGenerateUID = (): string => {
+  try {
+    let uid = localStorage.getItem(UID_STORAGE_KEY);
+    if (!uid) {
+      uid = generateUID();
+      localStorage.setItem(UID_STORAGE_KEY, uid);
+    }
+    return uid;
+  } catch (error) {
+    console.error('Failed to get or generate UID:', error);
+    return generateUID();
+  }
+};
+
+const cleanupOldMessages = (messages: Message[]): Message[] => {
+  const now = Date.now();
+  const threeDaysAgo = now - THREE_DAYS_IN_MS;
+  return messages.filter(message => message.timestamp >= threeDaysAgo);
+};
+
+const saveToStorage = (uid: string, messages: Message[]): void => {
+  try {
+    const storageData: ConversationStorage = {
+      uid,
+      messages: cleanupOldMessages(messages),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
+  } catch (error) {
+    console.error('Failed to save to storage:', error);
+  }
+};
+
+const loadFromStorage = (): { uid: string; messages: Message[] } => {
+  try {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      const parsedData: ConversationStorage = JSON.parse(savedData);
+      const cleanedMessages = cleanupOldMessages(parsedData.messages);
+
+      if (parsedData.uid) {
+        localStorage.setItem(UID_STORAGE_KEY, parsedData.uid);
+      }
+
+      return {
+        uid: parsedData.uid || getOrGenerateUID(),
+        messages: cleanedMessages,
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load from storage:', error);
+  }
+
+  return {
+    uid: getOrGenerateUID(),
+    messages: [],
+  };
+};
 
 const parseContentToMedia = (content: string): MediaContent[] => {
   const mediaContent: MediaContent[] = [];
@@ -406,8 +477,8 @@ const ChartComponent = memo(({ chartType, chartData }: ChartComponentProps) => {
 
 // 主组件
 export const SQLAssistant = memo(() => {
-  // 状态管理
   const [messages, setMessages] = useState<Message[]>([]);
+  const [uid, setUid] = useState<string>('');
   const [inputValue, setInputValue] = useState('');
   const [selectedQuestionType, setSelectedQuestionType] =
     useState<QuestionType>('function');
@@ -417,23 +488,17 @@ export const SQLAssistant = memo(() => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<any>(null);
 
-  // 从本地存储加载对话历史
   useEffect(() => {
-    const savedConversations = localStorage.getItem(STORAGE_KEY);
-    if (savedConversations) {
-      try {
-        const parsedMessages = JSON.parse(savedConversations);
-        setMessages(parsedMessages);
-      } catch (error) {
-        console.error('Failed to parse saved conversations:', error);
-      }
-    }
+    const { uid: loadedUid, messages: loadedMessages } = loadFromStorage();
+    setUid(loadedUid);
+    setMessages(loadedMessages);
   }, []);
 
-  // 保存对话历史到本地存储
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-  }, [messages]);
+    if (uid) {
+      saveToStorage(uid, messages);
+    }
+  }, [messages, uid]);
 
   // 滚动到底部
   useEffect(() => {
@@ -466,16 +531,15 @@ export const SQLAssistant = memo(() => {
       const token = getToken() || '';
       let accumulatedContent = '';
 
-      // 使用 fetch API 发送 POST 请求并处理 SSE 流
       fetch(url, {
         method: 'POST',
         headers: {
           Authorization: token,
           'Content-Type': 'application/json',
-          // 'Accept': 'text/event-stream', // 请求 SSE 响应
           'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
+          uid,
           questionType,
           content,
         }),
@@ -526,6 +590,8 @@ export const SQLAssistant = memo(() => {
                     const data = lineBreakLine.slice(6);
                     if (data.trim()) {
                       accumulatedContent += data;
+                      // 创建一个局部副本以避免闭包问题
+                      const currentContent = accumulatedContent;
 
                       setMessages(prev => {
                         const updatedMessages = [...prev];
@@ -536,7 +602,7 @@ export const SQLAssistant = memo(() => {
                         if (!assistantMessage) return prev;
 
                         assistantMessage.content =
-                          parseContentToMedia(accumulatedContent);
+                          parseContentToMedia(currentContent);
 
                         return updatedMessages;
                       });
@@ -581,7 +647,7 @@ export const SQLAssistant = memo(() => {
           setIsSending(false);
         });
     },
-    [],
+    [uid],
   );
 
   // 发送消息
