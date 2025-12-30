@@ -20,7 +20,8 @@ import { LoadingOutlined, SendOutlined } from '@ant-design/icons';
 import { Button, Input, Select } from 'antd';
 import { init } from 'echarts';
 import { BASE_API_URL } from 'globalConstants';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
 import {
   BORDER_RADIUS,
@@ -31,6 +32,8 @@ import {
 } from 'styles/StyleConstants';
 import { getToken } from 'utils/auth';
 import useI18NPrefix from '../../../../../../hooks/useI18NPrefix';
+import { selectSources } from '../../../SourcePage/slice/selectors';
+import { selectCurrentEditingViewAttr } from '../../slice/selectors';
 import Container from './Container';
 import { MarkdownRenderer } from './MarkdownComponents/MarkdownRenderer';
 
@@ -346,6 +349,18 @@ export const SQLAssistant = memo(() => {
     useState<QuestionType>('function');
   const [isSending, setIsSending] = useState(false);
 
+  const sources = useSelector(selectSources);
+  const sourceId = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'sourceId' }),
+  ) as string;
+
+  const sqlType = useMemo(() => {
+    const currentSource = sources.find(source => source.id === sourceId);
+    return (
+      JSON.parse(currentSource?.config || '{}').dbType?.toLowerCase() || ''
+    );
+  }, [sources, sourceId]);
+
   // 问题类型选项
   const QUESTION_TYPES = [
     { value: 'function', label: t('function') },
@@ -537,6 +552,7 @@ export const SQLAssistant = memo(() => {
           conversationId,
           questionType,
           content,
+          sqlType,
         }),
       })
         .then(response => {
@@ -649,7 +665,7 @@ export const SQLAssistant = memo(() => {
           setIsSending(false);
         });
     },
-    [conversationId],
+    [conversationId, sqlType],
   );
 
   // 发送消息
