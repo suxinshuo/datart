@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -87,6 +88,20 @@ public class SqlAssistantServiceImpl extends BaseService implements SqlAssistant
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (!StringUtils.startsWith(line, "data:")) {
+                        Map<String, Object> map = null;
+                        try {
+                            map = JsonUtils.toBean(line, Map.class);
+                        } catch (Exception e) {
+                            log.warn("解析大模型返回值失败, line: {}", line, e);
+                            continue;
+                        }
+                        Object status = map.get("status");
+                        Object message = map.get("message");
+                        if (Objects.nonNull(status) && StringUtils.equals("404", status.toString())
+                                && Objects.nonNull(message) && StringUtils.equals("Conversation Not Exists.", message.toString())) {
+                            sendOutMessage(writer, "conversation_id: ");
+                            throw new RuntimeException(message.toString());
+                        }
                         continue;
                     }
                     line = line.substring(6);

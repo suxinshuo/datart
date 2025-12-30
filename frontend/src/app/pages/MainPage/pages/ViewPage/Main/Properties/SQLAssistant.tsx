@@ -490,9 +490,7 @@ export const SQLAssistant = memo(() => {
   }, []);
 
   useEffect(() => {
-    if (conversationId) {
-      saveToStorage(conversationId, messages);
-    }
+    saveToStorage(conversationId, messages);
   }, [messages, conversationId]);
 
   const scrollToBottom = useCallback(() => {

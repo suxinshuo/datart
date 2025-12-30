@@ -24,7 +24,7 @@ public class ThreadPoolConfig {
     private int queueCapacity;
 
     @Bean("sqlTaskExecutor")
-    public ThreadPoolTaskExecutor cacheExecutor() {
+    public ThreadPoolTaskExecutor sqlTaskExecutor() {
         log.info("start sqlTaskExecutor");
 
         // 需要注意一下请求 trace id 能不能传递到子线程中, 后续再看看要不要改造
