@@ -24,6 +24,10 @@ const ListItem = styled.li`
   line-height: 1.6;
   color: #3f4254;
 
+  ul & {
+    list-style-type: disc;
+  }
+
   &::marker {
     font-weight: 400;
     color: #7e8299;
