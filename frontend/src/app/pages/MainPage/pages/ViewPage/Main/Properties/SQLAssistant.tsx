@@ -354,6 +354,7 @@ export const SQLAssistant = memo(() => {
   ];
 
   // 引用
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<any>(null);
 
@@ -479,26 +480,41 @@ export const SQLAssistant = memo(() => {
     }
   }, [messages, conversationId]);
 
-  // 滚动到底部
+  const scrollToBottom = useCallback(() => {
+    if (chatContainerRef.current && chatContainerRef.current.scrollHeight > 0) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, []);
+
   useEffect(() => {
     if (messages.length > 0) {
-      const scrollToBottom = () => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      };
-
       scrollToBottom();
 
-      requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
         scrollToBottom();
-      });
-
-      const timer = setTimeout(scrollToBottom, 100);
+      }, 100);
 
       return () => clearTimeout(timer);
     }
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
-  // 自动聚焦输入框
+  useEffect(() => {
+    if (!chatContainerRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      if (messages.length > 0) {
+        scrollToBottom();
+      }
+    });
+
+    observer.observe(chatContainerRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [messages, scrollToBottom]);
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -689,7 +705,7 @@ export const SQLAssistant = memo(() => {
   return (
     <Container title="sqlAssistant">
       <SQLAssistantContainer>
-        <ChatContainer>
+        <ChatContainer ref={chatContainerRef}>
           {messages.map(message => (
             <MessageWrapper key={message.id} $isUser={message.type === 'user'}>
               <MessageBubble $isUser={message.type === 'user'}>
