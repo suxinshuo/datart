@@ -57,6 +57,7 @@ import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -411,8 +412,12 @@ public class JdbcDataProviderAdapter implements Closeable {
         List<String> preSqls = param.getPreSqls();
         String sql = param.getSql();
 
+        AtomicReference<Statement> stmtRef = new AtomicReference<>();
         try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
             try (Statement statement = conn.createStatement()) {
+                stmtRef.set(statement);
+                CommonVarUtils.SQL_STATEMENTS.put(taskId, stmtRef);
+
                 if (CollUtil.isNotEmpty(preSqls)) {
                     for (String preSql : preSqls) {
                         statement.execute(preSql);
@@ -435,6 +440,9 @@ public class JdbcDataProviderAdapter implements Closeable {
                     executeCompleteHook(taskId, statement);
                 }
             }
+        } finally {
+            stmtRef.set(null);
+            CommonVarUtils.SQL_STATEMENTS.remove(taskId);
         }
     }
 
@@ -451,8 +459,12 @@ public class JdbcDataProviderAdapter implements Closeable {
         List<String> preSqls = param.getPreSqls();
         String selectSql = param.getSql();
 
+        AtomicReference<Statement> stmtRef = new AtomicReference<>();
         try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
             try (Statement statement = conn.createStatement()) {
+                stmtRef.set(statement);
+                CommonVarUtils.SQL_STATEMENTS.put(taskId, stmtRef);
+
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
                 // 执行 set 语句
                 if (CollUtil.isNotEmpty(preSqls)) {
@@ -485,6 +497,9 @@ public class JdbcDataProviderAdapter implements Closeable {
                     executeCompleteHook(taskId, statement);
                 }
             }
+        } finally {
+            stmtRef.set(null);
+            CommonVarUtils.SQL_STATEMENTS.remove(taskId);
         }
     }
 
@@ -497,13 +512,22 @@ public class JdbcDataProviderAdapter implements Closeable {
     public int executeCountSql(ExecuteSqlParam param) throws SQLException {
         String taskId = param.getTaskId();
         String sql = param.getSql();
+
+        AtomicReference<Statement> stmtRef = new AtomicReference<>();
         try (Connection connection = getConn(taskId, param.getSparkShareLevel())) {
             String countSql = String.format(COUNT_SQL, sql);
             countSql = getTaskSql(taskId, countSql);
             PreparedStatement preparedStatement = connection.prepareStatement(countSql);
+
+            stmtRef.set(preparedStatement);
+            CommonVarUtils.SQL_STATEMENTS.put(taskId, stmtRef);
+
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
             return resultSet.getInt(1);
+        } finally {
+            stmtRef.set(null);
+            CommonVarUtils.SQL_STATEMENTS.remove(taskId);
         }
     }
 

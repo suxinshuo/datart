@@ -24,7 +24,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.db.DbRuntimeException;
 import cn.hutool.setting.dialect.Props;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import datart.core.common.CommonVarUtils;
 import datart.core.data.provider.SchemaItem;
 import datart.core.entity.SourceConstants;
 import datart.core.entity.User;
@@ -48,8 +48,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
-
-    private static final ThreadLocal<Map<String, Thread>> SPARK_TASK_PROGRESS_POLLING_THREADS = new InheritableThreadLocal<>();
 
     private List<Tuple> parserConf(String confStr) {
         String confStrTrim = StringUtils.trim(confStr);
@@ -167,12 +165,7 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
             Thread sparkTaskProgressThread = new Thread(() -> pollSparkTaskProgress(taskId, finalAppTag));
             sparkTaskProgressThread.start();
             // 记录线程, 后续执行完成时, 中断线程
-            Map<String, Thread> threadMap = SPARK_TASK_PROGRESS_POLLING_THREADS.get();
-            if (Objects.isNull(threadMap)) {
-                threadMap = Maps.newConcurrentMap();
-            }
-            threadMap.put(taskId, sparkTaskProgressThread);
-            SPARK_TASK_PROGRESS_POLLING_THREADS.set(threadMap);
+            CommonVarUtils.SPARK_TASK_PROGRESS_POLLING_THREADS.put(taskId, sparkTaskProgressThread);
         }
 
         super.executeAllPreSqlHook(taskId, statement);
@@ -182,7 +175,7 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
     protected void executeCompleteHook(String taskId, Statement statement) {
         try {
             // 任务执行完成, 中断轮询线程
-            Thread sparkTaskProgressThread = SPARK_TASK_PROGRESS_POLLING_THREADS.get().remove(taskId);
+            Thread sparkTaskProgressThread = CommonVarUtils.SPARK_TASK_PROGRESS_POLLING_THREADS.remove(taskId);
             if (Objects.nonNull(sparkTaskProgressThread)) {
                 sparkTaskProgressThread.interrupt();
                 log.info("任务运行完成, 已中断 Spark 任务进度轮询线程, 任务 ID: {}", taskId);
