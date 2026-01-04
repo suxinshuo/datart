@@ -19,8 +19,8 @@ package datart.data.provider.base.yarn;
 
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.http.HttpUtil;
-import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Lists;
+import datart.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -67,7 +67,7 @@ public class YarnRestClient {
         }
         String appsUrl = String.format(GET_APPS_BY_TAG_URL, yarnRmNode.getUrl() + ":" + yarnRmNode.getPort(), tag);
         String appsData = HttpUtil.get(appsUrl);
-        YarnAppsResponse yarnAppsResponse = JSONUtil.toBean(appsData, new TypeReference<YarnAppsResponse>() {
+        YarnAppsResponse yarnAppsResponse = JsonUtils.toBean(appsData, new TypeReference<YarnAppsResponse>() {
         }, true);
         YarnApps apps = yarnAppsResponse.getApps();
         if (Objects.isNull(apps)) {
@@ -84,7 +84,7 @@ public class YarnRestClient {
         String appId = yarnApp.getId();
         String jobsUrl = String.format(GET_APP_DETAIL_JOB_URL, trackingUrl, appId);
         String jobsData = HttpUtil.get(jobsUrl);
-        return JSONUtil.toBean(jobsData, new TypeReference<List<YarnAppSparkJob>>() {
+        return JsonUtils.toBean(jobsData, new TypeReference<List<YarnAppSparkJob>>() {
         }, true);
     }
 
@@ -99,7 +99,7 @@ public class YarnRestClient {
             String rmStatusUrl = String.format(GET_RM_STATUS_URL, yarnRmNode.getUrl() + ":" + yarnRmNode.getPort());
             // 请求获取 rm 状态接口, 找到状态为 ACTIVE 的 rm 节点
             String rmStatusData = HttpUtil.get(rmStatusUrl);
-            YarnClusterInfoResponse yarnClusterInfoResponse = JSONUtil.toBean(rmStatusData, YarnClusterInfoResponse.class);
+            YarnClusterInfoResponse yarnClusterInfoResponse = JsonUtils.toBean(rmStatusData, YarnClusterInfoResponse.class);
             YarnClusterInfo clusterInfo = yarnClusterInfoResponse.getClusterInfo();
             if (StringUtils.equalsIgnoreCase(clusterInfo.getHaState(), "ACTIVE")) {
                 return yarnRmNode;
