@@ -26,6 +26,7 @@ import datart.core.bo.task.QueueTaskBo;
 import datart.core.bo.task.RunningTaskBo;
 import datart.core.bo.task.SqlTaskChecker;
 import datart.core.bo.task.SqlTaskConsumerChecker;
+import datart.core.common.CommonVarUtils;
 import datart.core.entity.enums.SqlTaskExecuteType;
 import datart.core.entity.enums.SqlTaskProgress;
 import datart.core.entity.enums.SqlTaskStatus;
@@ -51,9 +52,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -421,6 +424,21 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                     log.error("Cancel task error. taskId: {}", taskId, e);
                 }
             }
+        }
+        // 并且中断线程中对应的 statement 执行
+        AtomicReference<Statement> statementAtomicReference = CommonVarUtils.SQL_STATEMENTS.remove(taskId);
+        if (Objects.isNull(statementAtomicReference)) {
+            return;
+        }
+        Statement statement = statementAtomicReference.get();
+        if (Objects.isNull(statement)) {
+            return;
+        }
+        try {
+            statement.cancel();
+            log.info("任务({}) Statement 执行已取消", taskId);
+        } catch (Exception e) {
+            log.error("Cancel task error. taskId: {}", taskId, e);
         }
     }
 
