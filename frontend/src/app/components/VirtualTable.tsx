@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Empty, Table, TableProps } from 'antd';
+import { Empty, Table, TableProps, Tooltip } from 'antd';
 import classNames from 'classnames';
 import { TABLE_DATA_INDEX } from 'globalConstants';
 import React, {
@@ -29,7 +29,82 @@ import React, {
 } from 'react';
 import { VariableSizeGrid as Grid } from 'react-window';
 import styled from 'styled-components/macro';
-import { SPACE_TIMES } from 'styles/StyleConstants';
+import { SPACE_TIMES, SPACE_XS } from 'styles/StyleConstants';
+
+const CellContent = styled.div`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+`;
+
+const TooltipContent = styled.div`
+  display: flex;
+  gap: ${SPACE_XS};
+  align-items: flex-start;
+  max-width: 600px;
+  word-break: break-all;
+`;
+
+const TooltipText = styled.div`
+  flex: 1;
+  max-width: 550px;
+`;
+
+interface TooltipCellProps {
+  value: any;
+  style: React.CSSProperties;
+  className?: string;
+}
+
+const TooltipCell = memo(({ value, style, className }: TooltipCellProps) => {
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const textRef = useRef<HTMLDivElement>(null);
+
+  const displayValue = value === null ? 'NULL' : value;
+  const textValue = String(displayValue);
+  const isNull = value === null;
+
+  useEffect(() => {
+    if (textRef.current) {
+      const { scrollWidth, clientWidth } = textRef.current;
+      setIsOverflowing(scrollWidth > clientWidth);
+    }
+  }, [textValue]);
+
+  const cellContent = (
+    <CellContent
+      ref={textRef}
+      className={className}
+      style={{
+        ...style,
+        color: isNull ? '#999' : style.color,
+      }}
+    >
+      {displayValue}
+    </CellContent>
+  );
+
+  if (isOverflowing) {
+    return (
+      <Tooltip
+        title={
+          <TooltipContent>
+            <TooltipText>{textValue}</TooltipText>
+          </TooltipContent>
+        }
+        placement="topLeft"
+        overlayStyle={{ maxWidth: '600px' }}
+      >
+        {cellContent}
+      </Tooltip>
+    );
+  }
+
+  return cellContent;
+});
+
+TooltipCell.displayName = 'TooltipCell';
 
 interface VirtualTableProps extends TableProps<object> {
   width: number;
@@ -134,33 +209,24 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
           }}
         >
           {({ rowIndex, columnIndex, style }) => {
-            const cellValue = rawData[rowIndex][mergedColumns[columnIndex].dataIndex];
-            let displayValue = cellValue;
-            let cellStyle = {};
-
-            // 对 null 值进行个性化处理
-            if (cellValue === null) {
-              displayValue = 'NULL';
-              cellStyle = { color: '#999' };
-            }
-
-            style = {
+            const cellValue =
+              rawData[rowIndex][mergedColumns[columnIndex].dataIndex];
+            const cellStyle = {
               padding: `${SPACE_TIMES(2)}`,
               textAlign: mergedColumns[columnIndex].align,
               ...style,
-              ...cellStyle,
             };
+            const cellClassName = classNames('virtual-table-cell', {
+              'virtual-table-cell-last':
+                columnIndex === mergedColumns.length - 1,
+            });
             return (
-              <TableCell
-                className={classNames('virtual-table-cell', {
-                  'virtual-table-cell-last':
-                    columnIndex === mergedColumns.length - 1,
-                })}
-                style={style}
+              <TooltipCell
+                value={cellValue}
+                style={cellStyle}
+                className={cellClassName}
                 key={columnIndex}
-              >
-                {displayValue}
-              </TableCell>
+              />
             );
           }}
         </Grid>
@@ -180,7 +246,3 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
     />
   );
 });
-
-const TableCell = styled.div`
-  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
-`;

@@ -9,6 +9,7 @@ public enum SqlTypeEnum {
     QUERY,
     DML,
     DDL,
+    DDL_QUERY,
     TCL,
     UNKNOWN;
 

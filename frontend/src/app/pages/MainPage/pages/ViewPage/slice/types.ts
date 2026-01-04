@@ -79,10 +79,11 @@ export interface ViewSimpleViewModel extends ViewSimple {
   deleteLoading: boolean;
 }
 
-export type ViewTreeNode = ViewSimpleViewModel & TreeDataNode & {
-  path: string[];
-  children?: ViewTreeNode[];
-};
+export type ViewTreeNode = ViewSimpleViewModel &
+  TreeDataNode & {
+    path: string[];
+    children?: ViewTreeNode[];
+  };
 
 export interface ViewViewModel<T = object>
   extends Pick<View, 'name' | 'script' | 'type'> {
@@ -102,11 +103,20 @@ export interface ViewViewModel<T = object>
   size: number;
   touched: boolean;
   stage: ViewViewModelStages;
-  previewResults: T[];
+  previewResults: T[] | undefined;
   error: string;
   fragment: string;
   isSaveAs?: Boolean;
   warnings?: string[] | null;
+  // SQL Async Execution Fields
+  currentTaskId?: string;
+  currentTaskStatus?: SqlTaskStatus;
+  currentTaskProgress?: number;
+  enableAsyncExecution?: boolean;
+  currentTaskErrorMessage?: string;
+  isCancelClicked?: boolean;
+  // Spark Resource Isolation Level
+  sparkShareLevel?: 'CONNECTION' | 'USER' | 'SERVER';
 }
 
 export interface QueryResult {
@@ -195,6 +205,48 @@ export interface SaveViewParams {
   resolve?: () => void;
   isSaveAs?: Boolean;
   currentView?: ViewViewModel;
+}
+
+export interface SqlTaskCreateResponse {
+  taskId: string;
+  createTime: string;
+}
+
+export interface SqlTaskStatusResponse {
+  createBy: string;
+  createTime: string;
+  duration: number;
+  endTime: string;
+  errorMessage: string | null;
+  failType: string | null;
+  log: any[];
+  progress: number;
+  startTime: string;
+  status: SqlTaskStatus;
+  statusDesc: string;
+  taskId: string;
+  taskResult: QueryResult;
+}
+
+export interface SqlTaskCancelResponse {
+  taskId: string;
+  cancelResult: string;
+  cancelTime: string;
+}
+
+export enum SqlTaskStatus {
+  QUEUED = 'QUEUED',
+  RUNNING = 'RUNNING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+}
+
+export enum SqlTaskFailType {
+  SQL_ERROR = 'SQL_ERROR',
+  TIMEOUT = 'TIMEOUT',
+  MANUAL_INTERRUPT = 'MANUAL_INTERRUPT',
+  SYSTEM_ERROR = 'SYSTEM_ERROR',
+  OTHER = 'OTHER',
 }
 
 export interface UpdateViewBaseParams {

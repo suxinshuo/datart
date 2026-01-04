@@ -75,16 +75,22 @@ public class Const {
 
     public static final int ENABLE = 1;
 
+    // 2
     public static final int READ = 1 << 1;
 
+    // 6
     public static final int MANAGE = 1 << 2 | READ;
 
+    // 10
     public static final int GRANT = 1 << 3 | READ;
 
+    // 34
     public static final int DOWNLOAD = 1 << 5 | READ;
 
+    // 66
     public static final int SHARE = 1 << 6 | READ;
 
+    // 134
     public static final int CREATE = 1 << 7 | MANAGE;
 
     /*

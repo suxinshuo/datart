@@ -17,9 +17,11 @@
  */
 package datart.server.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import datart.core.base.consts.Const;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.ParamException;
+import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
 import datart.core.mappers.ext.StoryboardMapperExt;
@@ -32,6 +34,7 @@ import datart.security.util.PermissionHelper;
 import datart.server.base.dto.StoryboardDetail;
 import datart.server.base.params.BaseCreateParam;
 import datart.server.base.params.StoryboardBaseUpdateParam;
+import datart.server.base.params.storyboard.StoryboardCreateDirectlyParam;
 import datart.server.service.BaseService;
 import datart.server.service.RoleService;
 import datart.server.service.StoryboardService;
@@ -246,5 +249,74 @@ public class StoryboardServiceImpl extends BaseService implements StoryboardServ
             Exceptions.tr(ParamException.class, "error.param.exists.name");
         }
         return true;
+    }
+
+    @Override
+    public List<Storyboard> getTopStoryboardsByName(String orgId, String name) {
+        StoryboardExample example = new StoryboardExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andParentIdIsNull()
+                .andNameEqualTo(name)
+                .andIsFolderEqualTo(true)
+                .andStatusEqualTo(Const.DATA_STATUS_ACTIVE);
+        return storyboardMapper.selectByExample(example);
+    }
+
+    @Override
+    public Storyboard createDirectly(StoryboardCreateDirectlyParam param) {
+        Storyboard storyboard = new Storyboard();
+        BeanUtils.copyProperties(param, storyboard);
+
+        storyboard.setId(UUIDGenerator.generate());
+        storyboard.setCreateBy(param.getOperatorUserId());
+        storyboard.setCreateTime(new Date());
+        storyboard.setUpdateBy(param.getOperatorUserId());
+        storyboard.setUpdateTime(new Date());
+
+        storyboardMapper.insertSelective(storyboard);
+
+        return storyboard;
+    }
+
+    @Override
+    public List<Storyboard> getFolderStoryboardsByParentIdAndName(String orgId, String parentId, String name, Boolean filterPermission) {
+        StoryboardExample example = new StoryboardExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andParentIdEqualTo(parentId)
+                .andIsFolderEqualTo(true)
+                .andNameEqualTo(name);
+        example.setOrderByClause("`id`");
+        List<Storyboard> storyboards = storyboardMapper.selectByExample(example);
+
+        if (Objects.isNull(filterPermission) || !filterPermission) {
+            return storyboards;
+        }
+
+        // 根据权限过滤
+        return storyboards.stream().filter(storyboard -> {
+            try {
+                requirePermission(storyboard, Const.READ);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public Storyboard getLastStoryboardByParentId(String orgId, String parentId) {
+        StoryboardExample example = new StoryboardExample();
+        example.createCriteria()
+                .andOrgIdEqualTo(orgId)
+                .andParentIdEqualTo(parentId)
+                .andStatusEqualTo(Const.DATA_STATUS_ACTIVE);
+        example.setOrderByClause("`index` desc");
+        List<Storyboard> storyboards = storyboardMapper.selectByExample(example);
+        if (CollUtil.isNotEmpty(storyboards)) {
+            return storyboards.get(0);
+        }
+        return null;
     }
 }

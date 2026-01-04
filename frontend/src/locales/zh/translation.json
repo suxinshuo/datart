@@ -36,7 +36,9 @@
     "validation": {
       "required": "不能为空",
       "invalidPassword": "密码长度为6-20位",
-      "passwordNotMatch": "两次输入的密码不一致"
+      "passwordNotMatch": "两次输入的密码不一致",
+      "noFolderPermission": "无文件夹权限",
+      "noFolderPermissionDesc": "您当前没有访问任何文件夹的权限，请联系管理员获取相应权限"
     },
     "time": {
       "minute": "分钟",
@@ -421,7 +423,10 @@
         "format": {
           "local": "本地",
           "date": "日期"
-        }
+        },
+        "analysisBasedStatic": "基于历史执行结果分析",
+        "selectHistoricalExecutionResult": "选择历史执行结果",
+        "analysisBasedStaticTip": "基于历史执行结果分析只能查看，不支持保存。"
       },
       "dataview": {
         "plsSelectDataView": "请选择",
@@ -1233,11 +1238,28 @@
     "resultEmpty2": " 按钮执行，运行结果将在此处展示",
     "errorTitle": "执行错误",
     "sqlRequired": "SQL 语句不能为空",
+    "structQueryRequired": "结构化查询语句不能为空",
+    "sourceNotAvailable": "数据源不存在",
+    "noCurrentEditingView": "当前无正在编辑的视图",
+    "invalidTaskId": "任务 ID 无效",
+    "sqlExecutionFailed": "SQL 执行失败",
+    "taskNotActive": "任务未激活",
+    "cancelTaskFailed": "取消任务失败",
     "sqlRunWraning": "SQL 解析失败，欢迎一键提交 issue 帮助我们优化。",
     "detail": "查看详情",
     "warningDescription": "Datart 默认使用 calcite 解析 SQL 语句；calcite 拥有的非常棒的语法解析器，但依然做不到解析所有数据库的所有语法。当发生解析异常时，datart 对 SQL 语句进行必要的处理之后仍然会发送到数据库执行，如果可以执行成功，我们会认为解析器需要针对该条 SQL 语句的语法进行优化。在这种情况下，datart 会显示该警告信息，方便用户将解析异常的语句提交到 github 或 gitee issue，帮助我们优化解析器。",
     "close": "关闭",
     "computedFieldNameExistWarning": "计算字段名称已经存在，请重新输入",
+    "taskId": "任务 ID",
+    "cancelTask": "取消任务",
+    "taskStatus": {
+      "queued": "排队中",
+      "running": "运行中",
+      "success": "成功",
+      "failed": "失败"
+    },
+    "sqlExecutionCancelled": "SQL 执行已取消",
+    "saveInProgress": "正在保存数据视图，暂不允许执行查询",
     "tabs": {
       "discard": "放弃",
       "cancel": "取消",
@@ -1262,13 +1284,57 @@
       "saveAs": "另存为",
       "saveFragment": "保存片段",
       "readonlyTip": "回收站中不可编辑",
-      "saveSuccess": "保存成功"
+      "saveSuccess": "保存成功",
+      "asyncExecution": "异步执行",
+      "sparkShareLevel": {
+        "CONNECTION_DESC": "每个任务独立资源",
+        "USER_DESC": "每个用户独立资源",
+        "SERVER_DESC": "所有用户共享资源"
+      }
     },
     "properties": {
       "reference": "数据源信息",
       "variable": "变量配置",
       "model": "数据模型",
-      "columnPermissions": "列权限"
+      "columnPermissions": "列权限",
+      "history": "历史记录",
+      "sqlAssistant": "开发助手"
+    },
+    "history": {
+      "empty": "暂无历史记录",
+      "loadMore": "加载更多",
+      "refresh": "刷新",
+      "viewDetail": "查看详情",
+      "failMessage": "失败信息",
+      "query": "查询语句",
+      "submitTime": "提交时间",
+      "startTime": "开始时间",
+      "endTime": "结束时间",
+      "duration": "耗时",
+      "detailTitle": "查询详情",
+      "copy": "复制",
+      "copySuccess": "复制成功",
+      "copySuccessMessage": "查询语句已复制到剪贴板",
+      "copyFailed": "复制失败",
+      "copyFailedMessage": "复制查询语句失败",
+      "close": "关闭",
+      "status": {
+        "success": "成功",
+        "failed": "失败",
+        "running": "运行中",
+        "cancelled": "已取消",
+        "unknown": "未知"
+      }
+    },
+    "sqlAssistant": {
+      "function": "查函数",
+      "analysis": "分析结果",
+      "other": "其他",
+      "chatTypeNotSupport": "图表类型不支持",
+      "replying": "正在回复...",
+      "replyFailed": "回复失败，请重试",
+      "inputQuestion": "请输入您的问题...",
+      "send": "发送"
     },
     "resource": {
       "title": "数据源信息",

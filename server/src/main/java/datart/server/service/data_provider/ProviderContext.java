@@ -7,6 +7,7 @@ import datart.data.provider.base.IProviderContext;
 import datart.security.manager.DatartSecurityManager;
 import datart.security.util.AESUtil;
 import datart.server.service.doris.DorisUserMappingService;
+import datart.server.service.task.SqlTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,9 @@ public class ProviderContext implements IProviderContext {
 
     @Resource
     private DorisUserMappingService dorisUserMappingService;
+
+    @Resource
+    private SqlTaskService sqlTaskService;
 
     /**
      * 获取当前登录用户
@@ -74,6 +78,17 @@ public class ProviderContext implements IProviderContext {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * 更新任务进度
+     *
+     * @param taskId   任务 ID
+     * @param progress 执行进度
+     */
+    @Override
+    public void updateTaskProgress(String taskId, Integer progress) {
+        sqlTaskService.updateTaskProgress(taskId, progress);
     }
 
 }

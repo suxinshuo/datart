@@ -84,12 +84,18 @@ public class SqlScriptRender extends ScriptRender {
         QueryScriptProcessResult result = getScriptProcessor().process(queryScript);
         String originSql = result.getOriginSql();
         SqlTypeEnum sqlTypeEnum = SqlValidateUtils.getSqlType(originSql);
+        log.debug("SQL 类型: {}", sqlTypeEnum);
         String selectSql;
+
+        // 默认为 select 类型 sql
+        RequestContext.setSqlSelectTypeFlag(true);
+
         // build with execute params
         if (Objects.equals(queryScript.getScriptType(), ScriptType.SQL)
                 && !Objects.equals(sqlTypeEnum, SqlTypeEnum.QUERY)) {
             log.info("非 QUERY SQL, 直接执行原始 SQL: {}", originSql);
             selectSql = originSql;
+            RequestContext.setSqlSelectTypeFlag(Objects.equals(sqlTypeEnum, SqlTypeEnum.DDL_QUERY));
         } else if (withExecuteParam) {
             selectSql = SqlBuilder.builder()
                     .withExecuteParam(executeParam)

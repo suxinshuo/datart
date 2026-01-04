@@ -55,7 +55,7 @@ mybatis:
   configuration:
     use-generated-keys: true
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 logging:
   level:
@@ -75,6 +75,35 @@ datart:
 
   server:
     path-prefix: /api/v1
+
+  user:
+    doris:
+      default-compute-group: defaultComputeGroup
+
+  ad-hoc:
+    dir-name: "Ad-hoc Query SQLs" # adhoc 目录名称
+    example-dir-name: "Example Query SQLs" # adhoc 示例目录名称
+
+  folder:
+    per-dir-name: "个人目录"
+    example-dir-name: "示例"
+
+  storyboard:
+    per-dir-name: "个人目录"
+    example-dir-name: "示例"
+
+  task:
+    queue_capacity: 100
+    consumer:
+      count: 4
+    thread:
+      pool:
+        size: 20
+        queue_capacity: 100
+    execution:
+      max_time: 1800000 # 30分钟
+#    result:
+#      retention_days: 7
 
 server:
   port: 8080

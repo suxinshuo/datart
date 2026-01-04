@@ -156,16 +156,19 @@ const VizHeader: FC<{
                   {t('run')}
                 </Button>
               )}
-              {allowManage && !isArchived && onPublish && Number(status) === 1 && (
-                <Button
-                  key="publish"
-                  icon={<SendOutlined />}
-                  loading={publishLoading}
-                  onClick={onPublish}
-                >
-                  {t('publish')}
-                </Button>
-              )}
+              {allowManage &&
+                !isArchived &&
+                onPublish &&
+                Number(status) === 1 && (
+                  <Button
+                    key="publish"
+                    icon={<SendOutlined />}
+                    loading={publishLoading}
+                    onClick={onPublish}
+                  >
+                    {t('publish')}
+                  </Button>
+                )}
               {allowManage && !isArchived && onGotoEdit && (
                 <Button key="edit" icon={<EditOutlined />} onClick={onGotoEdit}>
                   {t('edit')}

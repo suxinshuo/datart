@@ -3,10 +3,7 @@ package datart.server.service.doris.impl;
 import cn.hutool.core.collection.CollUtil;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.ParamException;
-import datart.core.entity.DorisUserMapping;
-import datart.core.entity.DorisUserMappingExample;
-import datart.core.entity.Source;
-import datart.core.entity.SourceConstants;
+import datart.core.entity.*;
 import datart.core.bo.doris.DorisCreateUserBo;
 import datart.core.bo.doris.DorisExecSourceParamBo;
 import datart.core.bo.doris.DorisUserMappingQueryConditionBo;
@@ -20,11 +17,14 @@ import datart.server.service.doris.DorisExecService;
 import datart.server.service.doris.DorisUserMappingService;
 import datart.server.service.doris.factory.DorisUserMappingFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,6 +37,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class DorisUserMappingServiceImpl extends BaseService implements DorisUserMappingService {
+
+    @Value("${datart.user.doris.default-compute-group:defaultComputeGroup}")
+    private String dorisDefaultComputeGroup;
+
+    @Value("${datart.user.doris.default-auth-catalog}")
+    private String dorisDefaultAuthCatalog;
 
     @Resource
     private DorisUserMappingMapperExt dorisUserMappingMapper;
@@ -71,9 +77,16 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
             log.error("这一批用户中有已经存在的 sysUsername 和 sourceId. createParams: {}", createParams);
             Exceptions.tr(ParamException.class, "error.param.occupied", "resource.user-or-source");
         }
-        String userId = getCurrentUser().getId();
+
+        User currentUser = getCurrentUser();
+        String createUserId;
+        if (Objects.nonNull(currentUser)) {
+            createUserId = currentUser.getId();
+        } else {
+            createUserId = SystemConstant.SYSTEM_USER_ID;
+        }
         List<DorisUserMapping> dorisUserMappings = createParams.stream()
-                .map(createParam -> dorisUserMappingFactory.getDorisUserMapping(createParam, userId))
+                .map(createParam -> dorisUserMappingFactory.getDorisUserMapping(createParam, createUserId))
                 .collect(Collectors.toList());
 
         dorisUserMappingMapper.insertBatch(dorisUserMappings);
@@ -101,11 +114,14 @@ public class DorisUserMappingServiceImpl extends BaseService implements DorisUse
                 continue;
             }
 
+            List<String> authCatalogs = Arrays.stream(StringUtils.split(dorisDefaultAuthCatalog, ","))
+                    .map(StringUtils::trim).collect(Collectors.toList());
             List<DorisCreateUserBo> dorisCreateUserBos = userMappings.stream()
                     .map(userMapping -> DorisCreateUserBo.builder()
                             .dorisUsername(userMapping.getDorisUsername())
                             .dorisPassword(AESUtil.decryptSafe(userMapping.getEncryptedPassword()))
-                            .dorisDefaultComputeGroup(SourceConstants.DORIS_DEFAULT_COMPUTE_GROUP)
+                            .dorisDefaultComputeGroup(dorisDefaultComputeGroup)
+                            .dorisDefaultAuthCatalogs(authCatalogs)
                             .build())
                     .collect(Collectors.toList());
             dorisExecService.createUser(sourceParam, dorisCreateUserBos);

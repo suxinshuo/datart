@@ -38,7 +38,7 @@ const appIndexes = ['js', 'tsx', 'ts', 'jsx'].map(ext =>
 
 module.exports = {
   babel: {
-    plugins: ['babel-plugin-styled-components'],
+    plugins: ['babel-plugin-styled-components', '@babel/plugin-proposal-optional-chaining', '@babel/plugin-proposal-nullish-coalescing-operator'],
   },
   webpack: {
     alias: {},
@@ -48,6 +48,28 @@ module.exports = {
       // new BundleAnalyzerPlugin(),
     ],
     configure: (webpackConfig, { env, paths }) => {
+      // 让 Babel 处理 react-draggable 库
+      if (webpackConfig.module && webpackConfig.module.rules) {
+        webpackConfig.module.rules.forEach(rule => {
+          if (rule.oneOf) {
+            rule.oneOf.forEach(oneOfRule => {
+              if (oneOfRule.test && oneOfRule.test.test && oneOfRule.test.test('.js') && oneOfRule.exclude) {
+                // 检查 exclude 是否是数组或函数
+                if (Array.isArray(oneOfRule.exclude)) {
+                  oneOfRule.exclude = oneOfRule.exclude.filter(exclude => {
+                    return typeof exclude === 'string' ? !exclude.includes('react-draggable') : true;
+                  });
+                } else if (typeof oneOfRule.exclude === 'function') {
+                  const originalExclude = oneOfRule.exclude;
+                  oneOfRule.exclude = (modulePath) => {
+                    return originalExclude(modulePath) && !modulePath.includes('react-draggable');
+                  };
+                }
+              }
+            });
+          }
+        });
+      }
       // paths.appPath='public'
       // paths.appBuild = 'dist'; // 配合输出打包修改文件目录
       // webpackConfig中可以解构出你想要的参数比如mode、devtool、entry等等，更多信息请查看webpackConfig.json文件

@@ -29,6 +29,7 @@ export const APP_VERSION_RC_1 = '1.0.0-RC.1';
 export const APP_VERSION_RC_2 = '1.0.0-RC.2';
 export const APP_VERSION_RC_3 = '1.0.0-RC.3';
 export const APP_VERSION_1_0_1 = '1.0.1';
+export const APP_VERSION_1_0_2 = '1.0.2';
 
 export const APP_SEMANTIC_VERSIONS = [
   APP_VERSION_INIT,
@@ -44,6 +45,7 @@ export const APP_SEMANTIC_VERSIONS = [
   APP_VERSION_RC_2,
   APP_VERSION_RC_3,
   APP_VERSION_1_0_1,
+  APP_VERSION_1_0_2,
 ];
 
 export const APP_CURRENT_VERSION =

@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-import { DoubleRightOutlined } from '@ant-design/icons';
+import { DoubleRightOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
+  Alert,
   Button,
   Checkbox,
   Form,
@@ -65,6 +66,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const [advancedVisible, setAdvancedVisible] = useState(false);
   const [concurrencyControl, setConcurrencyControl] = useState(true);
   const [cache, setCache] = useState(false);
+  const [currentParentId, setCurrentParentId] = useState<string>();
   const selectViewFolderTree = useMemo(makeSelectViewFolderTree, []);
   const [expensiveQuery, setExpensiveQuery] = useState(false); // beta.2 add expensiveQuery
   const {
@@ -103,12 +105,79 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
 
   useEffect(() => {
     if (initialValues) {
+      const findFirstAvailableFolder = (nodes: any[]): string | undefined => {
+        for (const node of nodes) {
+          if (!node.disabled) {
+            return node.id;
+          }
+          if (node.children && node.children.length > 0) {
+            const found = findFirstAvailableFolder(node.children);
+            if (found) return found;
+          }
+        }
+        return undefined;
+      };
+
+      const firstAvailableFolderId = findFirstAvailableFolder(folderTree || []);
+
       formRef.current?.setFieldsValue({
         ...initialValues,
-        parentId: initialValues.parentId || void 0,
+        parentId: initialValues.parentId || firstAvailableFolderId || void 0,
       });
+
+      setCurrentParentId(
+        initialValues.parentId || firstAvailableFolderId || void 0,
+      );
     }
-  }, [initialValues]);
+  }, [initialValues, folderTree]);
+
+  const hasAvailableFolders = useMemo(() => {
+    const checkAvailable = (nodes: any[]): boolean => {
+      for (const node of nodes) {
+        if (!node.disabled) return true;
+        if (node.children && node.children.length > 0) {
+          if (checkAvailable(node.children)) return true;
+        }
+      }
+      return false;
+    };
+    return folderTree ? checkAvailable(folderTree) : false;
+  }, [folderTree]);
+
+  const getExpandedKeys = useCallback(
+    (selectedId: string, nodes: any[]): string[] => {
+      const path: string[] = [];
+      const findPath = (
+        targetId: string,
+        currentNodes: any[],
+        currentPath: string[],
+      ): boolean => {
+        for (const node of currentNodes) {
+          const newPath = [...currentPath, node.id];
+          if (node.id === targetId) {
+            path.push(...currentPath);
+            return true;
+          }
+          if (node.children && node.children.length > 0) {
+            if (findPath(targetId, node.children, newPath)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      findPath(selectedId, nodes, []);
+      return path;
+    },
+    [],
+  );
+
+  const expandedKeys = useMemo(() => {
+    if (currentParentId && folderTree) {
+      return getExpandedKeys(currentParentId, folderTree);
+    }
+    return [];
+  }, [folderTree, currentParentId, getExpandedKeys]);
 
   const toggleAdvanced = useCallback(() => {
     setAdvancedVisible(!advancedVisible);
@@ -186,11 +255,23 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
           placeholder={t('root')}
           treeData={folderTree || []}
           allowClear
+          disabled={!hasAvailableFolders}
+          treeDefaultExpandedKeys={expandedKeys}
           onChange={() => {
             formRef.current?.validateFields();
           }}
         />
       </Form.Item>
+      {!hasAvailableFolders && (
+        <Alert
+          message={tg('validation.noFolderPermission')}
+          description={tg('validation.noFolderPermissionDesc')}
+          type="warning"
+          showIcon
+          icon={<InfoCircleOutlined />}
+          style={{ marginBottom: SPACE_MD }}
+        />
+      )}
       {!simple && initialValues?.config && (
         <>
           <AdvancedToggle

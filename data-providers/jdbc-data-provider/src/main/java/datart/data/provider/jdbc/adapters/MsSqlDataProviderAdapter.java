@@ -2,6 +2,7 @@ package datart.data.provider.jdbc.adapters;
 
 import datart.core.base.PageInfo;
 import datart.core.data.provider.Dataframe;
+import datart.data.provider.base.entity.ExecuteSqlParam;
 import datart.data.provider.script.SqlStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,8 +24,11 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    public int executeCountSql(String sql) throws SQLException {
-        try (Connection connection = getConn()) {
+    public int executeCountSql(ExecuteSqlParam param) throws SQLException {
+        String taskId = param.getTaskId();
+        String sql = param.getSql();
+
+        try (Connection connection = getConn(taskId)) {
             Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             ResultSet resultSet = statement.executeQuery(sql);
             resultSet.last();
@@ -33,8 +37,8 @@ public class MsSqlDataProviderAdapter extends JdbcDataProviderAdapter {
     }
 
     @Override
-    protected Dataframe execute(String selectSql, PageInfo pageInfo) throws SQLException {
-        selectSql = SqlStringUtils.rebuildSqlWithFragment(selectSql);
-        return super.execute(selectSql, pageInfo);
+    protected Dataframe execute(ExecuteSqlParam param, PageInfo pageInfo) throws SQLException {
+        param.setSql(SqlStringUtils.rebuildSqlWithFragment(param.getSql()));
+        return super.execute(param, pageInfo);
     }
 }
