@@ -28,6 +28,7 @@ import datart.data.provider.jdbc.adapters.JdbcDataProviderAdapter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.util.CollectionUtils;
 import org.yaml.snakeyaml.Yaml;
 
@@ -70,24 +71,32 @@ public class JdbcDataProvider extends DataProvider {
      */
     public static final Integer DEFAULT_MAX_WAIT = 5000;
 
-    private final Map<String, JdbcDataProviderAdapter> cachedProviders = new ConcurrentSkipListMap<>();
+    private final Cache<String, JdbcDataProviderAdapter> cachedProviders = CacheBuilder.newBuilder()
+            .expireAfterAccess(20, TimeUnit.MINUTES)
+            .maximumSize(1000)
+            .removalListener(adapterRemovalListener())
+            .build();
 
     private final Cache<String, JdbcDataProviderAdapter> cachedDynamicProviders = CacheBuilder.newBuilder()
             .expireAfterAccess(20, TimeUnit.MINUTES)
             .maximumSize(1000)
-            .removalListener((RemovalListener<String, JdbcDataProviderAdapter>) removalNotification -> {
-                try {
-                    String key = removalNotification.getKey();
-                    JdbcDataProviderAdapter adapter = removalNotification.getValue();
-                    if (Objects.nonNull(adapter)) {
-                        adapter.close();
-                    }
-                    log.info("jdbc adapter has not been accessed for a long time and is automatically destroyed, key: {}", key);
-                } catch (Exception e) {
-                    log.error("jdbc adapter destroyed error.", e);
-                }
-            })
+            .removalListener(adapterRemovalListener())
             .build();
+
+    private static @NonNull RemovalListener<String, JdbcDataProviderAdapter> adapterRemovalListener() {
+        return (RemovalListener<String, JdbcDataProviderAdapter>) removalNotification -> {
+            try {
+                String key = removalNotification.getKey();
+                JdbcDataProviderAdapter adapter = removalNotification.getValue();
+                if (Objects.nonNull(adapter)) {
+                    adapter.close();
+                }
+                log.info("jdbc adapter has not been accessed for a long time and is automatically destroyed, key: {}", key);
+            } catch (Exception e) {
+                log.error("jdbc adapter destroyed error.", e);
+            }
+        };
+    }
 
 
     @Override
@@ -207,7 +216,7 @@ public class JdbcDataProvider extends DataProvider {
             adapter = ProviderFactory.createDataProvider(conv2JdbcProperties(source), true);
             cachedDynamicProviders.put(uniqKey, adapter);
         } else {
-            adapter = cachedProviders.get(source.getSourceId());
+            adapter = cachedProviders.getIfPresent(source.getSourceId());
             if (Objects.nonNull(adapter)) {
                 return adapter;
             }
@@ -415,11 +424,15 @@ public class JdbcDataProvider extends DataProvider {
     @Override
     public void resetSource(DataProviderSource source) {
         try {
-            JdbcDataProviderAdapter adapter = cachedProviders.remove(source.getSourceId());
-            if (adapter != null) {
-                adapter.close();
-            }
-            log.info("jdbc source '{}-{}' updated, source has been reset", source.getSourceId(), source.getName());
+            String sourceId = source.getSourceId();
+
+            // 销毁 cache 中对应的 adapter
+            cachedProviders.invalidate(sourceId);
+            cachedDynamicProviders.asMap().keySet().stream()
+                    .filter(key -> StringUtils.startsWith(key, sourceId + "_"))
+                    .forEach(cachedDynamicProviders::invalidate);
+
+            log.info("jdbc source '{}-{}' updated, source has been reset", sourceId, source.getName());
         } catch (Exception e) {
             log.error("source reset error.", e);
         }

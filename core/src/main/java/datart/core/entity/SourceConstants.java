@@ -30,11 +30,6 @@ public interface SourceConstants {
      */
     String SPARK_SCHEMA_TASK = "QUERY_SCHEMA_";
 
-    /**
-     * doris 默认计算组
-     */
-    String DORIS_DEFAULT_COMPUTE_GROUP = "defaultComputeGroup";
-
     String DORIS_DEFAULT_PASSWORD = "S@TktH2j5*";
 
 }

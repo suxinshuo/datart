@@ -1297,7 +1297,8 @@
       "variable": "变量配置",
       "model": "数据模型",
       "columnPermissions": "列权限",
-      "history": "历史记录"
+      "history": "历史记录",
+      "sqlAssistant": "开发助手"
     },
     "history": {
       "empty": "暂无历史记录",
@@ -1324,6 +1325,16 @@
         "cancelled": "已取消",
         "unknown": "未知"
       }
+    },
+    "sqlAssistant": {
+      "function": "查函数",
+      "analysis": "分析结果",
+      "other": "其他",
+      "chatTypeNotSupport": "图表类型不支持",
+      "replying": "正在回复...",
+      "replyFailed": "回复失败，请重试",
+      "inputQuestion": "请输入您的问题...",
+      "send": "发送"
     },
     "resource": {
       "title": "数据源信息",

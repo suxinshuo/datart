@@ -21,6 +21,7 @@ import {
   DatabaseOutlined,
   FunctionOutlined,
   HistoryOutlined,
+  RobotOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { PaneWrapper } from 'app/components';
@@ -40,6 +41,7 @@ import { ColumnPermissions } from './ColumnPermissions';
 import DataModelTree from './DataModelTree/DataModelTree';
 import { History } from './History';
 import { Resource } from './Resource';
+import { SQLAssistant } from './SQLAssistant';
 import { Variables } from './Variables';
 import { VerticalTabs } from './VerticalTabs';
 
@@ -68,6 +70,11 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
         icon: <SafetyCertificateOutlined />,
       },
       { name: 'history', title: t('history'), icon: <HistoryOutlined /> },
+      {
+        name: 'sqlAssistant',
+        title: t('sqlAssistant'),
+        icon: <RobotOutlined />,
+      },
     ];
     return viewType === 'STRUCT'
       ? tabTitle.slice(2, tabTitle.length)
@@ -94,6 +101,9 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
       </PaneWrapper>
       <PaneWrapper selected={selectedTab === 'history'}>
         <History />
+      </PaneWrapper>
+      <PaneWrapper selected={selectedTab === 'sqlAssistant'}>
+        <SQLAssistant />
       </PaneWrapper>
       <VerticalTabs tabs={tabTitle} onSelect={tabSelect} />
     </Container>

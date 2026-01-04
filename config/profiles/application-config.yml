@@ -95,6 +95,9 @@ datart:
       expire-hours: ${datart.register.expire-hours:48} # 注册邮件有效期/小时
     invite:
       expire-hours: ${datart.invite.expire-hours:48} # 邀请邮件有效期/小时
+    doris:
+      default-compute-group: defaultComputeGroup
+      default-auth-catalog: internal
 
   security:
     token:
@@ -112,3 +115,11 @@ datart:
   task:
     consumer:
       count: 4 # 异步执行任务的消费者数量
+
+  assistant:
+    dify:
+      url: https://tify-api.itigerinner.com/v1/chat-messages
+      token:
+        function: app-jfSmxwOWFEm1Aenir6LFeLPG
+        analysis:
+        other:

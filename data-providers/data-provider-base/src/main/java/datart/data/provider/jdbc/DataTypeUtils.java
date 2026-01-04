@@ -64,7 +64,7 @@ public class DataTypeUtils {
 
         if (Objects.isNull(family)) {
             // 有一些特有字段, 比如 hll(Doris) Map 等, 这种先直接返回 string
-            log.warn("can not convert jdbc type {}", jdbcType);
+            // log.warn("can not convert jdbc type {}", jdbcType);
             return ValueType.STRING;
         }
 

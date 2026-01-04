@@ -1298,7 +1298,8 @@
       "variable": "Variables",
       "model": "Data Model",
       "columnPermissions": "Column Permissions",
-      "history": "History"
+      "history": "History",
+      "sqlAssistant": "Programming Assistant"
     },
     "history": {
       "empty": "No history records found",
@@ -1325,6 +1326,16 @@
         "cancelled": "Cancelled",
         "unknown": "Unknown"
       }
+    },
+    "sqlAssistant": {
+      "function": "Lookup function",
+      "analysis": "Analysis results",
+      "other": "Other",
+      "chatTypeNotSupport": "Chart type not supported",
+      "replying": "Replying...",
+      "replyFailed": "Reply failed, please try again",
+      "inputQuestion": "Please enter your question...",
+      "send": "Send"
     },
     "resource": {
       "title": "Source info",
