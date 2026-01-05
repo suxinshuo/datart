@@ -1342,7 +1342,12 @@
       "search": "Search database / table / column",
       "sortType": "Sort",
       "byName": "By Name",
-      "byField": "By Field"
+      "byField": "By Field",
+      "fillMode": "Fill Mode",
+      "dbTable": "Database.Table",
+      "selectStatement": "SELECT Statement",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
     },
     "variable": {
       "title": "Variables",
