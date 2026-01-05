@@ -1341,7 +1341,12 @@
       "search": "搜索数据库 / 表 / 字段关键字",
       "sortType": "排序方式",
       "byName": "按名称",
-      "byField": "按字段"
+      "byField": "按字段",
+      "fillMode": "选择填充方式",
+      "dbTable": "库名.表名",
+      "selectStatement": "SELECT语句",
+      "confirm": "确定",
+      "cancel": "取消"
     },
     "variable": {
       "title": "变量配置",
