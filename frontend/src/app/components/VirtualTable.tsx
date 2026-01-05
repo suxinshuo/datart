@@ -124,14 +124,7 @@ interface VirtualTableProps extends TableProps<object> {
  */
 export const VirtualTable = memo((props: VirtualTableProps) => {
   const { columns, scroll, width: boxWidth, dataSource } = props;
-  const widthColumns = columns.map(v => {
-    return { width: v.width, dataIndex: v.dataIndex };
-  });
   const gridRef: any = useRef();
-  const isFull = useRef<boolean>(false);
-  const widthColumnCount = widthColumns.filter(
-    ({ width, dataIndex }) => !width || dataIndex !== TABLE_DATA_INDEX,
-  ).length;
   const [connectObject] = useState(() => {
     const obj = {};
     Object.defineProperty(obj, 'scrollLeft', {
@@ -146,27 +139,43 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
     });
     return obj;
   });
-  isFull.current = boxWidth > scroll.x;
 
-  if (isFull.current === true) {
-    widthColumns.forEach((v, i) => {
-      return (widthColumns[i].width =
-        widthColumns[i].dataIndex === TABLE_DATA_INDEX
-          ? widthColumns[i].width
-          : widthColumns[i].width + (boxWidth - scroll.x) / widthColumnCount);
+  // 当columns变化时，重新计算widthColumns和widthColumnCount
+  const widthColumns = useMemo(() => {
+    return columns.map(v => {
+      return { width: v.width, dataIndex: v.dataIndex };
     });
-  }
+  }, [columns]);
+
+  const widthColumnCount = useMemo(() => {
+    return widthColumns.filter(
+      ({ width, dataIndex }) => !width || dataIndex !== TABLE_DATA_INDEX,
+    ).length;
+  }, [widthColumns]);
 
   const mergedColumns = useMemo(() => {
+    const isFull = boxWidth > scroll.x;
+    const updatedWidthColumns = [...widthColumns];
+
+    if (isFull === true) {
+      updatedWidthColumns.forEach((v, i) => {
+        updatedWidthColumns[i].width =
+          updatedWidthColumns[i].dataIndex === TABLE_DATA_INDEX
+            ? updatedWidthColumns[i].width
+            : updatedWidthColumns[i].width +
+              (boxWidth - scroll.x) / widthColumnCount;
+      });
+    }
+
     return columns.map((column, i) => {
       return {
         ...column,
         width: column.width
-          ? widthColumns[i].width
+          ? updatedWidthColumns[i].width
           : Math.floor(boxWidth / widthColumnCount),
       };
     });
-  }, [boxWidth, columns, widthColumnCount, widthColumns]);
+  }, [boxWidth, columns, scroll.x, widthColumnCount, widthColumns]);
 
   const resetVirtualGrid = useCallback(() => {
     gridRef.current?.resetAfterIndices({
@@ -175,7 +184,10 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
     });
   }, [gridRef]);
 
-  useEffect(() => resetVirtualGrid, [boxWidth, dataSource, resetVirtualGrid]);
+  useEffect(
+    () => resetVirtualGrid,
+    [boxWidth, columns, dataSource, resetVirtualGrid],
+  );
 
   const renderVirtualList = useCallback(
     (rawData, { scrollbarSize, ref, onScroll }) => {
