@@ -126,6 +126,9 @@ export const Toolbar = memo(
     const ViewIndex = useSelector(state =>
       selectCurrentEditingViewAttr(state, { name: 'index' }),
     ) as number;
+    const previewResults = useSelector(state =>
+      selectCurrentEditingViewAttr(state, { name: 'previewResults' }),
+    ) as any[];
     const isArchived = status === ViewStatus.Archived;
     const enableAsyncExecution = useSelector(state =>
       selectCurrentEditingViewAttr(state, { name: 'enableAsyncExecution' }),
@@ -409,7 +412,7 @@ export const Toolbar = memo(
             {allowEnableViz && (
               <Tooltip title={t('startAnalysis')} placement="bottom">
                 <ToolbarButton
-                  disabled={isNewView(id)}
+                  disabled={isNewView(id) || (isFocusMode && (!previewResults || previewResults.length === 0))}
                   icon={<MonitorOutlined />}
                   color={INFO}
                   onClick={() => {
