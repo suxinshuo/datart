@@ -218,7 +218,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     @Override
     public SqlTaskStatusResponse getSqlTaskStatus(String taskId) {
         // 从数据库查询任务信息
-        SqlTaskWithBLOBs task = sqlTaskMapper.selectByPrimaryKey(taskId);
+        SqlTaskWithBLOBs task = retrieveNoExp(taskId, SqlTaskWithBLOBs.class, false);
 
         if (Objects.isNull(task)) {
             SqlTaskStatusResponse response = new SqlTaskStatusResponse();
@@ -375,7 +375,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     @Override
     public void updateTaskProgress(String taskId, Integer progress) {
         // 查询当前进度
-        SqlTaskWithBLOBs sqlTask = sqlTaskMapper.selectByPrimaryKey(taskId);
+        SqlTaskWithBLOBs sqlTask = retrieveNoExp(taskId, SqlTaskWithBLOBs.class, false);
         Integer oldProgress = sqlTask.getProgress();
         if (progress <= oldProgress) {
             // 要更新的进度 <= 当前进度, 不更新
@@ -415,7 +415,11 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     private void cancelSqlTask(String taskId, SqlTaskFailType failType, String operatorUserId) {
         log.info("取消任务执行, taskId: {}, failType: {}", taskId, failType);
         // 从数据库查询任务信息
-        SqlTaskWithBLOBs task = sqlTaskMapper.selectByPrimaryKey(taskId);
+        SqlTaskWithBLOBs task = retrieveNoExp(taskId, SqlTaskWithBLOBs.class, false);
+        if (Objects.isNull(task)) {
+            log.warn("任务({}) 不存在", taskId);
+            return;
+        }
 
         // 更新任务状态为失败
         Date endTime = new Date();
@@ -527,7 +531,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 }
 
                 // 如果之前已经更新为手动终止, 则不更新状态
-                SqlTaskWithBLOBs nowTask = sqlTaskMapper.selectByPrimaryKey(task.getId());
+                SqlTaskWithBLOBs nowTask = retrieveNoExp(task.getId(), SqlTaskWithBLOBs.class, false);
                 SqlTaskFailType nowSqlTaskFailType = SqlTaskFailType.fromCode(nowTask.getFailType());
                 if (Objects.equals(SqlTaskStatus.FAILED.getCode(), nowTask.getStatus())
                         && SqlTaskFailType.getManualTypes().contains(nowSqlTaskFailType)) {
@@ -557,7 +561,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     }
 
     @Override
-    public void requirePermission(SqlTask entity, int permission) {
+    public void requirePermission(SqlTaskWithBLOBs entity, int permission) {
 
     }
 

@@ -41,6 +41,7 @@ import datart.server.service.*;
 import datart.server.service.task.SqlTaskService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -73,6 +74,7 @@ public class ViewServiceImpl extends BaseService implements ViewService {
     @Resource
     private RelVariableSubjectMapperExt rvsMapper;
 
+    @Lazy
     @Resource
     private SqlTaskService sqlTaskService;
 

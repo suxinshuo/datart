@@ -17,7 +17,7 @@
  */
 package datart.server.service.task;
 
-import datart.core.entity.SqlTask;
+import datart.core.entity.SqlTaskWithBLOBs;
 import datart.core.mappers.SqlTaskMapper;
 import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
@@ -25,7 +25,7 @@ import datart.server.service.BaseCRUDService;
 
 import java.util.List;
 
-public interface SqlTaskService extends BaseCRUDService<SqlTask, SqlTaskMapper> {
+public interface SqlTaskService extends BaseCRUDService<SqlTaskWithBLOBs, SqlTaskMapper> {
 
     /**
      * 创建 SQL 执行任务
