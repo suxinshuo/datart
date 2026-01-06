@@ -262,6 +262,7 @@ export function getSaveParamsFromViewModel(
     columnPermissions,
     index,
     type,
+    currentTaskId,
   } = editingView;
 
   if (isUpdate) {
@@ -354,6 +355,7 @@ export function getSaveParamsFromViewModel(
         ...cp,
         columnPermission: JSON.stringify(cp.columnPermission),
       })),
+      sqlTaskId: currentTaskId,
     };
   }
 }

@@ -53,4 +53,6 @@ public class ViewCreateParam extends VizCreateParam {
 
     private String config;
 
+    private String sqlTaskId;
+
 }

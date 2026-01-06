@@ -19,6 +19,7 @@
 import { Spin } from 'antd';
 import { Split } from 'app/components';
 import { useAccess, useCascadeAccess } from 'app/pages/MainPage/Access';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import debounce from 'lodash/debounce';
 import React, {
   memo,
@@ -50,6 +51,8 @@ export const Workbench = memo(() => {
   const { editorInstance } = useContext(EditorContext);
   const { actions } = useViewSlice();
 
+  // 获取专注模式状态
+  const isFocusMode = useSelector(selectIsFocusMode);
   const views = useSelector(selectViews);
   const id = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'id' }),
@@ -92,6 +95,18 @@ export const Workbench = memo(() => {
   useEffect(() => {
     editorInstance?.layout();
   }, [editorInstance, allowManage]);
+
+  // 在专注模式下, 自动设置视图类型为SQL, 跳过选择步骤
+  useEffect(() => {
+    if (isFocusMode && !viewType && id.includes(UNPERSISTED_ID_PREFIX)) {
+      dispatch(
+        actions.changeCurrentEditingView({
+          type: 'SQL',
+          script: '',
+        }),
+      );
+    }
+  }, [isFocusMode, viewType, id, actions, dispatch]);
 
   /* eslint-disable-next-line */
   const onResize = useCallback(

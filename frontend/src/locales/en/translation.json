@@ -417,6 +417,7 @@
         "open": "Open",
         "close": "Close",
         "cancel": "Cancel",
+        "returnToQueryInterface": "Return to query interface",
         "downloadList": "Download list",
         "lang": {
           "zh": "zh",

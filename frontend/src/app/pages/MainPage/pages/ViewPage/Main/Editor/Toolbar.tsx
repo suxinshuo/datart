@@ -30,6 +30,7 @@ import { ToolbarButton } from 'app/components';
 import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useResizeObserver from 'app/hooks/useResizeObserver';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { CommonFormTypes } from 'globalConstants';
 import React, {
   memo,
@@ -85,6 +86,7 @@ export const Toolbar = memo(
     const history = useHistory();
     const histState = history.location.state as any;
     const viewsData = useSelector(selectViews);
+    const isFocusMode = useSelector(selectIsFocusMode);
     const t = useI18NPrefix('view.editor');
     const saveAsView = useSaveAsView();
     const startAnalysis = useStartAnalysis();
@@ -380,7 +382,8 @@ export const Toolbar = memo(
                 />
               </Tooltip>
             )}
-            {allowManage && (
+            {/* 在专注模式下隐藏详情设置按钮 */}
+            {allowManage && !isFocusMode && (
               <Tooltip title={t('info')} placement="bottom">
                 <ToolbarButton
                   icon={<SettingFilled />}

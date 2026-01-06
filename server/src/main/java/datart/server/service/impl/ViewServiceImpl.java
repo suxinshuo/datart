@@ -96,6 +96,9 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         requirePermission(view, Const.CREATE);
         viewMapper.insert(view);
 
+        // TODO: 更新相关的最近一个运行任务为当前 view id
+
+
         getRoleService().grantPermission(viewCreateParam.getPermissions());
 
         if (!CollectionUtils.isEmpty(viewCreateParam.getVariablesToCreate())) {

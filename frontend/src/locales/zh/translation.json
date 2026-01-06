@@ -415,6 +415,7 @@
         "open": "开启",
         "close": "关闭",
         "cancel": "取消",
+        "returnToQueryInterface": "返回至查询界面",
         "downloadList": "下载列表",
         "lang": {
           "zh": "中文",

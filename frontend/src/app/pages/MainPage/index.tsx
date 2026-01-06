@@ -17,6 +17,7 @@
  */
 
 import ChartEditor, { ChartEditorBaseProps } from 'app/components/ChartEditor';
+import { message } from 'antd';
 import useMount from 'app/hooks/useMount';
 import ChartManager from 'app/models/ChartManager';
 import { useAppSlice } from 'app/slice';
@@ -50,8 +51,14 @@ import { useViewSlice } from './pages/ViewPage/slice';
 import { VizPage } from './pages/VizPage';
 import { useVizSlice } from './pages/VizPage/slice';
 import { initChartPreviewData } from './pages/VizPage/slice/thunks';
+import { useFocusModeSlice } from './slice/focusModeSlice';
+import { selectIsFocusMode } from './slice/focusModeSelectors';
 import { useMainSlice } from './slice';
 import { selectOrgId } from './slice/selectors';
+import {
+  enterFocusMode,
+  exitFocusMode,
+} from './slice/focusModeSlice';
 import {
   getDataProviders,
   getLoggedInUserPermissions,
@@ -61,6 +68,7 @@ import { MainPageRouteParams } from './types';
 
 export function MainPage() {
   useAppSlice();
+  useFocusModeSlice(); // 注入专注模式reducer
   const { actions } = useMainSlice();
   const { actions: vizActions } = useVizSlice();
   const { actions: viewActions } = useViewSlice();
@@ -94,6 +102,36 @@ export function MainPage() {
       dispatch(getLoggedInUserPermissions(orgId));
     }
   }, [dispatch, vizActions, viewActions, orgId]);
+
+  // 全局快捷键监听
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Command+B (Mac) / Control+B (Windows) 切换到专注模式
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        dispatch(enterFocusMode());
+      }
+      // ESC 切换回普通模式
+      if (e.key === 'Escape') {
+        dispatch(exitFocusMode());
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [dispatch]);
+
+  // 监听专注模式状态变化，显示提示信息
+  const isFocusMode = useSelector(selectIsFocusMode);
+  useEffect(() => {
+    if (isFocusMode) {
+      message.info('已进入专注模式，使用ESC键返回普通模式');
+    } else {
+      message.info('已返回普通模式');
+    }
+  }, [isFocusMode]);
 
   const onSaveInDataChart = useCallback(
     (orgId: string, backendChartId: string) => {
