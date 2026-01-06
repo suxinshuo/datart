@@ -1230,6 +1230,10 @@
       "empty": "Select vizs in the sidebar",
       "closeOther": "Close Other Tabs",
       "closeAll": "Close All Tabs"
+    },
+    "focusMode": {
+      "enter": "Entered focus mode, use ESC key to return to normal mode",
+      "exit": "Entered normal mode, use Command+B/Control+B key to return to focus mode"
     }
   },
   "view": {

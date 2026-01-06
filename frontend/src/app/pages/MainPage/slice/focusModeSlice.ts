@@ -24,9 +24,30 @@ export interface FocusModeState {
   isFocusMode: boolean;
 }
 
+// 从localStorage读取初始状态，默认值为true
+const getInitialState = (): FocusModeState => {
+  try {
+    const savedState = localStorage.getItem('datart_focus_mode');
+    if (savedState !== null) {
+      return JSON.parse(savedState);
+    }
+  } catch (error) {
+    console.error('Failed to read focus mode state from localStorage:', error);
+  }
+  return {
+    isFocusMode: true,
+  };
+};
+
 // 初始状态
-export const initialState: FocusModeState = {
-  isFocusMode: false,
+export const initialState: FocusModeState = getInitialState();
+
+const saveFocusModeState = (state: FocusModeState) => {
+  try {
+    localStorage.setItem('datart_focus_mode', JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to save focus mode state to localStorage:', error);
+  }
 };
 
 const slice = createSlice({
@@ -36,14 +57,17 @@ const slice = createSlice({
     // 切换到专注模式
     enterFocusMode(state) {
       state.isFocusMode = true;
+      saveFocusModeState(state);
     },
     // 退出专注模式
     exitFocusMode(state) {
       state.isFocusMode = false;
+      saveFocusModeState(state);
     },
     // 切换专注模式状态
     toggleFocusMode(state) {
       state.isFocusMode = !state.isFocusMode;
+      saveFocusModeState(state);
     },
   },
 });

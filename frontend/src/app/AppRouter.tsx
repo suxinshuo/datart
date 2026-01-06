@@ -38,6 +38,7 @@ import { LazyRegisterPage } from './pages/RegisterPage/Loadable';
 import { LazySetupPage } from './pages/SetupPage/Loadable';
 import { useAppSlice } from './slice';
 import { getSystemInfo, logout, setLoggedInUser } from './slice/thunks';
+import { useFocusModeSlice } from './pages/MainPage/slice/focusModeSlice';
 
 registerTheme('default', echartsDefaultTheme);
 
@@ -47,6 +48,7 @@ export function AppRouter() {
   const logged = !!getToken();
   const t = useI18NPrefix('global');
   useAppSlice();
+  useFocusModeSlice(); // 注入专注模式reducer，确保应用启动时就从localStorage读取初始状态
 
   useLayoutEffect(() => {
     if (logged) {

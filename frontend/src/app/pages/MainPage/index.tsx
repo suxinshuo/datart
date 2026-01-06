@@ -21,6 +21,7 @@ import { message } from 'antd';
 import useMount from 'app/hooks/useMount';
 import ChartManager from 'app/models/ChartManager';
 import { useAppSlice } from 'app/slice';
+import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import React, { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -125,13 +126,14 @@ export function MainPage() {
 
   // 监听专注模式状态变化，显示提示信息
   const isFocusMode = useSelector(selectIsFocusMode);
+  const t = useI18NPrefix('viz.focusMode');
   useEffect(() => {
     if (isFocusMode) {
-      message.info('已进入专注模式，使用ESC键返回普通模式');
+      message.info(t('enter'));
     } else {
-      message.info('已返回普通模式');
+      message.info(t('exit'));
     }
-  }, [isFocusMode]);
+  }, [isFocusMode, t]);
 
   const onSaveInDataChart = useCallback(
     (orgId: string, backendChartId: string) => {

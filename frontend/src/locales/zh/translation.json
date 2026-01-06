@@ -1229,6 +1229,10 @@
       "empty": "请在左侧列表选择可视化",
       "closeOther": "关闭其他",
       "closeAll": "关闭所有"
+    },
+    "focusMode": {
+      "enter": "已进入专注模式，使用ESC键返回普通模式",
+      "exit": "已进入普通模式，使用Command+B/Control+B键返回专注模式"
     }
   },
   "view": {

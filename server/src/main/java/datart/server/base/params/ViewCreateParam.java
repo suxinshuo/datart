@@ -53,6 +53,9 @@ public class ViewCreateParam extends VizCreateParam {
 
     private String config;
 
+    /**
+     * 创建 View 的时候最近一次关联的运行 SQL 任务 ID
+     */
     private String sqlTaskId;
 
 }
