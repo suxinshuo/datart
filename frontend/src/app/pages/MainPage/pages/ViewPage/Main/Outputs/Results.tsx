@@ -433,6 +433,9 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
         getExtraHeaderActions={getExtraHeaderActions}
         onSchemaTypeChange={modelChange}
         hasCategory
+        expandable={{
+          childrenColumnName: '___not_children___',
+        }}
       />
       {stage === ViewViewModelStages.Running && (
         <LoadingMask>

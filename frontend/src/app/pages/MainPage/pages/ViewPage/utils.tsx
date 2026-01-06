@@ -507,7 +507,10 @@ export function buildAntdTreeNodeModel<T extends TreeDataNode & { value: any }>(
   const fullNames = ancestors.concat(nodeName);
   return {
     // 添加后缀随机数, 避免key重复
-    key: fullNames.join(TREE_HIERARCHY_SEPERATOR) + "_" + Math.random().toString(36),
+    key:
+      fullNames.join(TREE_HIERARCHY_SEPERATOR) +
+      '_' +
+      Math.random().toString(36),
     title: nodeName,
     value: fullNames,
     children,
