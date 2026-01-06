@@ -34,11 +34,11 @@ import { LazyActivationPage } from './pages/ActivationPage/Loadable';
 import { LazyAuthorizationPage } from './pages/AuthorizationPage/Loadable';
 import { LazyForgetPasswordPage } from './pages/ForgetPasswordPage/Loadable';
 import { LazyLoginPage } from './pages/LoginPage/Loadable';
+import { useFocusModeSlice } from './pages/MainPage/slice/focusModeSlice';
 import { LazyRegisterPage } from './pages/RegisterPage/Loadable';
 import { LazySetupPage } from './pages/SetupPage/Loadable';
 import { useAppSlice } from './slice';
 import { getSystemInfo, logout, setLoggedInUser } from './slice/thunks';
-import { useFocusModeSlice } from './pages/MainPage/slice/focusModeSlice';
 
 registerTheme('default', echartsDefaultTheme);
 

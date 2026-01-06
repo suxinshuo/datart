@@ -19,4 +19,5 @@
 import { RootState } from 'types';
 
 // 选择专注模式状态
-export const selectIsFocusMode = (state: RootState) => state.focusMode?.isFocusMode || false;
+export const selectIsFocusMode = (state: RootState) =>
+  state.focusMode?.isFocusMode || false;

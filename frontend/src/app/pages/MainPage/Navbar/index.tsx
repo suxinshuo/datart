@@ -34,13 +34,13 @@ import logo from 'app/assets/images/logo.svg';
 import { Avatar, MenuListItem, Popup } from 'app/components';
 import { TenantManagementMode } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import {
   selectCurrentOrganization,
   selectDownloadPolling,
   selectOrganizationListLoading,
   selectOrgId,
 } from 'app/pages/MainPage/slice/selectors';
-import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { getOrganizations } from 'app/pages/MainPage/slice/thunks';
 import { selectLoggedInUser, selectSystemInfo } from 'app/slice/selectors';
 import { logout } from 'app/slice/thunks';
@@ -316,7 +316,10 @@ export function Navbar() {
                   onVisibleChange={organizationListVisibleChange}
                 >
                   <li>
-                    <Tooltip title={t('nav.organization.title')} placement="right">
+                    <Tooltip
+                      title={t('nav.organization.title')}
+                      placement="right"
+                    >
                       <Avatar
                         src={`${BASE_RESOURCE_URL}${currentOrganization?.avatar}`}
                       >

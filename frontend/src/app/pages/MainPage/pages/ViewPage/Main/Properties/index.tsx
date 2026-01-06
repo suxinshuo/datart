@@ -83,7 +83,7 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
     // 在专注模式下隐藏"数据模型"和"列权限"标签页
     if (isFocusMode) {
       tabTitle = tabTitle.filter(
-        tab => tab.name !== 'model' && tab.name !== 'columnPermissions'
+        tab => tab.name !== 'model' && tab.name !== 'columnPermissions',
       );
     }
 

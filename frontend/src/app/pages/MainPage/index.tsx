@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-import ChartEditor, { ChartEditorBaseProps } from 'app/components/ChartEditor';
 import { message } from 'antd';
+import ChartEditor, { ChartEditorBaseProps } from 'app/components/ChartEditor';
+import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useMount from 'app/hooks/useMount';
 import ChartManager from 'app/models/ChartManager';
 import { useAppSlice } from 'app/slice';
-import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import React, { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -52,14 +52,14 @@ import { useViewSlice } from './pages/ViewPage/slice';
 import { VizPage } from './pages/VizPage';
 import { useVizSlice } from './pages/VizPage/slice';
 import { initChartPreviewData } from './pages/VizPage/slice/thunks';
-import { useFocusModeSlice } from './slice/focusModeSlice';
-import { selectIsFocusMode } from './slice/focusModeSelectors';
 import { useMainSlice } from './slice';
-import { selectOrgId } from './slice/selectors';
+import { selectIsFocusMode } from './slice/focusModeSelectors';
 import {
   enterFocusMode,
   exitFocusMode,
+  useFocusModeSlice,
 } from './slice/focusModeSlice';
+import { selectOrgId } from './slice/selectors';
 import {
   getDataProviders,
   getLoggedInUserPermissions,

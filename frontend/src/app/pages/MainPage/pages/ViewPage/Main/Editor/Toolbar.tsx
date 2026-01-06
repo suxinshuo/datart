@@ -412,7 +412,11 @@ export const Toolbar = memo(
             {allowEnableViz && (
               <Tooltip title={t('startAnalysis')} placement="bottom">
                 <ToolbarButton
-                  disabled={isNewView(id) || (isFocusMode && (!previewResults || previewResults.length === 0))}
+                  disabled={
+                    isNewView(id) ||
+                    (isFocusMode &&
+                      (!previewResults || previewResults.length === 0))
+                  }
                   icon={<MonitorOutlined />}
                   color={INFO}
                   onClick={() => {

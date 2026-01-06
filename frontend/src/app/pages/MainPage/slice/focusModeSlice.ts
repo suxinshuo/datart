@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 
 // 定义专注模式状态类型

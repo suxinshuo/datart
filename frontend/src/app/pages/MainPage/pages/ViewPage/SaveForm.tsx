@@ -31,8 +31,8 @@ import {
 } from 'antd';
 import { ModalForm, ModalFormProps } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
-import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { APP_CURRENT_VERSION } from 'app/migration/constants';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { fetchCheckName } from 'app/utils/fetch';
 import debounce from 'debounce-promise';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';

@@ -20,12 +20,12 @@ import { Button, Select, Space, Switch, Tooltip } from 'antd';
 import SaveToDashboard from 'app/components/SaveToDashboard';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useMount from 'app/hooks/useMount';
-import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { useWorkbenchSlice } from 'app/pages/ChartWorkbenchPage/slice';
 import { DownloadListPopup } from 'app/pages/MainPage/Navbar/DownloadListPopup';
 import { loadTasks } from 'app/pages/MainPage/Navbar/service';
 import { selectHasVizFetched } from 'app/pages/MainPage/pages/VizPage/slice/selectors';
 import { getFolders } from 'app/pages/MainPage/pages/VizPage/slice/thunks';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { downloadFile } from 'app/utils/fetch';
 import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -188,7 +188,8 @@ const ChartHeaderPanel: FC<{
                 >
                   {sqlTaskHistory.map(task => (
                     <Select.Option key={task.id} value={task.id}>
-                      {new Date(task.submitTime).toLocaleString()} - {task.status}
+                      {new Date(task.submitTime).toLocaleString()} -
+                      {task.status}
                     </Select.Option>
                   ))}
                 </Select>
@@ -217,7 +218,9 @@ const ChartHeaderPanel: FC<{
                   }
                 }}
                 renderDom={
-                  <Button icon={<DownloadOutlined />}>{t('downloadList')}</Button>
+                  <Button icon={<DownloadOutlined />}>
+                    {t('downloadList')}
+                  </Button>
                 }
               />
             </>
@@ -245,7 +248,9 @@ const ChartHeaderPanel: FC<{
               </Tooltip>
               {!(container === 'widget') && (
                 <Tooltip
-                  title={staticAnalysis ? t('analysisBasedStaticTip') : undefined}
+                  title={
+                    staticAnalysis ? t('analysisBasedStaticTip') : undefined
+                  }
                   placement="bottom"
                 >
                   <Button
