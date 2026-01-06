@@ -23,16 +23,6 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
     private SqlTaskResultMapper sqlTaskResultMapper;
 
     /**
-     * 插入 SQL 任务结果
-     *
-     * @param sqlTaskResult SQL 任务结果
-     */
-    @Override
-    public void insertSelective(SqlTaskResult sqlTaskResult) {
-        sqlTaskResultMapper.insertSelective(sqlTaskResult);
-    }
-
-    /**
      * 根据任务 ID 获取 SQL 任务结果
      *
      * @param taskId 任务 ID
@@ -50,7 +40,7 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
     }
 
     @Override
-    public SqlTaskResult getById(String id) {
-        return sqlTaskResultMapper.selectByPrimaryKey(id);
+    public void requirePermission(SqlTaskResult entity, int permission) {
+
     }
 }

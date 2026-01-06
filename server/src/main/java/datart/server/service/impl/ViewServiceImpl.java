@@ -23,7 +23,6 @@ import datart.core.base.consts.Const;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotFoundException;
 import datart.core.base.exception.ParamException;
-import datart.core.common.Application;
 import datart.core.common.DateUtils;
 import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
@@ -39,47 +38,43 @@ import datart.server.base.transfer.ImportStrategy;
 import datart.server.base.transfer.TransferConfig;
 import datart.server.base.transfer.model.ViewResourceModel;
 import datart.server.service.*;
+import datart.server.service.task.SqlTaskService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class ViewServiceImpl extends BaseService implements ViewService {
 
-    private final ViewMapperExt viewMapper;
+    @Resource
+    private ViewMapperExt viewMapper;
 
-    private final RelSubjectColumnsMapperExt rscMapper;
+    @Resource
+    private RelSubjectColumnsMapperExt rscMapper;
 
-    private final RelRoleResourceMapperExt rrrMapper;
+    @Resource
+    private RelRoleResourceMapperExt rrrMapper;
 
-    private final RoleService roleService;
+    @Resource
+    private RoleService roleService;
 
-    private final VariableService variableService;
+    @Resource
+    private VariableService variableService;
 
-    private final VariableMapperExt variableMapper;
+    @Resource
+    private VariableMapperExt variableMapper;
 
-    private final RelVariableSubjectMapperExt rvsMapper;
+    @Resource
+    private RelVariableSubjectMapperExt rvsMapper;
 
-    public ViewServiceImpl(ViewMapperExt viewMapper,
-                           RelSubjectColumnsMapperExt rscMapper,
-                           RelRoleResourceMapperExt rrrMapper,
-                           RoleService roleService,
-                           VariableService variableService,
-                           VariableMapperExt variableMapper,
-                           RelVariableSubjectMapperExt rvsMapper) {
-        this.viewMapper = viewMapper;
-        this.rscMapper = rscMapper;
-        this.rrrMapper = rrrMapper;
-        this.roleService = roleService;
-        this.variableService = variableService;
-        this.variableMapper = variableMapper;
-        this.rvsMapper = rvsMapper;
-    }
+    @Resource
+    private SqlTaskService sqlTaskService;
 
     @Override
     @Transactional
@@ -96,8 +91,12 @@ public class ViewServiceImpl extends BaseService implements ViewService {
         requirePermission(view, Const.CREATE);
         viewMapper.insert(view);
 
-        // TODO: 更新相关的最近一个运行任务为当前 view id
-
+        // 更新相关的最近一个运行任务为当前 view id
+        String sqlTaskId = viewCreateParam.getSqlTaskId();
+        SqlTask sqlTask = sqlTaskService.retrieveNoExp(sqlTaskId);
+        if (Objects.nonNull(sqlTask) && StringUtils.isBlank(sqlTask.getViewId())) {
+            sqlTaskService.safeUpdateViewIdSafe(sqlTaskId, view.getId());
+        }
 
         getRoleService().grantPermission(viewCreateParam.getPermissions());
 

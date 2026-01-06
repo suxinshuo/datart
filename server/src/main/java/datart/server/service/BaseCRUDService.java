@@ -7,12 +7,14 @@ import datart.core.base.exception.Exceptions;
 import datart.core.common.Application;
 import datart.core.common.UUIDGenerator;
 import datart.core.entity.BaseEntity;
+import datart.core.entity.SystemConstant;
 import datart.core.entity.User;
 import datart.core.mappers.ext.CRUDMapper;
 import datart.core.mappers.ext.RelRoleResourceMapperExt;
 import datart.security.base.ResourceType;
 import datart.server.base.params.BaseCreateParam;
 import datart.server.base.params.BaseUpdateParam;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Date;
+import java.util.Objects;
 
 public interface BaseCRUDService<E extends BaseEntity, M extends CRUDMapper> {
 
@@ -44,6 +47,31 @@ public interface BaseCRUDService<E extends BaseEntity, M extends CRUDMapper> {
         return instance;
     }
 
+    default E createSelective(BaseCreateParam createParam) {
+        E instance = getEntityInstance();
+        BeanUtils.copyProperties(createParam, instance);
+        // check create permission
+        requirePermission(instance, Const.CREATE);
+
+        String operatorUserId = "";
+        User currentUser = getCurrentUser();
+        if (Objects.nonNull(currentUser)) {
+            operatorUserId = currentUser.getId();
+        } else {
+            operatorUserId = SystemConstant.SYSTEM_USER_ID;
+        }
+        instance.setCreateBy(operatorUserId);
+        instance.setCreateTime(new Date());
+        instance.setId(UUIDGenerator.generate());
+        try {
+            Method setStatus = instance.getClass().getDeclaredMethod("setStatus", Byte.class);
+            setStatus.invoke(instance, Const.DATA_STATUS_ACTIVE);
+        } catch (Exception ignored) {
+        }
+        getDefaultMapper().insertSelective(instance);
+        return instance;
+    }
+
     default E retrieve(String id) {
         return retrieve(id, true);
     }
@@ -52,6 +80,25 @@ public interface BaseCRUDService<E extends BaseEntity, M extends CRUDMapper> {
         E e = (E) getDefaultMapper().selectByPrimaryKey(id);
         if (e == null) {
             notFoundException();
+        }
+        if (checkPermission) {
+            requirePermission(e, Const.READ);
+        }
+        return e;
+    }
+
+    default E retrieveNoExp(String id) {
+        return retrieveNoExp(id, true);
+    }
+
+    default E retrieveNoExp(String id, boolean checkPermission) {
+        if (StringUtils.isBlank(id)) {
+            return null;
+        }
+
+        E e = (E) getDefaultMapper().selectByPrimaryKey(id);
+        if (Objects.isNull(e)) {
+            return null;
         }
         if (checkPermission) {
             requirePermission(e, Const.READ);

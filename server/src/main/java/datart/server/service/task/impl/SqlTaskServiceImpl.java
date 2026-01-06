@@ -39,6 +39,7 @@ import datart.core.mappers.SqlTaskMapper;
 import datart.core.utils.JsonUtils;
 import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
+import datart.server.base.params.task.SqlTaskResultCreateParam;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
 import datart.server.service.task.SqlTaskLogService;
@@ -393,6 +394,20 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         sqlTaskMapper.updateByExampleSelective(updateSqlTask, example);
     }
 
+    @Override
+    public void safeUpdateViewIdSafe(String taskId, String viewId) {
+        SqlTaskExample whereExample = new SqlTaskExample();
+        whereExample.createCriteria()
+                .andIdEqualTo(taskId)
+                .andViewIdIsNull();
+
+        SqlTaskWithBLOBs updateSqlTask = new SqlTaskWithBLOBs();
+        updateSqlTask.setViewId(viewId);
+        updateSqlTask.setUpdateBy(getCurrentUser().getId());
+        updateSqlTask.setUpdateTime(new Date());
+        sqlTaskMapper.updateByExampleSelective(updateSqlTask, whereExample);
+    }
+
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {
         cancelSqlTask(taskId, failType, SystemConstant.SYSTEM_USER_ID);
     }
@@ -482,16 +497,13 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 Date endDate = new Date();
 
                 // 保存执行结果
-                SqlTaskResult result = new SqlTaskResult();
-                result.setId(UUIDGenerator.generate());
-                result.setTaskId(task.getId());
+                SqlTaskResultCreateParam createParam = new SqlTaskResultCreateParam();
+                createParam.setTaskId(task.getId());
                 // 将 Dataframe 转换为 JSON 字符串
-                result.setData(JsonUtils.toJsonStr(dataframe));
-                result.setRowCount(dataframe.getRows().size());
-                result.setColumnCount(dataframe.getColumns().size());
-                result.setCreateBy(task.getCreateBy());
-                result.setCreateTime(endDate);
-                sqlTaskResultService.insertSelective(result);
+                createParam.setData(JsonUtils.toJsonStr(dataframe));
+                createParam.setRowCount(dataframe.getRows().size());
+                createParam.setColumnCount(dataframe.getColumns().size());
+                sqlTaskResultService.createSelective(createParam);
 
                 // 更新任务状态为成功
                 task.setStatus(SqlTaskStatus.SUCCESS.getCode());
@@ -542,6 +554,11 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 securityManager.releaseRunAs();
             }
         }
+    }
+
+    @Override
+    public void requirePermission(SqlTask entity, int permission) {
+
     }
 
     private String getInstantId() {
