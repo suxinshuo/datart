@@ -1269,6 +1269,19 @@
     },
     "sqlExecutionCancelled": "SQL 执行已取消",
     "saveInProgress": "正在保存数据视图，暂不允许执行查询",
+    "download": {
+      "name": "下载",
+      "error": {
+        "taskIdMissing": "任务 ID 缺失",
+        "invalidFileType": "无效的文件类型",
+        "failed": "下载失败"
+      },
+      "success": "下载成功",
+      "type": {
+        "excel": "EXCEL",
+        "csv": "CSV"
+      }
+    },
     "tabs": {
       "discard": "放弃",
       "cancel": "取消",

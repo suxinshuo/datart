@@ -75,7 +75,7 @@ public class DownloadController extends BaseController {
     @ApiOperation(value = "sync download file")
     @GetMapping(value = "/sync/files/{taskId}")
     public void downloadTaskResultSync(@PathVariable String taskId, @RequestParam AttachmentType downloadType, HttpServletResponse response) {
-
+        downloadService.downloadTaskResultSync(taskId, downloadType, response);
     }
 
 }

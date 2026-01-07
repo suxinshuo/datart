@@ -1270,6 +1270,19 @@
     },
     "sqlExecutionCancelled": "SQL execution cancelled",
     "saveInProgress": "Data view is being saved, query execution is temporarily disabled",
+    "download": {
+      "name": "Download",
+      "error": {
+        "taskIdMissing": "Task ID is missing",
+        "invalidFileType": "Invalid file type",
+        "failed": "Download failed"
+      },
+      "success": "Download successful",
+      "type": {
+        "excel": "EXCEL",
+        "csv": "CSV"
+      }
+    },
     "tabs": {
       "discard": "Discard",
       "cancel": "Cancel",
