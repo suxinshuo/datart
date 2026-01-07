@@ -1,4 +1,4 @@
-package datart.core.bo.doris;
+package datart.server.base.bo.doris;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

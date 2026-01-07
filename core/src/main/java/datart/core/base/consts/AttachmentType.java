@@ -6,7 +6,9 @@ public enum AttachmentType {
 
     IMAGE(".png"),
 
-    PDF(".pdf");
+    PDF(".pdf"),
+
+    CSV(".csv");
 
     private String suffix;
 

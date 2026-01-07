@@ -17,22 +17,33 @@
  */
 package datart.server.service;
 
+import datart.core.base.consts.AttachmentType;
 import datart.core.entity.Download;
 import datart.core.mappers.ext.DownloadMapperExt;
 import datart.server.base.params.DownloadCreateParam;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 public interface DownloadService extends BaseCRUDService<Download, DownloadMapperExt> {
 
     Download submitDownloadTask(DownloadCreateParam downloadCreateParam);
 
-    Download submitDownloadTask(DownloadCreateParam downloadCreateParam,String clientId);
+    Download submitDownloadTask(DownloadCreateParam downloadCreateParam, String clientId);
 
     List<Download> listDownloadTasks();
 
     List<Download> listDownloadTasks(String clientId);
 
     Download downloadFile(String downloadId);
+
+    /**
+     * 同步下载任务结果
+     *
+     * @param taskId       SQL 任务 ID
+     * @param downloadType 下载类型
+     * @param response     HttpServletResponse
+     */
+    void downloadTaskResultSync(String taskId, AttachmentType downloadType, HttpServletResponse response);
 
 }

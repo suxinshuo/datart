@@ -1,4 +1,4 @@
-package datart.core.bo.assistant;
+package datart.server.base.bo.assistant;
 
 import cn.hutool.core.annotation.Alias;
 import lombok.AllArgsConstructor;
