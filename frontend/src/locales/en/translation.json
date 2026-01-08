@@ -1315,6 +1315,20 @@
         "SERVER_DESC": "All users share resource"
       }
     },
+    "cacheDialog": {
+      "conflictTitle": "Data Conflict",
+      "expiredTitle": "Cache Expired",
+      "conflictDescription": "Local cache and server data are inconsistent, please choose which version to use:",
+      "expiredDescription": "Previous edit was not saved, do you want to save?",
+      "localCache": "Local Cache",
+      "remoteData": "Server Data",
+      "useLocalCache": "Use Local Cache",
+      "useRemoteData": "Use Server Data",
+      "useLocalCacheSuccess": "Using local cache data",
+      "useRemoteDataSuccess": "Using server data",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
     "properties": {
       "reference": "Source Reference",
       "variable": "Variables",

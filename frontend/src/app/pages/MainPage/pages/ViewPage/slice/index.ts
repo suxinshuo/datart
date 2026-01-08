@@ -21,8 +21,10 @@ import { getDataProviderDatabases } from 'app/pages/MainPage/slice/thunks';
 import { useInjectReducer } from 'utils/@reduxjs/injectReducer';
 import { ViewViewModelStages } from '../constants';
 import {
+  deleteSqlFromCache,
   diffMergeHierarchyModel,
   isNewView,
+  saveSqlToCache,
   transformQueryResultToModelAndDataSource,
 } from '../utils';
 import {
@@ -62,10 +64,14 @@ const slice = createSlice({
       state.currentEditingView = action.payload.id;
     },
     removeEditingView(state, action: PayloadAction<string>) {
+      const viewId = action.payload;
+      // Delete browser cache for the view
+      deleteSqlFromCache(viewId);
+
       state.editingViews = state.editingViews.filter(
-        v => v.id !== action.payload,
+        v => v.id !== viewId,
       );
-      if (state.currentEditingView === action.payload) {
+      if (state.currentEditingView === viewId) {
         if (state.editingViews.length > 0) {
           state.currentEditingView =
             state.editingViews[state.editingViews.length - 1].id;
@@ -118,9 +124,7 @@ const slice = createSlice({
 
         // Don't reset stage if it was explicitly set in payload
         if (
-          !(
-            entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])
-          ) &&
+          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])) &&
           !isTaskStatusCleanup // Don't mark as touched when just cleaning up task status
         ) {
           currentEditingView.touched = true;
@@ -146,16 +150,9 @@ const slice = createSlice({
           }
         }
 
-        // Save to local storage if it's a new view
-        if (isNewView(currentEditingView.id)) {
-          try {
-            localStorage.setItem(
-              `datart_view_${currentEditingView.id}`,
-              JSON.stringify(currentEditingView),
-            );
-          } catch (error) {
-            console.error('Failed to save view to local storage:', error);
-          }
+        // Save SQL content to browser cache if it's a SQL view and script was updated
+        if (currentEditingView.type === 'SQL' && entries.some(([key]) => key === 'script' || key === 'sourceId')) {
+          saveSqlToCache(currentEditingView.id, currentEditingView.script as string, currentEditingView.name, currentEditingView.sourceId);
         }
       }
     },
@@ -367,6 +364,7 @@ const slice = createSlice({
 
         // Get the old view ID (temporary ID for new views)
         const oldViewId = state.currentEditingView;
+        const newViewId = action.payload.id;
 
         state.editingViews.splice(editingIndex, 1, {
           ...action.payload,
@@ -374,13 +372,15 @@ const slice = createSlice({
           stage: ViewViewModelStages.Saved,
           originVariables: [...action.payload.variables],
           originColumnPermissions: [...action.payload.columnPermissions],
+          cacheConflict: undefined,
+          cacheExpired: undefined,
+          cacheData: undefined,
         });
-        state.currentEditingView = action.payload.id;
+        state.currentEditingView = newViewId;
 
-        // If it was a new view (had temporary ID), clear local storage
-        if (isNewView(oldViewId)) {
-          localStorage.removeItem(`datart_view_${oldViewId}`);
-        }
+        // Clear browser cache for both old and new view IDs
+        deleteSqlFromCache(oldViewId);
+        deleteSqlFromCache(newViewId);
       }
 
       if (state.views) {

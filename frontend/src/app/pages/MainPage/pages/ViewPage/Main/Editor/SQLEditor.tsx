@@ -22,8 +22,8 @@ import classnames from 'classnames';
 import { CommonFormTypes } from 'globalConstants';
 import debounce from 'lodash/debounce';
 import { language } from 'monaco-editor/esm/vs/basic-languages/sql/sql';
-import React, {
-  memo,
+import React,
+  { memo,
   useCallback,
   useContext,
   useEffect,
@@ -38,12 +38,14 @@ import { FONT_SIZE_BASE } from 'styles/StyleConstants';
 import { selectThemeKey } from 'styles/theme/slice/selectors';
 import { RootState } from 'types';
 import { getInsertedNodeIndex } from 'utils/utils';
+import { CacheDialog } from '../../components/CacheDialog';
 import { ViewStatus, ViewViewModelStages } from '../../constants';
 import { EditorContext } from '../../EditorContext';
 import { SaveFormContext } from '../../SaveFormContext';
 import { useViewSlice } from '../../slice';
 import {
   selectCurrentEditingViewAttr,
+  selectCurrentEditingView,
   selectViews,
 } from '../../slice/selectors';
 import {
@@ -51,7 +53,7 @@ import {
   runSql,
   saveView,
 } from '../../slice/thunks';
-import { isNewView } from '../../utils';
+import { deleteSqlFromCache, isNewView } from '../../utils';
 
 // Text selected when "value" prop changes issue
 // https://github.com/react-monaco-editor/react-monaco-editor/issues/325
@@ -59,8 +61,7 @@ import { isNewView } from '../../utils';
 export const SQLEditor = memo(() => {
   const { actions } = useViewSlice();
   const dispatch = useDispatch();
-  const {
-    editorInstance,
+  const { editorInstance,
     editorCompletionItemProviderRef,
     setEditor,
     initActions,
@@ -80,8 +81,27 @@ export const SQLEditor = memo(() => {
   ) as ViewStatus;
   const theme = useSelector(selectThemeKey);
   const viewsData = useSelector(selectViews);
+  const cacheConflict = useSelector<RootState>(state =>
+    selectCurrentEditingViewAttr(state, { name: 'cacheConflict' }),
+  ) as boolean;
+  const cacheExpired = useSelector<RootState>(state =>
+    selectCurrentEditingViewAttr(state, { name: 'cacheExpired' }),
+  ) as boolean;
+  const cacheData = useSelector<RootState>(state =>
+    selectCurrentEditingViewAttr(state, { name: 'cacheData' }),
+  ) as {
+    script: string;
+    name: string;
+    sourceId: string;
+    updatedAt: number;
+    viewId: string;
+  } | undefined;
+  const currentView = useSelector(selectCurrentEditingView) as any;
   const t = useI18NPrefix('view.editor');
   const tView = useI18NPrefix('view');
+
+  // Cache Dialog state
+  const [cacheDialogVisible, setCacheDialogVisible] = useState(false);
 
   // 智能执行功能状态管理
   const [sqlFragments, setSqlFragments] = useState<string[]>([]);
@@ -523,6 +543,53 @@ export const SQLEditor = memo(() => {
     [dispatch, callSave],
   );
 
+  // Show cache dialog when cacheConflict or cacheExpired is true
+  useEffect(() => {
+    if (cacheConflict || cacheExpired) {
+      setCacheDialogVisible(true);
+    }
+  }, [cacheConflict, cacheExpired]);
+
+  // Handle use local cache
+  const handleUseLocalCache = useCallback(() => {
+    if (cacheData) {
+      dispatch(actions.changeCurrentEditingView({
+        script: cacheData.script,
+        sourceId: cacheData.sourceId
+      }));
+      // Clear cache conflict flag
+      dispatch(actions.changeCurrentEditingView({ cacheConflict: false }));
+    }
+  }, [dispatch, actions, cacheData]);
+
+  // Handle use remote data (discard cache)
+  const handleUseRemoteData = useCallback(() => {
+    // Clear browser cache
+    deleteSqlFromCache(id);
+    // Clear cache conflict and expired flags
+    dispatch(actions.changeCurrentEditingView({
+      cacheConflict: false,
+      cacheExpired: false,
+      cacheData: undefined,
+    }));
+  }, [dispatch, actions, id]);
+
+  // Handle save cache
+  const handleSaveCache = useCallback(() => {
+    if (cacheData) {
+      // First close the dialog and clear cache flags to prevent re-showing
+      setCacheDialogVisible(false);
+      dispatch(actions.changeCurrentEditingView({
+        cacheConflict: false,
+        cacheExpired: false,
+        cacheData: undefined,
+      }));
+      // Then update script and save the view
+      dispatch(actions.changeCurrentEditingView({ script: cacheData.script }));
+      save();
+    }
+  }, [dispatch, actions, cacheData, save]);
+
   const debouncedEditorChange = useMemo(() => {
     const editorChange = script => {
       dispatch(actions.changeCurrentEditingView({ script }));
@@ -551,6 +618,25 @@ export const SQLEditor = memo(() => {
           editorDidMount={editorDidMount}
         />
       </EditorWrapper>
+      <CacheDialog
+        visible={cacheDialogVisible}
+        onCancel={() => {
+          setCacheDialogVisible(false);
+          // When cancel is clicked, just close the dialog but keep the cache
+          dispatch(actions.changeCurrentEditingView({
+            cacheConflict: false,
+            cacheExpired: false,
+            cacheData: undefined,
+          }));
+        }}
+        onUseLocalCache={handleUseLocalCache}
+        onUseRemoteData={handleUseRemoteData}
+        onSave={handleSaveCache}
+        cacheConflict={cacheConflict}
+        cacheExpired={cacheExpired}
+        cacheUpdatedAt={cacheData?.updatedAt}
+        remoteUpdatedAt={new Date((currentView as any)?.updateTime?.replace(' ', 'T') + '+08:00').getTime()}
+      />
     </>
   );
 });
