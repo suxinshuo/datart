@@ -183,6 +183,13 @@ export const getViewDetail = createAsyncThunk<
           // Compare update times to determine which is newer
           const date = new Date((data as any).updateTime.replace(' ', 'T') + '+08:00');
           const backendUpdatedAt = date.getTime();
+          
+          // Save original server data for conflict resolution
+          const originalServerData = {
+            script: data.script,
+            sourceId: (data as any).sourceId
+          };
+          
           // Always use local cache for display when there's a conflict
           (data as any).script = cachedSql.script;
           (data as any).sourceId = cachedSql.sourceId;
@@ -192,6 +199,7 @@ export const getViewDetail = createAsyncThunk<
             // Only prompt for conflict if backend data is newer
             cacheConflict = true;
             cacheData = cachedSql;
+            (data as any).originalServerData = originalServerData;
           }
         } else if (isCacheExpired(cachedSql)) {
           // Only handle expiration if no conflict exists

@@ -127,6 +127,11 @@ export interface ViewViewModel<T = object>
     updatedAt: number;
     viewId: string;
   };
+  // Original server data for conflict resolution
+  originalServerData?: {
+    script: string;
+    sourceId: string;
+  };
 }
 
 export interface QueryResult {

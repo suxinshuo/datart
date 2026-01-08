@@ -565,6 +565,16 @@ export const SQLEditor = memo(() => {
 
   // Handle use remote data (discard cache)
   const handleUseRemoteData = useCallback(() => {
+    // Get original server data from view model
+    const originalServerData = currentView?.originalServerData;
+    if (originalServerData) {
+      // Update to use server data
+      dispatch(actions.changeCurrentEditingView({
+        script: originalServerData.script,
+        sourceId: originalServerData.sourceId,
+        touched: false,
+      }));
+    }
     // Clear browser cache
     deleteSqlFromCache(id);
     // Clear cache conflict and expired flags
@@ -572,8 +582,9 @@ export const SQLEditor = memo(() => {
       cacheConflict: false,
       cacheExpired: false,
       cacheData: undefined,
+      originalServerData: undefined,
     }));
-  }, [dispatch, actions, id]);
+  }, [dispatch, actions, id, currentView?.originalServerData]);
 
   // Handle save cache
   const handleSaveCache = useCallback(() => {
