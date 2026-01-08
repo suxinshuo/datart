@@ -176,31 +176,31 @@ export const getViewDetail = createAsyncThunk<
     if (data.type === 'SQL') {
       const cachedSql = getSqlFromCache(viewId);
       if (cachedSql) {
-        // Check if cache is expired
-        if (isCacheExpired(cachedSql)) {
-          // Cache expired, prioritize showing cached data to user
+        // Check if cache content or sourceId is different from backend data (regardless of expiration)
+        const isContentDifferent = cachedSql.script !== data.script || cachedSql.sourceId !== (data as any).sourceId;
+        
+        if (isContentDifferent) {
+          // Compare update times to determine which is newer
+          const date = new Date((data as any).updateTime.replace(' ', 'T') + '+08:00');
+          const backendUpdatedAt = date.getTime();
+          // Always use local cache for display when there's a conflict
+          (data as any).script = cachedSql.script;
+          (data as any).sourceId = cachedSql.sourceId;
+          (data as any).touched = true;
+          
+          if (!(backendUpdatedAt && cachedSql.updatedAt > backendUpdatedAt)) {
+            // Only prompt for conflict if backend data is newer
+            cacheConflict = true;
+            cacheData = cachedSql;
+          }
+        } else if (isCacheExpired(cachedSql)) {
+          // Only handle expiration if no conflict exists
           cacheExpired = true;
           cacheData = cachedSql;
           // Use cached data for display
           (data as any).script = cachedSql.script;
           (data as any).sourceId = cachedSql.sourceId;
           (data as any).touched = true;
-        }
-        // Check if cache content or sourceId is different from backend data
-        else if (cachedSql.script !== data.script || cachedSql.sourceId !== (data as any).sourceId) {
-          // Compare update times to determine which is newer
-          const date = new Date((data as any).updateTime.replace(' ', 'T') + '+08:00');
-          const backendUpdatedAt = date.getTime();
-          if (backendUpdatedAt && cachedSql.updatedAt > backendUpdatedAt) {
-            // Local cache is newer, use it directly without prompting user
-            (data as any).script = cachedSql.script;
-            (data as any).sourceId = cachedSql.sourceId;
-            (data as any).touched = true;
-          } else {
-            // Backend data is newer, prompt user to choose
-            cacheConflict = true;
-            cacheData = cachedSql;
-          }
         }
       }
     }

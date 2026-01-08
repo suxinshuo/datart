@@ -544,6 +544,7 @@ export const SQLEditor = memo(() => {
   );
 
   // Show cache dialog when cacheConflict or cacheExpired is true
+  // Prioritize cacheConflict if both are true
   useEffect(() => {
     if (cacheConflict || cacheExpired) {
       setCacheDialogVisible(true);
