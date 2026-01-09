@@ -102,8 +102,9 @@ datart:
         queue_capacity: 100
     execution:
       max_time: 1800000 # 30分钟
-#    result:
-#      retention_days: 7
+    result:
+      retention_days: 180
+      retention_check_interval_min: 180 # 检查任务结果保留时间的间隔, 单位分钟
 
 server:
   port: 8080

@@ -63,4 +63,8 @@ public class DateUtils {
         return name + DateFormatUtils.format(new Date(), DateFormatUtils.format(new Date(), "yyyy-MM-dd HH:mm:ss.SSS"));
     }
 
+    public static Date getDaysAgo(int days) {
+        return new Date(System.currentTimeMillis() - (long) days * 24 * 60 * 60 * 1000);
+    }
+
 }

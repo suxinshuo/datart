@@ -20,4 +20,12 @@ public interface SqlTaskResultService extends BaseCRUDService<SqlTaskResult, Sql
      */
     List<SqlTaskResult> getByTaskId(String taskId);
 
+    /**
+     * 获取N天前的 SQL 任务结果
+     *
+     * @param days 天数
+     * @return N天前的 SQL 任务结果
+     */
+    List<SqlTaskResult> getDaysBeforeResults(Integer days);
+
 }

@@ -47,6 +47,7 @@ public interface BaseCRUDService<E extends BaseEntity, M extends CRUDMapper> {
         return instance;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     default E createSelective(BaseCreateParam createParam) {
         E instance = convertParam(createParam);
         getDefaultMapper().insertSelective(instance);

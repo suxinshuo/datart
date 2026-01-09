@@ -40,6 +40,7 @@ import datart.core.utils.JsonUtils;
 import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.base.params.task.SqlTaskResultCreateParam;
+import datart.server.config.SqlTaskConfig;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
 import datart.server.service.task.SqlTaskLogService;
@@ -95,27 +96,21 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     @Resource
     private SqlTaskFactory sqlTaskFactory;
 
-    @Value("${datart.task.consumer.count:4}")
-    private int consumerCount;
-
     @Resource(name = "sqlTaskExecutor")
     private ThreadPoolTaskExecutor sqlTaskExecutor;
 
-    @Value("${datart.task.queue_capacity:100}")
-    private int queueCapacity;
-
-    @Value("${datart.task.execution.max_time:600000}")
-    private long maxRunningTime;
+    @Resource
+    private SqlTaskConfig sqlTaskConfig;
 
     /**
      * 初始化任务执行器
      */
     @PostConstruct
     public void init() {
-        taskQueue = new PriorityBlockingQueue<>(queueCapacity, (o1, o2) ->
+        taskQueue = new PriorityBlockingQueue<>(sqlTaskConfig.getQueueCapacity(), (o1, o2) ->
                 o2.getSqlTask().getPriority() - o1.getSqlTask().getPriority());
         // 启动任务执行线程
-        for (int i = 0; i < consumerCount; i++) {
+        for (int i = 0; i < sqlTaskConfig.getConsumerCount(); i++) {
             sqlTaskExecutor.execute(this::processTasks);
         }
 
@@ -124,14 +119,14 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 runningTasks,
                 cancelTasks,
                 sqlTaskMapper,
-                maxRunningTime,
+                sqlTaskConfig.getMaxRunningTime(),
                 this::cancelSqlTask
         )).start();
 
         // 启动一个线程, 检查 consumer 数量
         new Thread(new SqlTaskConsumerChecker(
                 sqlTaskExecutor,
-                consumerCount,
+                sqlTaskConfig.getConsumerCount(),
                 this::processTasks
         )).start();
     }
@@ -185,7 +180,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         task.setScriptType(executeParam.getScriptType().name());
         task.setStatus(SqlTaskStatus.QUEUED.getCode());
         task.setPriority(executeParam.getPriority());
-        task.setTimeout((int) maxRunningTime);
+        task.setTimeout((int) sqlTaskConfig.getMaxRunningTime());
         task.setMaxSize(executeParam.getSize());
         task.setOrgId(source.getOrgId());
         task.setExecuteParam(JsonUtils.toJsonStr(executeParam));

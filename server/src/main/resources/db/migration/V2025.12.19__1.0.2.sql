@@ -30,7 +30,11 @@ CREATE TABLE `sql_task`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_org_id`(`org_id`) USING BTREE,
   INDEX `idx_status`(`status`) USING BTREE,
-  INDEX `idx_create_time`(`create_time`) USING BTREE
+  INDEX `idx_create_time`(`create_time`) USING BTREE,
+  INDEX `idx_create_by`(`create_by`) USING BTREE,
+  INDEX `idx_execute_type`(`execute_type`) USING BTREE,
+  INDEX `idx_view_id`(`view_id`) USING BTREE,
+  INDEX `idx_source_id`(`source_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -49,7 +53,8 @@ CREATE TABLE `sql_task_result`  (
   `update_time` timestamp(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0),
   `permission` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_task_id`(`task_id`) USING BTREE
+  INDEX `idx_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------

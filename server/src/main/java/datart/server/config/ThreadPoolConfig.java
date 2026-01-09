@@ -18,10 +18,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ThreadPoolConfig {
 
     @Value("${datart.task.thread.pool.size:20}")
-    private int threadPoolSize;
+    private int sqlTaskThreadPoolSize;
 
     @Value("${datart.task.thread.pool.queue_capacity:100}")
-    private int queueCapacity;
+    private int sqlTaskQueueCapacity;
 
     @Bean("sqlTaskExecutor")
     public ThreadPoolTaskExecutor sqlTaskExecutor() {
@@ -30,11 +30,11 @@ public class ThreadPoolConfig {
         // 需要注意一下请求 trace id 能不能传递到子线程中, 后续再看看要不要改造
         ThreadPoolTaskExecutor executor = new ThreadPoolMdcExecutor();
         // 配置核心线程数
-        executor.setCorePoolSize(threadPoolSize);
+        executor.setCorePoolSize(sqlTaskThreadPoolSize);
         // 设置最大线程数
-        executor.setMaxPoolSize(threadPoolSize);
+        executor.setMaxPoolSize(sqlTaskThreadPoolSize);
         // 设置队列容量
-        executor.setQueueCapacity(queueCapacity);
+        executor.setQueueCapacity(sqlTaskQueueCapacity);
         // 设置线程活跃时间(秒)
         executor.setKeepAliveSeconds(300);
         // 配置线程池中的线程的名称前缀

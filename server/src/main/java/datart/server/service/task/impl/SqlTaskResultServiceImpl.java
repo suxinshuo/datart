@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import datart.core.common.DateUtils;
 import datart.core.data.provider.Dataframe;
 import datart.core.entity.SqlTaskResult;
 import datart.core.entity.SqlTaskResultExample;
@@ -21,6 +22,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.io.BufferedInputStream;
@@ -79,18 +81,49 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
         // 从 hdfs 读取具体数据填充
         sqlTaskResults.forEach(sqlTaskResult -> {
             String data = sqlTaskResult.getData();
-            // 兼容历史数据
-            if (StringUtils.isBlank(data) || StringUtils.startsWith(data, "{")) {
+            if (StringUtils.isBlank(data)) {
                 return;
             }
-            Dataframe dataframe = read(hdfsFileSystem, data);
+            Dataframe dataframe = readDataframe(hdfsFileSystem, data);
             sqlTaskResult.setData(JsonUtils.toJsonStr(dataframe));
         });
 
         return sqlTaskResults;
     }
 
+    /**
+     * 获取N天前的 SQL 任务结果
+     *
+     * @param days 天数
+     * @return N天前的 SQL 任务结果
+     */
     @Override
+    public List<SqlTaskResult> getDaysBeforeResults(Integer days) {
+        SqlTaskResultExample example = new SqlTaskResultExample();
+        example.createCriteria().andCreateTimeLessThan(DateUtils.getDaysAgo(days));
+        return sqlTaskResultMapper.selectByExample(example);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean delete(String id) {
+        if (StringUtils.isBlank(id)) {
+            return false;
+        }
+        // 删除 hdfs 文件
+        SqlTaskResult sqlTaskResult = sqlTaskResultMapper.selectByPrimaryKey(id);
+        if (Objects.isNull(sqlTaskResult)) {
+            return false;
+        }
+        String data = sqlTaskResult.getData();
+
+        sqlTaskResultMapper.deleteByPrimaryKey(id);
+        delHfs(hdfsFileSystem, data);
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public SqlTaskResult createSelective(BaseCreateParam createParam) {
         SqlTaskResult sqlTaskResult = convertParam(createParam);
 
@@ -194,12 +227,24 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
      * @param hdfsPath HDFS 路径
      * @return 数据
      */
-    private Dataframe read(FileSystem fs, String hdfsPath) {
+    private Dataframe readDataframe(FileSystem fs, String hdfsPath) {
         Path path = new Path(hdfsPath);
         try (FSDataInputStream in = fs.open(path);
              BufferedInputStream bis = new BufferedInputStream(in, BUFFER_SIZE)) {
             return MAPPER.readValue(bis, Dataframe.class);
         } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void delHfs(FileSystem fs, String hdfsPath) {
+        try {
+            Path path = new Path(hdfsPath);
+            if (fs.exists(path)) {
+                fs.delete(path, true);
+            }
+        } catch (IOException e) {
+            log.error("删除 HDFS 文件失败. hdfsPath: {}", hdfsPath, e);
             throw new RuntimeException(e);
         }
     }
