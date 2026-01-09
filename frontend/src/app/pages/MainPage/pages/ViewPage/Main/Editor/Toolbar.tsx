@@ -144,7 +144,7 @@ export const Toolbar = memo(
     });
 
     const showSparkShareLevel = useMemo(() => {
-      return width && width > 600;
+      return width && width > 800;
     }, [width]);
 
     // Determine if current data source is Spark

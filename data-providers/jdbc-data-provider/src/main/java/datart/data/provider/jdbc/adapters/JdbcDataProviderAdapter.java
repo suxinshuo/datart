@@ -395,7 +395,7 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected void executeCompleteHook(String taskId, Statement statement) {
-        if (StringUtils.isNotBlank(taskId)) {
+        if (StringUtils.isNotBlank(taskId) && !Thread.currentThread().isInterrupted()) {
             providerContext.updateTaskProgress(taskId, SqlTaskProgress.RUNNING_COMPLETE.getProgress());
         }
     }

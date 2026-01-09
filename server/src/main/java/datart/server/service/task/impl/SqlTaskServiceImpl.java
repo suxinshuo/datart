@@ -54,6 +54,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -434,20 +435,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         // 更新任务信息到数据库
         sqlTaskMapper.updateByPrimaryKeySelective(task);
 
-        // 尝试中断执行线程
-        if (runningTasks.containsKey(taskId)) {
-            RunningTaskBo runningTask = runningTasks.remove(taskId);
-            cancelTasks.put(taskId, System.currentTimeMillis());
-            Thread runningThread = runningTask.getRunThread();
-            if (Objects.nonNull(runningThread) && runningThread.isAlive()) {
-                try {
-                    runningThread.interrupt();
-                } catch (Exception e) {
-                    log.error("Cancel task error. taskId: {}", taskId, e);
-                }
-            }
-        }
-        // 并且中断线程中对应的 statement 执行
+        // 尝试中断线程中对应的 statement 执行
         AtomicReference<Statement> statementAtomicReference = CommonVarUtils.removeSqlStatement(taskId);
         if (Objects.isNull(statementAtomicReference)) {
             return;
@@ -461,6 +449,20 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             log.info("任务({}) Statement 执行已取消", taskId);
         } catch (Exception e) {
             log.error("Cancel task error. taskId: {}", taskId, e);
+        }
+
+        // 尝试中断执行线程
+        if (runningTasks.containsKey(taskId)) {
+            RunningTaskBo runningTask = runningTasks.remove(taskId);
+            cancelTasks.put(taskId, System.currentTimeMillis());
+            Thread runningThread = runningTask.getRunThread();
+            if (Objects.nonNull(runningThread) && runningThread.isAlive()) {
+                try {
+                    runningThread.interrupt();
+                } catch (Exception e) {
+                    log.error("Cancel task error. taskId: {}", taskId, e);
+                }
+            }
         }
     }
 
@@ -518,8 +520,11 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 task.setUpdateTime(endDate);
                 sqlTaskMapper.updateByPrimaryKeySelective(task);
             } catch (Exception e) {
-                if ((e instanceof InterruptedException)
-                        || (Objects.nonNull(task) && cancelTasks.containsKey(task.getId()))) {
+                boolean interrupted = Thread.currentThread().isInterrupted()
+                                || isInterruptedException(e)
+                                || (Objects.nonNull(task) && cancelTasks.containsKey(task.getId()));
+
+                if (interrupted) {
                     Thread.currentThread().interrupt();
                     log.info("当前线程被中断/任务被取消, task: {}", task);
                     break;
@@ -567,6 +572,21 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
 
     private String getInstantId() {
         return NetUtil.getLocalHostName();
+    }
+
+    private boolean isInterruptedException(Throwable e) {
+        Throwable cur = e;
+        while (cur != null) {
+            if (cur instanceof InterruptedException) {
+                return true;
+            }
+            // JDBC / Druid 常见特征
+            if (cur instanceof SQLException && cur.getMessage() != null && cur.getMessage().toLowerCase().contains("interrupt")) {
+                return true;
+            }
+            cur = cur.getCause();
+        }
+        return false;
     }
 
 }
