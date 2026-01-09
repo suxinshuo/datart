@@ -24,40 +24,26 @@ public interface SqlTaskResultMapper extends CRUDMapper {
 
     @Insert({
         "insert into sql_task_result (id, task_id, ",
-        "`row_count`, column_count, ",
-        "create_by, create_time, ",
-        "update_by, update_time, ",
-        "permission, `data`)",
+        "`data`, `row_count`, ",
+        "column_count, create_by, ",
+        "create_time, update_by, ",
+        "update_time, permission)",
         "values (#{id,jdbcType=VARCHAR}, #{taskId,jdbcType=VARCHAR}, ",
-        "#{rowCount,jdbcType=INTEGER}, #{columnCount,jdbcType=INTEGER}, ",
-        "#{createBy,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, ",
-        "#{updateBy,jdbcType=VARCHAR}, #{updateTime,jdbcType=TIMESTAMP}, ",
-        "#{permission,jdbcType=INTEGER}, #{data,jdbcType=LONGVARCHAR})"
+        "#{data,jdbcType=VARCHAR}, #{rowCount,jdbcType=INTEGER}, ",
+        "#{columnCount,jdbcType=INTEGER}, #{createBy,jdbcType=VARCHAR}, ",
+        "#{createTime,jdbcType=TIMESTAMP}, #{updateBy,jdbcType=VARCHAR}, ",
+        "#{updateTime,jdbcType=TIMESTAMP}, #{permission,jdbcType=INTEGER})"
     })
     int insert(SqlTaskResult record);
 
     @InsertProvider(type=SqlTaskResultSqlProvider.class, method="insertSelective")
     int insertSelective(SqlTaskResult record);
 
-    @SelectProvider(type=SqlTaskResultSqlProvider.class, method="selectByExampleWithBLOBs")
-    @Results({
-        @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
-        @Result(column="task_id", property="taskId", jdbcType=JdbcType.VARCHAR),
-        @Result(column="row_count", property="rowCount", jdbcType=JdbcType.INTEGER),
-        @Result(column="column_count", property="columnCount", jdbcType=JdbcType.INTEGER),
-        @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
-        @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
-        @Result(column="update_by", property="updateBy", jdbcType=JdbcType.VARCHAR),
-        @Result(column="update_time", property="updateTime", jdbcType=JdbcType.TIMESTAMP),
-        @Result(column="permission", property="permission", jdbcType=JdbcType.INTEGER),
-        @Result(column="data", property="data", jdbcType=JdbcType.LONGVARCHAR)
-    })
-    List<SqlTaskResult> selectByExampleWithBLOBs(SqlTaskResultExample example);
-
     @SelectProvider(type=SqlTaskResultSqlProvider.class, method="selectByExample")
     @Results({
         @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
         @Result(column="task_id", property="taskId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="data", property="data", jdbcType=JdbcType.VARCHAR),
         @Result(column="row_count", property="rowCount", jdbcType=JdbcType.INTEGER),
         @Result(column="column_count", property="columnCount", jdbcType=JdbcType.INTEGER),
         @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
@@ -70,30 +56,27 @@ public interface SqlTaskResultMapper extends CRUDMapper {
 
     @Select({
         "select",
-        "id, task_id, `row_count`, column_count, create_by, create_time, update_by, update_time, ",
-        "permission, `data`",
+        "id, task_id, `data`, `row_count`, column_count, create_by, create_time, update_by, ",
+        "update_time, permission",
         "from sql_task_result",
         "where id = #{id,jdbcType=VARCHAR}"
     })
     @Results({
         @Result(column="id", property="id", jdbcType=JdbcType.VARCHAR, id=true),
         @Result(column="task_id", property="taskId", jdbcType=JdbcType.VARCHAR),
+        @Result(column="data", property="data", jdbcType=JdbcType.VARCHAR),
         @Result(column="row_count", property="rowCount", jdbcType=JdbcType.INTEGER),
         @Result(column="column_count", property="columnCount", jdbcType=JdbcType.INTEGER),
         @Result(column="create_by", property="createBy", jdbcType=JdbcType.VARCHAR),
         @Result(column="create_time", property="createTime", jdbcType=JdbcType.TIMESTAMP),
         @Result(column="update_by", property="updateBy", jdbcType=JdbcType.VARCHAR),
         @Result(column="update_time", property="updateTime", jdbcType=JdbcType.TIMESTAMP),
-        @Result(column="permission", property="permission", jdbcType=JdbcType.INTEGER),
-        @Result(column="data", property="data", jdbcType=JdbcType.LONGVARCHAR)
+        @Result(column="permission", property="permission", jdbcType=JdbcType.INTEGER)
     })
     SqlTaskResult selectByPrimaryKey(String id);
 
     @UpdateProvider(type=SqlTaskResultSqlProvider.class, method="updateByExampleSelective")
     int updateByExampleSelective(@Param("record") SqlTaskResult record, @Param("example") SqlTaskResultExample example);
-
-    @UpdateProvider(type=SqlTaskResultSqlProvider.class, method="updateByExampleWithBLOBs")
-    int updateByExampleWithBLOBs(@Param("record") SqlTaskResult record, @Param("example") SqlTaskResultExample example);
 
     @UpdateProvider(type=SqlTaskResultSqlProvider.class, method="updateByExample")
     int updateByExample(@Param("record") SqlTaskResult record, @Param("example") SqlTaskResultExample example);
@@ -104,21 +87,7 @@ public interface SqlTaskResultMapper extends CRUDMapper {
     @Update({
         "update sql_task_result",
         "set task_id = #{taskId,jdbcType=VARCHAR},",
-          "`row_count` = #{rowCount,jdbcType=INTEGER},",
-          "column_count = #{columnCount,jdbcType=INTEGER},",
-          "create_by = #{createBy,jdbcType=VARCHAR},",
-          "create_time = #{createTime,jdbcType=TIMESTAMP},",
-          "update_by = #{updateBy,jdbcType=VARCHAR},",
-          "update_time = #{updateTime,jdbcType=TIMESTAMP},",
-          "permission = #{permission,jdbcType=INTEGER},",
-          "`data` = #{data,jdbcType=LONGVARCHAR}",
-        "where id = #{id,jdbcType=VARCHAR}"
-    })
-    int updateByPrimaryKeyWithBLOBs(SqlTaskResult record);
-
-    @Update({
-        "update sql_task_result",
-        "set task_id = #{taskId,jdbcType=VARCHAR},",
+          "`data` = #{data,jdbcType=VARCHAR},",
           "`row_count` = #{rowCount,jdbcType=INTEGER},",
           "column_count = #{columnCount,jdbcType=INTEGER},",
           "create_by = #{createBy,jdbcType=VARCHAR},",

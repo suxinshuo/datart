@@ -342,7 +342,7 @@ public class JdbcDataProviderAdapter implements Closeable {
 
     protected Column readTableColumn(ResultSet columnMetadata) throws SQLException {
         Column column = new Column();
-        column.setName(columnMetadata.getString(4));
+        column.setNameExt(columnMetadata.getString(4));
         column.setType(DataTypeUtils.jdbcType2DataType(columnMetadata.getInt(5)));
         return column;
     }

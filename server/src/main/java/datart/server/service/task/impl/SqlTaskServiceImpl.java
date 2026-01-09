@@ -505,8 +505,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 // 保存执行结果
                 SqlTaskResultCreateParam createParam = new SqlTaskResultCreateParam();
                 createParam.setTaskId(task.getId());
-                // 将 Dataframe 转换为 JSON 字符串
-                createParam.setData(JsonUtils.toJsonStr(dataframe));
+                createParam.setDataframe(dataframe);
                 createParam.setRowCount(dataframe.getRows().size());
                 createParam.setColumnCount(dataframe.getColumns().size());
                 sqlTaskResultService.createSelective(createParam);

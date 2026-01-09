@@ -40,7 +40,7 @@ DROP TABLE IF EXISTS `sql_task_result`;
 CREATE TABLE `sql_task_result`  (
   `id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `task_id` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-  `data` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  `data` varchar(1000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
   `row_count` int(11) NULL DEFAULT NULL,
   `column_count` int(11) NULL DEFAULT NULL,
   `create_by` varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,

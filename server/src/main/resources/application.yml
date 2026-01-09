@@ -112,3 +112,20 @@ server:
   compression:
     enabled: true
     mime-types: application/javascript,application/json,application/xml,text/html,text/xml,text/plain,text/css,image/*
+
+# Hadoop 配置
+hadoop:
+  username: hdfs
+  task-result-dir: /datart/task_result/
+  properties:
+    fs.hdfs.impl: org.apache.hadoop.hdfs.DistributedFileSystem
+    fs.defaultFS: hdfs://nameservice1
+    ha.zookeeper.quorum: 10.68.36.115:2181,10.68.36.117:2181,10.68.37.160:2181
+    dfs.client.failover.proxy.provider.nameservice1: org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider
+    dfs.ha.automatic-failover.enabled.nameservice1: true
+    dfs.nameservices: nameservice1
+    dfs.ha.namenodes.nameservice1: namenode112,namenode114
+    dfs.namenode.rpc-address.nameservice1.namenode112: 10.68.36.115:8020
+    dfs.namenode.rpc-address.nameservice1.namenode114: 10.68.36.117:8020
+    dfs.namenode.servicerpc-address.nameservice1.namenode112: 10.68.36.115:8022
+    dfs.namenode.servicerpc-address.nameservice1.namenode114: 10.68.36.117:8022

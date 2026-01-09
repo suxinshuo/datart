@@ -117,7 +117,7 @@ public class Dataframe implements Serializable {
             Column column = columns.get(i);
             Column newColumn = newSchema.get(column.columnKey());
             String tableName = newColumn.tableName();
-            newColumn.setName(newColumn.columnName());
+            newColumn.setNameExt(newColumn.columnName());
             tableColumns.computeIfAbsent(tableName, v -> new ArrayList<>())
                     .add(newColumn);
         }

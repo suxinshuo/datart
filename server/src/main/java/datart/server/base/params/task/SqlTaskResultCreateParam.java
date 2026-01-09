@@ -1,5 +1,6 @@
 package datart.server.base.params.task;
 
+import datart.core.data.provider.Dataframe;
 import datart.server.base.params.BaseCreateParam;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,6 +19,6 @@ public class SqlTaskResultCreateParam extends BaseCreateParam {
 
     private Integer columnCount;
 
-    private String data;
+    private Dataframe dataframe;
 
 }

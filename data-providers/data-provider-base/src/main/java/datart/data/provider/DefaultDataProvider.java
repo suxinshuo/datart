@@ -103,7 +103,7 @@ public abstract class DefaultDataProvider extends DataProvider {
         }
         return columns.stream().map(col -> {
             Column column = new Column();
-            column.setName(col.get(COLUMN_NAME));
+            column.setNameExt(col.get(COLUMN_NAME));
             column.setType(ValueType.valueOf(col.get(COLUMN_TYPE).toUpperCase()));
             return column;
         }).collect(Collectors.toSet());

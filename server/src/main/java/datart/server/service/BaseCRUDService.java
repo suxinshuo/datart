@@ -48,6 +48,12 @@ public interface BaseCRUDService<E extends BaseEntity, M extends CRUDMapper> {
     }
 
     default E createSelective(BaseCreateParam createParam) {
+        E instance = convertParam(createParam);
+        getDefaultMapper().insertSelective(instance);
+        return instance;
+    }
+
+    default E convertParam(BaseCreateParam createParam) {
         E instance = getEntityInstance();
         BeanUtils.copyProperties(createParam, instance);
         // check create permission
@@ -68,7 +74,6 @@ public interface BaseCRUDService<E extends BaseEntity, M extends CRUDMapper> {
             setStatus.invoke(instance, Const.DATA_STATUS_ACTIVE);
         } catch (Exception ignored) {
         }
-        getDefaultMapper().insertSelective(instance);
         return instance;
     }
 
