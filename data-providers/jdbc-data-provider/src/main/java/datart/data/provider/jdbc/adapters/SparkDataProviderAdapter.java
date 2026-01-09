@@ -165,7 +165,7 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
             Thread sparkTaskProgressThread = new Thread(() -> pollSparkTaskProgress(taskId, finalAppTag));
             sparkTaskProgressThread.start();
             // 记录线程, 后续执行完成时, 中断线程
-            CommonVarUtils.SPARK_TASK_PROGRESS_POLLING_THREADS.put(taskId, sparkTaskProgressThread);
+            CommonVarUtils.putSparkTaskProgressPollingThread(taskId, sparkTaskProgressThread);
         }
 
         super.executeAllPreSqlHook(taskId, statement);
@@ -175,7 +175,7 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
     protected void executeCompleteHook(String taskId, Statement statement) {
         try {
             // 任务执行完成, 中断轮询线程
-            Thread sparkTaskProgressThread = CommonVarUtils.SPARK_TASK_PROGRESS_POLLING_THREADS.remove(taskId);
+            Thread sparkTaskProgressThread = CommonVarUtils.removeSparkTaskProgressPollingThread(taskId);
             if (Objects.nonNull(sparkTaskProgressThread)) {
                 sparkTaskProgressThread.interrupt();
                 log.info("任务运行完成, 已中断 Spark 任务进度轮询线程, 任务 ID: {}", taskId);

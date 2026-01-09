@@ -448,7 +448,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             }
         }
         // 并且中断线程中对应的 statement 执行
-        AtomicReference<Statement> statementAtomicReference = CommonVarUtils.SQL_STATEMENTS.remove(taskId);
+        AtomicReference<Statement> statementAtomicReference = CommonVarUtils.removeSqlStatement(taskId);
         if (Objects.isNull(statementAtomicReference)) {
             return;
         }
