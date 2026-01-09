@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-import { Button, Card, Space, message } from 'antd';
-import { QuestionCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Button, Card, message, Space } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import React, { memo } from 'react';
 import styled from 'styled-components/macro';
@@ -34,102 +34,102 @@ interface CacheDialogProps {
   remoteUpdatedAt?: number;
 }
 
-export const CacheDialog = memo(({
-  visible,
-  onCancel,
-  onUseLocalCache,
-  onUseRemoteData,
-  onSave,
-  cacheConflict = false,
-  cacheExpired = false,
-  cacheUpdatedAt,
-  remoteUpdatedAt,
-}: CacheDialogProps) => {
-  const t = useI18NPrefix('view.cacheDialog');
+export const CacheDialog = memo(
+  ({
+    visible,
+    onCancel,
+    onUseLocalCache,
+    onUseRemoteData,
+    onSave,
+    cacheConflict = false,
+    cacheExpired = false,
+    cacheUpdatedAt,
+    remoteUpdatedAt,
+  }: CacheDialogProps) => {
+    const t = useI18NPrefix('view.cacheDialog');
 
-  const formatTime = (timestamp?: number) => {
-    if (!timestamp) return '-';
-    const date = new Date(timestamp);
-    return date.toLocaleString();
-  };
+    const formatTime = (timestamp?: number) => {
+      if (!timestamp) return '-';
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    };
 
-  const handleUseLocalCache = () => {
-    onUseLocalCache?.();
-    message.success(t('useLocalCacheSuccess'));
-    onCancel();
-  };
+    const handleUseLocalCache = () => {
+      onUseLocalCache?.();
+      message.success(t('useLocalCacheSuccess'));
+      onCancel();
+    };
 
-  const handleUseRemoteData = () => {
-    onUseRemoteData?.();
-    message.success(t('useRemoteDataSuccess'));
-    onCancel();
-  };
+    const handleUseRemoteData = () => {
+      onUseRemoteData?.();
+      message.success(t('useRemoteDataSuccess'));
+      onCancel();
+    };
 
-  const handleSave = () => {
-    onSave?.();
-    onCancel();
-  };
+    const handleSave = () => {
+      onSave?.();
+      onCancel();
+    };
 
-  if (!visible) return null;
+    if (!visible) return null;
 
-  return (
-    <Overlay>
-      <DialogWrapper>
-        <Card
-          title={
-            cacheConflict ? (
-              <Title>
-                <InfoCircleOutlined /> {t('conflictTitle')}
-              </Title>
+    return (
+      <Overlay>
+        <DialogWrapper>
+          <Card
+            title={
+              cacheConflict ? (
+                <Title>
+                  <InfoCircleOutlined /> {t('conflictTitle')}
+                </Title>
+              ) : (
+                <Title>
+                  <QuestionCircleOutlined /> {t('expiredTitle')}
+                </Title>
+              )
+            }
+            bordered={false}
+          >
+            {cacheConflict ? (
+              <Content>
+                <p>{t('conflictDescription')}</p>
+                <TimeInfo>
+                  <div>
+                    <strong>{t('localCache')}:</strong>
+                    {formatTime(cacheUpdatedAt)}
+                  </div>
+                  <div>
+                    <strong>{t('remoteData')}:</strong>
+                    {formatTime(remoteUpdatedAt)}
+                  </div>
+                </TimeInfo>
+                <ActionButtons>
+                  <Button type="primary" onClick={handleUseLocalCache}>
+                    {t('useLocalCache')}
+                  </Button>
+                  <Button onClick={handleUseRemoteData}>
+                    {t('useRemoteData')}
+                  </Button>
+                  <Button onClick={onCancel}>{t('cancel')}</Button>
+                </ActionButtons>
+              </Content>
             ) : (
-              <Title>
-                <QuestionCircleOutlined /> {t('expiredTitle')}
-              </Title>
-            )
-          }
-          bordered={false}
-        >
-          {cacheConflict ? (
-            <Content>
-              <p>{t('conflictDescription')}</p>
-              <TimeInfo>
-                <div>
-                  <strong>{t('localCache')}:</strong> {formatTime(cacheUpdatedAt)}
-                </div>
-                <div>
-                  <strong>{t('remoteData')}:</strong> {formatTime(remoteUpdatedAt)}
-                </div>
-              </TimeInfo>
-              <ActionButtons>
-                <Button type="primary" onClick={handleUseLocalCache}>
-                  {t('useLocalCache')}
-                </Button>
-                <Button onClick={handleUseRemoteData}>
-                  {t('useRemoteData')}
-                </Button>
-                <Button onClick={onCancel}>
-                  {t('cancel')}
-                </Button>
-              </ActionButtons>
-            </Content>
-          ) : (
-            <Content>
-              <p>{t('expiredDescription')}</p>
-              <ActionButtons>
-                <Button type="primary" onClick={handleSave}>
-                  {t('save')}
-                </Button>
-                <Button onClick={onCancel}>
-                  {t('cancel')}
-                </Button>
-              </ActionButtons>
-            </Content>
-          )}
-        </Card>
-      </DialogWrapper>
-    </Overlay>
-  );
-});
+              <Content>
+                <p>{t('expiredDescription')}</p>
+                <ActionButtons>
+                  <Button type="primary" onClick={handleSave}>
+                    {t('save')}
+                  </Button>
+                  <Button onClick={onCancel}>{t('cancel')}</Button>
+                </ActionButtons>
+              </Content>
+            )}
+          </Card>
+        </DialogWrapper>
+      </Overlay>
+    );
+  },
+);
 
 const Overlay = styled.div`
   position: fixed;

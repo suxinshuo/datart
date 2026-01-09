@@ -660,7 +660,12 @@ interface SqlCacheData {
   viewId: string;
 }
 
-export const saveSqlToCache = (viewId: string, script: string, name?: string, sourceId?: string): void => {
+export const saveSqlToCache = (
+  viewId: string,
+  script: string,
+  name?: string,
+  sourceId?: string,
+): void => {
   try {
     const cacheData: SqlCacheData = {
       script,
@@ -669,7 +674,10 @@ export const saveSqlToCache = (viewId: string, script: string, name?: string, so
       updatedAt: Date.now(),
       viewId,
     };
-    localStorage.setItem(`${SQL_CACHE_KEY_PREFIX}${viewId}`, JSON.stringify(cacheData));
+    localStorage.setItem(
+      `${SQL_CACHE_KEY_PREFIX}${viewId}`,
+      JSON.stringify(cacheData),
+    );
   } catch (error) {
     console.error('Failed to save SQL to cache:', error);
   }
@@ -703,7 +711,7 @@ export const deleteSqlFromCache = (viewId: string): void => {
 export const getAllSqlFromCache = (): SqlCacheData[] => {
   try {
     const cachedViews: SqlCacheData[] = [];
-    
+
     // Iterate through all localStorage keys
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -716,7 +724,7 @@ export const getAllSqlFromCache = (): SqlCacheData[] => {
         }
       }
     }
-    
+
     return cachedViews;
   } catch (error) {
     console.error('Failed to get all SQL from cache:', error);

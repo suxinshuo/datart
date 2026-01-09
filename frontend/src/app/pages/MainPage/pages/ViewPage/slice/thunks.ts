@@ -125,7 +125,8 @@ export const getViewDetail = createAsyncThunk<
       const cachedSql = getSqlFromCache(viewId);
       if (cachedSql) {
         // Use cached name if available, otherwise generate new name
-        const viewName = cachedSql.name || generateNewEditingViewName(editingViews);
+        const viewName =
+          cachedSql.name || generateNewEditingViewName(editingViews);
         const newView = generateEditingView({
           id: viewId,
           name: viewName,
@@ -166,29 +167,35 @@ export const getViewDetail = createAsyncThunk<
     // Check browser cache for SQL content if it's a SQL view
     let cacheConflict = false;
     let cacheExpired = false;
-    let cacheData: {
-      script: string;
-      name: string;
-      sourceId: string;
-      updatedAt: number;
-      viewId: string;
-    } | undefined = undefined;
+    let cacheData:
+      | {
+          script: string;
+          name: string;
+          sourceId: string;
+          updatedAt: number;
+          viewId: string;
+        }
+      | undefined = undefined;
 
     if (data.type === 'SQL') {
       const cachedSql = getSqlFromCache(viewId);
       if (cachedSql) {
         // Check if cache content or sourceId is different from backend data (regardless of expiration)
-        const isContentDifferent = cachedSql.script !== data.script || cachedSql.sourceId !== (data as any).sourceId;
+        const isContentDifferent =
+          cachedSql.script !== data.script ||
+          cachedSql.sourceId !== (data as any).sourceId;
 
         if (isContentDifferent) {
           // Compare update times to determine which is newer
-          const date = new Date((data as any).updateTime.replace(' ', 'T') + '+08:00');
+          const date = new Date(
+            (data as any).updateTime.replace(' ', 'T') + '+08:00',
+          );
           const backendUpdatedAt = date.getTime();
 
           // Save original server data for conflict resolution
           const originalServerData = {
             script: data.script,
-            sourceId: (data as any).sourceId
+            sourceId: (data as any).sourceId,
           };
 
           // Always use local cache for display when there's a conflict

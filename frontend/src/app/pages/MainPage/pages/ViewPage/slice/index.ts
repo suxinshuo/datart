@@ -23,7 +23,6 @@ import { ViewViewModelStages } from '../constants';
 import {
   deleteSqlFromCache,
   diffMergeHierarchyModel,
-  isNewView,
   saveSqlToCache,
   transformQueryResultToModelAndDataSource,
 } from '../utils';
@@ -68,9 +67,7 @@ const slice = createSlice({
       // Delete browser cache for the view
       deleteSqlFromCache(viewId);
 
-      state.editingViews = state.editingViews.filter(
-        v => v.id !== viewId,
-      );
+      state.editingViews = state.editingViews.filter(v => v.id !== viewId);
       if (state.currentEditingView === viewId) {
         if (state.editingViews.length > 0) {
           state.currentEditingView =
@@ -124,7 +121,9 @@ const slice = createSlice({
 
         // Don't reset stage if it was explicitly set in payload
         if (
-          !(entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])) &&
+          !(
+            entries.length === 1 && ['fragment', 'size'].includes(entries[0][0])
+          ) &&
           !isTaskStatusCleanup // Don't mark as touched when just cleaning up task status
         ) {
           currentEditingView.touched = true;
@@ -151,8 +150,16 @@ const slice = createSlice({
         }
 
         // Save SQL content to browser cache if it's a SQL view and script was updated
-        if (currentEditingView.type === 'SQL' && entries.some(([key]) => key === 'script' || key === 'sourceId')) {
-          saveSqlToCache(currentEditingView.id, currentEditingView.script as string, currentEditingView.name, currentEditingView.sourceId);
+        if (
+          currentEditingView.type === 'SQL' &&
+          entries.some(([key]) => key === 'script' || key === 'sourceId')
+        ) {
+          saveSqlToCache(
+            currentEditingView.id,
+            currentEditingView.script as string,
+            currentEditingView.name,
+            currentEditingView.sourceId,
+          );
         }
       }
     },

@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { Button, List, Modal, Spin, Tag, Tooltip, Typography } from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import copy from 'copy-to-clipboard';
 import { memo, useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components/macro';
 import {
@@ -124,21 +125,18 @@ export const History = memo(() => {
   // 复制查询语句
   const handleCopyQuery = useCallback(
     (task: TaskHistory) => {
-      navigator.clipboard
-        .writeText(task.query)
-        .then(() => {
-          Modal.success({
-            title: t('copySuccess'),
-            content: t('copySuccessMessage'),
-          });
-        })
-        .catch(err => {
-          console.error('Failed to copy: ', err);
-          Modal.error({
-            title: t('copyFailed'),
-            content: t('copyFailedMessage'),
-          });
+      const success = copy(task.query);
+      if (success) {
+        Modal.success({
+          title: t('copySuccess'),
+          content: t('copySuccessMessage'),
         });
+      } else {
+        Modal.error({
+          title: t('copyFailed'),
+          content: t('copyFailedMessage'),
+        });
+      }
     },
     [t],
   );
