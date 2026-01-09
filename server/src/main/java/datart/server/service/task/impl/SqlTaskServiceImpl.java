@@ -513,10 +513,10 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
                 task.setUpdateTime(endDate);
                 sqlTaskMapper.updateByPrimaryKeySelective(task);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 boolean interrupted = Thread.currentThread().isInterrupted()
-                                || isInterruptedException(e)
-                                || (Objects.nonNull(task) && cancelTasks.containsKey(task.getId()));
+                        || isInterruptedException(e)
+                        || (Objects.nonNull(task) && cancelTasks.containsKey(task.getId()));
 
                 if (interrupted) {
                     Thread.currentThread().interrupt();

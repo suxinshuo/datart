@@ -19,17 +19,34 @@
 package datart.core.common;
 
 import datart.core.base.exception.Exceptions;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.springframework.util.CollectionUtils;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
+import javax.validation.ValidationException;
 import javax.validation.ValidatorFactory;
 import java.util.Set;
 import java.util.StringJoiner;
 
+@Slf4j
 public class BeanUtils {
 
-    private static final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+    private static ValidatorFactory validatorFactory;
+
+    static {
+        try {
+            validatorFactory = Validation.buildDefaultValidatorFactory();
+        } catch (ValidationException e) {
+            validatorFactory = Validation.byDefaultProvider()
+                    .configure()
+                    .messageInterpolator(new ParameterMessageInterpolator())
+                    .buildValidatorFactory();
+        } catch (Exception e) {
+            log.error("Init validator factory error", e);
+        }
+    }
 
     public static void requireNotNull(Object obj, String... fields) {
         for (String field : fields) {
