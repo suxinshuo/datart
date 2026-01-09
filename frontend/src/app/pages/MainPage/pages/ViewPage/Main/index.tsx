@@ -30,6 +30,7 @@ import { useVariableSlice } from '../../VariablePage/slice';
 import { UNPERSISTED_ID_PREFIX } from '../constants';
 import { selectEditingViews } from '../slice/selectors';
 import { getViewDetail } from '../slice/thunks';
+import { getAllSqlFromCache } from '../utils';
 import { Tabs } from './Tabs';
 import { Workbench } from './Workbench';
 
@@ -51,6 +52,18 @@ export const Main = memo(({ sliderVisible }: { sliderVisible: boolean }) => {
   useEffect(() => {
     dispatch(getSources(orgId));
   }, [dispatch, orgId]);
+
+  // Load all previously created but never saved views from cache on initial mount
+  useEffect(() => {
+    const cachedViews = getAllSqlFromCache();
+    
+    // Load all cached views
+    if (cachedViews.length > 0) {
+      cachedViews.forEach(cachedView => {
+        dispatch(getViewDetail({ viewId: cachedView.viewId }));
+      });
+    }
+  }, [dispatch]);
 
   useEffect(() => {
     if (viewId) {

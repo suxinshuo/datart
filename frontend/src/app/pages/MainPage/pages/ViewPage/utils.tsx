@@ -699,3 +699,27 @@ export const deleteSqlFromCache = (viewId: string): void => {
     console.error('Failed to delete SQL from cache:', error);
   }
 };
+
+export const getAllSqlFromCache = (): SqlCacheData[] => {
+  try {
+    const cachedViews: SqlCacheData[] = [];
+    
+    // Iterate through all localStorage keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(SQL_CACHE_KEY_PREFIX)) {
+        // Extract viewId from the key
+        const viewId = key.replace(SQL_CACHE_KEY_PREFIX, '');
+        const cachedData = getSqlFromCache(viewId);
+        if (cachedData) {
+          cachedViews.push(cachedData);
+        }
+      }
+    }
+    
+    return cachedViews;
+  } catch (error) {
+    console.error('Failed to get all SQL from cache:', error);
+    return [];
+  }
+};

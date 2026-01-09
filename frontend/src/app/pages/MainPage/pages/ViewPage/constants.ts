@@ -58,5 +58,5 @@ export const PREVIEW_SIZE_LIST = [100, 1000, 10000, 100000];
 export const MAX_RESULT_TABLE_COLUMN_WIDTH = 480;
 
 // SQL Browser Cache Configurations
-export const SQL_CACHE_EXPIRE_TIME = 1 * 60 * 1000; // 3 minutes in milliseconds
+export const SQL_CACHE_EXPIRE_TIME = 10 * 60 * 1000; // 10 minutes in milliseconds
 export const SQL_CACHE_KEY_PREFIX = 'datart_sql_cache_';
