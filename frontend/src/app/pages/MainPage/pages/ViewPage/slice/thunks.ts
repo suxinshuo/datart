@@ -129,6 +129,7 @@ export const getViewDetail = createAsyncThunk<
         const newView = generateEditingView({
           id: viewId,
           name: viewName,
+          type: 'SQL', // Set type to SQL since it's a SQL view cache
           script: cachedSql.script,
           sourceId: cachedSql.sourceId,
         });
@@ -178,37 +179,37 @@ export const getViewDetail = createAsyncThunk<
       if (cachedSql) {
         // Check if cache content or sourceId is different from backend data (regardless of expiration)
         const isContentDifferent = cachedSql.script !== data.script || cachedSql.sourceId !== (data as any).sourceId;
-        
+
         if (isContentDifferent) {
           // Compare update times to determine which is newer
           const date = new Date((data as any).updateTime.replace(' ', 'T') + '+08:00');
           const backendUpdatedAt = date.getTime();
-          
+
           // Save original server data for conflict resolution
           const originalServerData = {
             script: data.script,
             sourceId: (data as any).sourceId
           };
-          
+
           // Always use local cache for display when there's a conflict
           (data as any).script = cachedSql.script;
           (data as any).sourceId = cachedSql.sourceId;
           (data as any).touched = true;
-          
+
           if (!(backendUpdatedAt && cachedSql.updatedAt > backendUpdatedAt)) {
             // Only prompt for conflict if backend data is newer
             cacheConflict = true;
             cacheData = cachedSql;
             (data as any).originalServerData = originalServerData;
+          } else if (isCacheExpired(cachedSql)) {
+            // Only handle expiration if no conflict exists
+            cacheExpired = true;
+            cacheData = cachedSql;
+            // Use cached data for display
+            (data as any).script = cachedSql.script;
+            (data as any).sourceId = cachedSql.sourceId;
+            (data as any).touched = true;
           }
-        } else if (isCacheExpired(cachedSql)) {
-          // Only handle expiration if no conflict exists
-          cacheExpired = true;
-          cacheData = cachedSql;
-          // Use cached data for display
-          (data as any).script = cachedSql.script;
-          (data as any).sourceId = cachedSql.sourceId;
-          (data as any).touched = true;
         }
       }
     }
