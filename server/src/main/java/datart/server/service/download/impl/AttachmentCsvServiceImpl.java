@@ -7,9 +7,8 @@ import cn.hutool.core.text.csv.CsvWriter;
 import datart.core.base.consts.AttachmentType;
 import datart.core.data.provider.Column;
 import datart.core.data.provider.Dataframe;
-import datart.core.entity.SqlTaskResult;
-import datart.core.utils.JsonUtils;
 import datart.server.base.bo.download.ExportFile;
+import datart.server.base.bo.task.SqlTaskResultBo;
 import datart.server.service.download.AttachmentService;
 import datart.server.service.task.SqlTaskResultService;
 import lombok.Getter;
@@ -39,12 +38,12 @@ public class AttachmentCsvServiceImpl implements AttachmentService {
 
     @Override
     public ExportFile getFile(String taskId) {
-        List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+        List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
         if (CollUtil.isEmpty(sqlTaskResults)) {
             return ExportFile.empty(taskId, getAttachmentType());
         }
 
-        Dataframe dataframe = JsonUtils.toBean(sqlTaskResults.get(0).getData(), Dataframe.class);
+        Dataframe dataframe = sqlTaskResults.get(0).getDataframe();
         List<Column> columns = dataframe.getColumns();
         String[] headers = columns.stream().map(col -> {
             String[] names = col.getName();

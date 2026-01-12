@@ -19,14 +19,10 @@ package datart.server.service.task.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
-import cn.hutool.json.JSON;
 import com.github.pagehelper.PageHelper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import datart.server.base.bo.task.QueueTaskBo;
-import datart.server.base.bo.task.RunningTaskBo;
-import datart.server.base.bo.task.SqlTaskChecker;
-import datart.server.base.bo.task.SqlTaskConsumerChecker;
+import datart.server.base.bo.task.*;
 import datart.core.common.CommonVarUtils;
 import datart.core.entity.enums.SqlTaskExecuteType;
 import datart.core.entity.enums.SqlTaskProgress;
@@ -50,7 +46,6 @@ import datart.server.service.SourceService;
 import datart.server.service.task.factory.SqlTaskFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -242,10 +237,9 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         // 如果任务执行成功, 返回结果
         if (SqlTaskStatus.SUCCESS.equals(status)) {
             // 从数据库查询结果
-            List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+            List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
             if (CollUtil.isNotEmpty(sqlTaskResults)) {
-                String resultData = sqlTaskResults.get(0).getData();
-                response.setTaskResult(JsonUtils.toBean(resultData, JSON.class));
+                response.setTaskResult(sqlTaskResults.get(0).getDataframe());
             }
         } else if (SqlTaskStatus.FAILED.equals(status)) {
             // 如果任务执行失败, 返回错误信息
@@ -335,13 +329,12 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
      */
     @Override
     public SqlTaskResultStrResponse getSqlTaskResult(String taskId) {
-        List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+        List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
         if (CollUtil.isEmpty(sqlTaskResults)) {
             return new SqlTaskResultStrResponse("");
         }
-        String resultData = sqlTaskResults.get(0).getData();
         try {
-            Dataframe dataframe = JsonUtils.toBean(resultData, Dataframe.class);
+            Dataframe dataframe = sqlTaskResults.get(0).getDataframe();
             // dataframe 转 字符串 格式
             StringJoiner columnSj = new StringJoiner(",", "=== 列名(以','分隔) ===\n", "");
             dataframe.getColumns().stream().map(c -> {

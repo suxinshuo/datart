@@ -10,11 +10,10 @@ import datart.core.common.Application;
 import datart.core.common.POIUtils;
 import datart.core.data.provider.Column;
 import datart.core.data.provider.Dataframe;
-import datart.core.entity.SqlTaskResult;
 import datart.core.entity.View;
 import datart.core.entity.poi.POISettings;
-import datart.core.utils.JsonUtils;
 import datart.server.base.bo.download.ExportFile;
+import datart.server.base.bo.task.SqlTaskResultBo;
 import datart.server.base.params.DownloadCreateParam;
 import datart.server.base.params.ViewExecuteParam;
 import datart.server.common.PoiConvertUtils;
@@ -73,12 +72,12 @@ public class AttachmentExcelServiceImpl implements AttachmentService {
 
     @Override
     public ExportFile getFile(String taskId) {
-        List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+        List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
         if (CollUtil.isEmpty(sqlTaskResults)) {
             return ExportFile.empty(taskId, getAttachmentType());
         }
 
-        Dataframe dataframe = JsonUtils.toBean(sqlTaskResults.get(0).getData(), Dataframe.class);
+        Dataframe dataframe = sqlTaskResults.get(0).getDataframe();
         List<Column> columns = dataframe.getColumns();
         List<String> headers = columns.stream().map(col -> {
             String[] names = col.getName();

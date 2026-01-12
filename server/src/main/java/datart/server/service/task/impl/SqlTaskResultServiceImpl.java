@@ -1,5 +1,6 @@
 package datart.server.service.task.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,7 +10,7 @@ import datart.core.data.provider.Dataframe;
 import datart.core.entity.SqlTaskResult;
 import datart.core.entity.SqlTaskResultExample;
 import datart.core.mappers.SqlTaskResultMapper;
-import datart.core.utils.JsonUtils;
+import datart.server.base.bo.task.SqlTaskResultBo;
 import datart.server.base.params.BaseCreateParam;
 import datart.server.base.params.task.SqlTaskResultCreateParam;
 import datart.server.service.BaseService;
@@ -30,6 +31,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author suxinshuo
@@ -65,7 +67,7 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
      * @return SQL 任务结果
      */
     @Override
-    public List<SqlTaskResult> getByTaskId(String taskId) {
+    public List<SqlTaskResultBo> getByTaskId(String taskId) {
         if (StringUtils.isBlank(taskId)) {
             return Lists.newArrayList();
         }
@@ -79,16 +81,16 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
         }
 
         // 从 hdfs 读取具体数据填充
-        sqlTaskResults.forEach(sqlTaskResult -> {
-            String data = sqlTaskResult.getData();
-            if (StringUtils.isBlank(data)) {
-                return;
-            }
-            Dataframe dataframe = readDataframe(hdfsFileSystem, data);
-            sqlTaskResult.setData(JsonUtils.toJsonStr(dataframe));
-        });
-
-        return sqlTaskResults;
+        return sqlTaskResults.stream()
+                .filter(sqlTaskResult -> StringUtils.isNotBlank(sqlTaskResult.getData()))
+                .map(sqlTaskResult -> {
+                    String data = sqlTaskResult.getData();
+                    Dataframe dataframe = readDataframe(hdfsFileSystem, data);
+                    SqlTaskResultBo sqlTaskResultBo = new SqlTaskResultBo();
+                    BeanUtil.copyProperties(sqlTaskResult, sqlTaskResultBo);
+                    sqlTaskResultBo.setDataframe(dataframe);
+                    return sqlTaskResultBo;
+                }).collect(Collectors.toList());
     }
 
     /**

@@ -2,6 +2,7 @@ package datart.server.service.task;
 
 import datart.core.entity.SqlTaskResult;
 import datart.core.mappers.SqlTaskResultMapper;
+import datart.server.base.bo.task.SqlTaskResultBo;
 import datart.server.service.BaseCRUDService;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public interface SqlTaskResultService extends BaseCRUDService<SqlTaskResult, Sql
      * @param taskId 任务 ID
      * @return SQL 任务结果
      */
-    List<SqlTaskResult> getByTaskId(String taskId);
+    List<SqlTaskResultBo> getByTaskId(String taskId);
 
     /**
      * 获取N天前的 SQL 任务结果
