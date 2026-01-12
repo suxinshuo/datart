@@ -1,9 +1,23 @@
-import { GithubOutlined, PauseOutlined } from '@ant-design/icons';
-import { Alert, Button, Popover, Progress, Space } from 'antd';
+import {
+  DownloadOutlined,
+  GithubOutlined,
+  PauseOutlined,
+} from '@ant-design/icons';
+import {
+  Alert,
+  Button,
+  Dropdown,
+  Menu,
+  message,
+  Popover,
+  Progress,
+  Space,
+} from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useResizeObserver from 'app/hooks/useResizeObserver';
 import { selectSystemInfo } from 'app/slice/selectors';
-import React, { memo, useCallback, useEffect } from 'react';
+import { downloadTaskResultSync } from 'app/utils/fetch';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
 import {
@@ -48,6 +62,9 @@ export const Outputs = memo(() => {
     selectCurrentEditingViewAttr(state, { name: 'isCancelClicked' }),
   ) as boolean;
 
+  // Download related states
+  const [downloadLoading, setDownloadLoading] = useState(false);
+
   const { width, height, ref } = useResizeObserver({
     refreshMode: 'debounce',
     refreshRate: 200,
@@ -72,6 +89,40 @@ export const Outputs = memo(() => {
       dispatch(cancelSqlTask({ taskId: currentTaskId }));
     }
   }, [dispatch, currentTaskId, actions]);
+
+  // Handle file download
+  const handleDownload = useCallback(
+    async (downloadType: string) => {
+      // Validate parameters
+      if (!currentTaskId) {
+        message.error(t('download.error.taskIdMissing'));
+        return;
+      }
+
+      if (!['EXCEL', 'CSV'].includes(downloadType)) {
+        message.error(t('download.error.invalidFileType'));
+        return;
+      }
+
+      try {
+        setDownloadLoading(true);
+
+        // Call the utility function to download the file
+        await downloadTaskResultSync(
+          currentTaskId,
+          downloadType as 'EXCEL' | 'CSV',
+        );
+
+        message.success(t('download.success'));
+      } catch (error) {
+        console.error('Download failed:', error);
+        message.error(t('download.error.failed'));
+      } finally {
+        setDownloadLoading(false);
+      }
+    },
+    [currentTaskId, t],
+  );
 
   // Monitor task status with optimized polling strategy
   useEffect(() => {
@@ -200,11 +251,44 @@ export const Outputs = memo(() => {
               <span className="task-id">
                 {t('taskId')}: {currentTaskId}
               </span>
-              <span
-                className={`task-status-badge status-${currentTaskStatus.toLowerCase()}`}
-              >
-                {t(`taskStatus.${currentTaskStatus.toLowerCase()}`)}
-              </span>
+              <div className="task-right">
+                {currentTaskStatus === SqlTaskStatus.SUCCESS && (
+                  <Dropdown
+                    overlay={
+                      <Menu>
+                        <Menu.Item
+                          key="excel"
+                          onClick={() => handleDownload('EXCEL')}
+                        >
+                          {t('download.type.excel')}
+                        </Menu.Item>
+                        <Menu.Item
+                          key="csv"
+                          onClick={() => handleDownload('CSV')}
+                        >
+                          {t('download.type.csv')}
+                        </Menu.Item>
+                      </Menu>
+                    }
+                    placement="bottomCenter"
+                  >
+                    <Button
+                      type="link"
+                      icon={<DownloadOutlined />}
+                      loading={downloadLoading}
+                      size="small"
+                      className="download-button"
+                    >
+                      {t('download.name')}
+                    </Button>
+                  </Dropdown>
+                )}
+                <span
+                  className={`task-status-badge status-${currentTaskStatus.toLowerCase()}`}
+                >
+                  {t(`taskStatus.${currentTaskStatus.toLowerCase()}`)}
+                </span>
+              </div>
             </div>
             <Progress
               percent={currentTaskProgress}
@@ -266,13 +350,6 @@ const TaskStatusWrapper = styled.div`
   background-color: ${p => p.theme.componentBackground};
   border-bottom: 1px solid ${p => p.theme.borderColorSplit};
 
-  .task-info {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: ${SPACE_XS};
-  }
-
   .task-id {
     font-size: ${FONT_SIZE_BASE * 0.875}px;
     color: ${p => p.theme.textColorSnd};
@@ -283,6 +360,30 @@ const TaskStatusWrapper = styled.div`
     font-size: ${FONT_SIZE_BASE * 0.8125}px;
     font-weight: 500;
     border-radius: 4px;
+  }
+
+  .task-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: ${SPACE_XS};
+
+    .task-id {
+      flex-shrink: 0;
+    }
+
+    .task-right {
+      display: flex;
+      align-items: center;
+    }
+
+    .download-button {
+      flex-shrink: 0;
+    }
+
+    .task-status-badge {
+      flex-shrink: 0;
+    }
   }
 
   .status-queued {

@@ -25,7 +25,7 @@ import datart.server.base.dto.ScheduleJobConfig;
 import datart.server.base.params.DownloadCreateParam;
 import datart.server.base.params.ViewExecuteParam;
 import datart.server.common.JsParserUtils;
-import datart.server.service.AttachmentService;
+import datart.server.service.download.AttachmentService;
 import datart.server.service.FolderService;
 import datart.server.service.ShareService;
 import datart.server.service.VizService;

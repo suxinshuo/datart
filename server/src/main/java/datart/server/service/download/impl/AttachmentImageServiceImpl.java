@@ -1,4 +1,4 @@
-package datart.server.service.impl;
+package datart.server.service.download.impl;
 
 import datart.core.base.consts.AttachmentType;
 import datart.core.base.consts.ShareAuthenticationMode;
@@ -13,26 +13,23 @@ import datart.server.base.params.DownloadCreateParam;
 import datart.server.base.params.ShareCreateParam;
 import datart.server.base.params.ShareToken;
 import datart.server.base.params.ViewExecuteParam;
-import datart.server.service.AttachmentService;
+import datart.server.service.download.AttachmentService;
 import datart.server.service.FolderService;
 import datart.server.service.ShareService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.util.Date;
 
-@Service("pdfAttachmentService")
 @Slf4j
-public class AttachmentPdfServiceImpl implements AttachmentService {
+@Service("imageAttachmentService")
+public class AttachmentImageServiceImpl implements AttachmentService {
 
-    protected final AttachmentType attachmentType = AttachmentType.PDF;
+    @Getter
+    protected final AttachmentType attachmentType = AttachmentType.IMAGE;
 
     private final DatartSecurityManager securityManager;
 
@@ -40,8 +37,8 @@ public class AttachmentPdfServiceImpl implements AttachmentService {
 
     private final FolderService folderService;
 
-    public AttachmentPdfServiceImpl(DatartSecurityManager securityManager, ShareService shareService, FolderService folderService) {
-        this.securityManager = securityManager;
+    public AttachmentImageServiceImpl(DatartSecurityManager datartSecurityManager, ShareService shareService, FolderService folderService) {
+        this.securityManager = datartSecurityManager;
         this.shareService = shareService;
         this.folderService = folderService;
     }
@@ -60,36 +57,15 @@ public class AttachmentPdfServiceImpl implements AttachmentService {
         ShareToken share = shareService.createShare(SHARE_USER + securityManager.getCurrentUser().getId(), shareCreateParam);
 
         String url = Application.getWebRootURL() + "/" + shareCreateParam.getVizType().getShareRoute() + "/" + share.getId() + "?eager=true&type=" + share.getAuthenticationMode();
-        log.info("share url {} ", url);
+        log.info("created share url: {} ", url);
+        File target = WebUtils.screenShot2File(url, FileUtils.withBasePath(path), downloadCreateParam.getImageWidth());
 
-        File imageFile = WebUtils.screenShot2File(url, FileUtils.withBasePath(path), downloadCreateParam.getImageWidth());
-        File file = new File(generateFileName(path, fileName, attachmentType));
-        createPDFFromImage(file.getPath(), imageFile.getPath());
-
-        log.info("create pdf file complete.");
-        imageFile.delete();
+        path = generateFileName(path, fileName, attachmentType);
+        File file = new File(path);
+        target.renameTo(file);
+        log.info("create image file complete.");
         shareService.delete(share.getId(), false);
         return file;
     }
 
-    /**
-     * 使用Apache pdfbox将图片生成pdf
-     *
-     * @param pdfPath
-     * @param imagePath
-     * @throws Exception
-     */
-    public void createPDFFromImage(String pdfPath, String imagePath) throws Exception {
-        PDDocument doc = new PDDocument();
-        PDImageXObject pdImage = PDImageXObject.createFromFile(imagePath, doc);
-        float width = pdImage.getWidth();
-        float height = pdImage.getHeight();
-        PDPage page = new PDPage(new PDRectangle(width, height));
-        doc.addPage(page);
-        PDPageContentStream contents = new PDPageContentStream(doc, page);
-        contents.drawImage(pdImage, 0, 0, width, height);
-        contents.close();
-        doc.save(pdfPath);
-        doc.close();
-    }
 }

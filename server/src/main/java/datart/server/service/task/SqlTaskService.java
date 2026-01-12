@@ -17,12 +17,15 @@
  */
 package datart.server.service.task;
 
+import datart.core.entity.SqlTaskWithBLOBs;
+import datart.core.mappers.SqlTaskMapper;
 import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
+import datart.server.service.BaseCRUDService;
 
 import java.util.List;
 
-public interface SqlTaskService {
+public interface SqlTaskService extends BaseCRUDService<SqlTaskWithBLOBs, SqlTaskMapper> {
 
     /**
      * 创建 SQL 执行任务
@@ -78,5 +81,13 @@ public interface SqlTaskService {
      * @param progress 任务进度
      */
     void updateTaskProgress(String taskId, Integer progress);
+
+    /**
+     * 安全更新任务的 View ID, 避免并发更新导致的 View ID 冲突
+     *
+     * @param taskId 任务 id
+     * @param viewId 视图 id
+     */
+    void safeUpdateViewIdSafe(String taskId, String viewId);
 
 }

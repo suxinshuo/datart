@@ -417,6 +417,7 @@
         "open": "Open",
         "close": "Close",
         "cancel": "Cancel",
+        "returnToQueryInterface": "Return to query interface",
         "downloadList": "Download list",
         "lang": {
           "zh": "zh",
@@ -1229,6 +1230,10 @@
       "empty": "Select vizs in the sidebar",
       "closeOther": "Close Other Tabs",
       "closeAll": "Close All Tabs"
+    },
+    "focusMode": {
+      "enter": "Entered focus mode, use ESC key to return to normal mode",
+      "exit": "Entered normal mode, use Command+B/Control+B key to return to focus mode"
     }
   },
   "view": {
@@ -1237,6 +1242,10 @@
     "empty": "Select views in the sidebar",
     "resultEmpty1": "Click ",
     "resultEmpty2": " button to execute, the results will be displayed here",
+    "columnFilter": "Column Filter",
+    "selectAll": "Select All",
+    "search": "Search",
+    "noColumnsFound": "No columns found",
     "errorTitle": "Error occurred",
     "sqlRequired": "SQL statement cannot be empty",
     "structQueryRequired": "Structured query statement cannot be empty",
@@ -1261,6 +1270,19 @@
     },
     "sqlExecutionCancelled": "SQL execution cancelled",
     "saveInProgress": "Data view is being saved, query execution is temporarily disabled",
+    "download": {
+      "name": "Download",
+      "error": {
+        "taskIdMissing": "Task ID is missing",
+        "invalidFileType": "Invalid file type",
+        "failed": "Download failed"
+      },
+      "success": "Download successful",
+      "type": {
+        "excel": "EXCEL",
+        "csv": "CSV"
+      }
+    },
     "tabs": {
       "discard": "Discard",
       "cancel": "Cancel",
@@ -1342,7 +1364,12 @@
       "search": "Search database / table / column",
       "sortType": "Sort",
       "byName": "By Name",
-      "byField": "By Field"
+      "byField": "By Field",
+      "fillMode": "Fill Mode",
+      "dbTable": "Database.Table",
+      "selectStatement": "SELECT Statement",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
     },
     "variable": {
       "title": "Variables",

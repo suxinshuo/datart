@@ -34,6 +34,7 @@ import logo from 'app/assets/images/logo.svg';
 import { Avatar, MenuListItem, Popup } from 'app/components';
 import { TenantManagementMode } from 'app/constants';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import {
   selectCurrentOrganization,
   selectDownloadPolling,
@@ -94,6 +95,7 @@ export function Navbar() {
   const organizationListLoading = useSelector(selectOrganizationListLoading);
   const downloadPolling = useSelector(selectDownloadPolling);
   const themeKey = useSelector(selectThemeKey);
+  const isFocusMode = useSelector(selectIsFocusMode); // 获取专注模式状态
   const matchModules = useRouteMatch<{ moduleName: string }>(
     '/organizations/:orgId/:moduleName',
   );
@@ -261,152 +263,160 @@ export function Navbar() {
 
   return (
     <>
-      <MainNav>
-        <Brand onClick={brandClick}>
-          <img src={logo} alt="logo" />
-        </Brand>
-        <Nav>
-          {navs.map(({ name, title, icon, isActive, module }) => {
-            return name !== 'toSub' || subNavs.length > 0 ? (
-              <Access
-                key={name}
-                type="module"
-                module={module}
-                level={PermissionLevels.Enable}
+      {/* 在专注模式下隐藏导航栏 */}
+      {!isFocusMode && (
+        <>
+          <MainNav>
+            <Brand onClick={brandClick}>
+              <img src={logo} alt="logo" />
+            </Brand>
+            <Nav>
+              {navs.map(({ name, title, icon, isActive, module }) => {
+                return name !== 'toSub' || subNavs.length > 0 ? (
+                  <Access
+                    key={name}
+                    type="module"
+                    module={module}
+                    level={PermissionLevels.Enable}
+                  >
+                    <Tooltip title={title} placement="right">
+                      <NavItem
+                        to={`/organizations/${orgId}/${
+                          name === 'toSub' ? subNavs[0].name : name
+                        }`}
+                        activeClassName="active"
+                        {...(isActive && { isActive })}
+                      >
+                        {icon}
+                      </NavItem>
+                    </Tooltip>
+                  </Access>
+                ) : null;
+              })}
+            </Nav>
+            <Toolbar>
+              <DownloadListPopup
+                polling={downloadPolling}
+                setPolling={onSetPolling}
+                onLoadTasks={loadTasks}
+                onDownloadFile={item => {
+                  if (item.id) {
+                    downloadFile(item.id).then(() => {
+                      dispatch(actions.setDownloadPolling(true));
+                    });
+                  }
+                }}
+              />
+              {systemInfo?.tenantManagementMode ===
+                TenantManagementMode.Platform && (
+                <Popup
+                  content={<OrganizationList />}
+                  trigger={['click']}
+                  placement="rightBottom"
+                  onVisibleChange={organizationListVisibleChange}
+                >
+                  <li>
+                    <Tooltip
+                      title={t('nav.organization.title')}
+                      placement="right"
+                    >
+                      <Avatar
+                        src={`${BASE_RESOURCE_URL}${currentOrganization?.avatar}`}
+                      >
+                        <BankFilled />
+                      </Avatar>
+                    </Tooltip>
+                  </li>
+                </Popup>
+              )}
+              <Popup
+                content={
+                  <Menu
+                    prefixCls="ant-dropdown-menu"
+                    selectable={false}
+                    selectedKeys={[lang!, themeKey]}
+                    onClick={userMenuSelect}
+                  >
+                    <MenuListItem
+                      key="language"
+                      prefix={<GlobalOutlined className="icon" />}
+                      title={<p>{t('nav.account.switchLanguage.title')}</p>}
+                      sub
+                    >
+                      <MenuListItem key="zh">中文</MenuListItem>
+                      <MenuListItem key="en">English</MenuListItem>
+                    </MenuListItem>
+                    <MenuListItem
+                      key="theme"
+                      prefix={<SkinOutlined className="icon" />}
+                      title={<p>{t('nav.account.switchTheme.title')}</p>}
+                      sub
+                    >
+                      <MenuListItem key="light" prefix={<ThemeBadge />}>
+                        {t('nav.account.switchTheme.light')}
+                      </MenuListItem>
+                      <MenuListItem
+                        key="dark"
+                        prefix={<ThemeBadge background={BLACK} />}
+                      >
+                        {t('nav.account.switchTheme.dark')}
+                      </MenuListItem>
+                    </MenuListItem>
+                    <Menu.Divider />
+                    <MenuListItem
+                      key="profile"
+                      prefix={<ProfileOutlined className="icon" />}
+                    >
+                      <p>{t('nav.account.profile.title')}</p>
+                    </MenuListItem>
+                    <MenuListItem
+                      key="password"
+                      prefix={<FormOutlined className="icon" />}
+                    >
+                      <p>{t('nav.account.changePassword.title')}</p>
+                    </MenuListItem>
+                    <MenuListItem
+                      key="logout"
+                      prefix={<ExportOutlined className="icon" />}
+                    >
+                      <p>{t('nav.account.logout.title')}</p>
+                    </MenuListItem>
+                  </Menu>
+                }
+                trigger={['click']}
+                placement="rightBottom"
               >
-                <Tooltip title={title} placement="right">
-                  <NavItem
-                    to={`/organizations/${orgId}/${
-                      name === 'toSub' ? subNavs[0].name : name
-                    }`}
-                    activeClassName="active"
-                    {...(isActive && { isActive })}
-                  >
-                    {icon}
-                  </NavItem>
-                </Tooltip>
-              </Access>
-            ) : null;
-          })}
-        </Nav>
-        <Toolbar>
-          <DownloadListPopup
-            polling={downloadPolling}
-            setPolling={onSetPolling}
-            onLoadTasks={loadTasks}
-            onDownloadFile={item => {
-              if (item.id) {
-                downloadFile(item.id).then(() => {
-                  dispatch(actions.setDownloadPolling(true));
-                });
-              }
-            }}
-          />
-          {systemInfo?.tenantManagementMode ===
-            TenantManagementMode.Platform && (
-            <Popup
-              content={<OrganizationList />}
-              trigger={['click']}
-              placement="rightBottom"
-              onVisibleChange={organizationListVisibleChange}
-            >
-              <li>
-                <Tooltip title={t('nav.organization.title')} placement="right">
-                  <Avatar
-                    src={`${BASE_RESOURCE_URL}${currentOrganization?.avatar}`}
-                  >
-                    <BankFilled />
+                <li>
+                  <Avatar src={`${BASE_RESOURCE_URL}${loggedInUser?.avatar}`}>
+                    <UserOutlined />
                   </Avatar>
-                </Tooltip>
-              </li>
-            </Popup>
-          )}
-          <Popup
-            content={
-              <Menu
-                prefixCls="ant-dropdown-menu"
-                selectable={false}
-                selectedKeys={[lang!, themeKey]}
-                onClick={userMenuSelect}
-              >
-                <MenuListItem
-                  key="language"
-                  prefix={<GlobalOutlined className="icon" />}
-                  title={<p>{t('nav.account.switchLanguage.title')}</p>}
-                  sub
-                >
-                  <MenuListItem key="zh">中文</MenuListItem>
-                  <MenuListItem key="en">English</MenuListItem>
-                </MenuListItem>
-                <MenuListItem
-                  key="theme"
-                  prefix={<SkinOutlined className="icon" />}
-                  title={<p>{t('nav.account.switchTheme.title')}</p>}
-                  sub
-                >
-                  <MenuListItem key="light" prefix={<ThemeBadge />}>
-                    {t('nav.account.switchTheme.light')}
-                  </MenuListItem>
-                  <MenuListItem
-                    key="dark"
-                    prefix={<ThemeBadge background={BLACK} />}
+                </li>
+              </Popup>
+            </Toolbar>
+            <Profile visible={profileVisible} onCancel={hideProfile} />
+            <ModifyPassword
+              visible={modifyPasswordVisible}
+              onCancel={hideModifyPassword}
+            />
+          </MainNav>
+          {showSubNav && (
+            <SubNav>
+              <List
+                dataSource={subNavs}
+                renderItem={({ name, title, icon }) => (
+                  <SubNavTitle
+                    key={name}
+                    to={`/organizations/${orgId}/${name}`}
+                    activeClassName="active"
                   >
-                    {t('nav.account.switchTheme.dark')}
-                  </MenuListItem>
-                </MenuListItem>
-                <Menu.Divider />
-                <MenuListItem
-                  key="profile"
-                  prefix={<ProfileOutlined className="icon" />}
-                >
-                  <p>{t('nav.account.profile.title')}</p>
-                </MenuListItem>
-                <MenuListItem
-                  key="password"
-                  prefix={<FormOutlined className="icon" />}
-                >
-                  <p>{t('nav.account.changePassword.title')}</p>
-                </MenuListItem>
-                <MenuListItem
-                  key="logout"
-                  prefix={<ExportOutlined className="icon" />}
-                >
-                  <p>{t('nav.account.logout.title')}</p>
-                </MenuListItem>
-              </Menu>
-            }
-            trigger={['click']}
-            placement="rightBottom"
-          >
-            <li>
-              <Avatar src={`${BASE_RESOURCE_URL}${loggedInUser?.avatar}`}>
-                <UserOutlined />
-              </Avatar>
-            </li>
-          </Popup>
-        </Toolbar>
-        <Profile visible={profileVisible} onCancel={hideProfile} />
-        <ModifyPassword
-          visible={modifyPasswordVisible}
-          onCancel={hideModifyPassword}
-        />
-      </MainNav>
-      {showSubNav && (
-        <SubNav>
-          <List
-            dataSource={subNavs}
-            renderItem={({ name, title, icon }) => (
-              <SubNavTitle
-                key={name}
-                to={`/organizations/${orgId}/${name}`}
-                activeClassName="active"
-              >
-                {cloneElement(icon, { className: 'prefix' })}
-                <h4>{title}</h4>
-              </SubNavTitle>
-            )}
-          />
-        </SubNav>
+                    {cloneElement(icon, { className: 'prefix' })}
+                    <h4>{title}</h4>
+                  </SubNavTitle>
+                )}
+              />
+            </SubNav>
+          )}
+        </>
       )}
     </>
   );

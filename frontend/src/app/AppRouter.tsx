@@ -34,6 +34,7 @@ import { LazyActivationPage } from './pages/ActivationPage/Loadable';
 import { LazyAuthorizationPage } from './pages/AuthorizationPage/Loadable';
 import { LazyForgetPasswordPage } from './pages/ForgetPasswordPage/Loadable';
 import { LazyLoginPage } from './pages/LoginPage/Loadable';
+import { useFocusModeSlice } from './pages/MainPage/slice/focusModeSlice';
 import { LazyRegisterPage } from './pages/RegisterPage/Loadable';
 import { LazySetupPage } from './pages/SetupPage/Loadable';
 import { useAppSlice } from './slice';
@@ -47,6 +48,7 @@ export function AppRouter() {
   const logged = !!getToken();
   const t = useI18NPrefix('global');
   useAppSlice();
+  useFocusModeSlice(); // 注入专注模式reducer，确保应用启动时就从localStorage读取初始状态
 
   useLayoutEffect(() => {
     if (logged) {

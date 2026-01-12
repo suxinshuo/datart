@@ -100,6 +100,19 @@ public class BaseService extends MessageResolver {
         }
     }
 
+    public <T> T retrieveNoExp(String id, Class<T> clz) {
+        return (T) getEntityService(clz).retrieveNoExp(id);
+    }
+
+    public <T> T retrieveNoExp(String id, Class<T> clz, boolean checkPermission) {
+        try {
+            return (T) getEntityService(clz).retrieveNoExp(id, checkPermission);
+        } catch (Exception e) {
+            log.error("retrieve entity error, id: {}, clz: {}, checkPermission: {}", id, clz, checkPermission, e);
+            throw e;
+        }
+    }
+
     private BaseCRUDService<?, ?> getEntityService(Class<?> clz) {
         if (CollectionUtils.isEmpty(entityServiceMap) || !entityServiceMap.containsKey(clz)) {
             entityServiceMap = new HashMap<>();
