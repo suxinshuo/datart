@@ -184,10 +184,13 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
     });
   }, [gridRef]);
 
-  useEffect(
-    () => resetVirtualGrid,
-    [boxWidth, columns, dataSource, resetVirtualGrid],
-  );
+  // 优化重置逻辑，只有在真正需要时才重置
+  useEffect(() => {
+    // 只有当列宽或数据发生显著变化时才重置
+    if (columns.length > 0 && dataSource && dataSource.length > 0) {
+      resetVirtualGrid();
+    }
+  }, [boxWidth, columns.length, dataSource?.length, resetVirtualGrid]);
 
   const renderVirtualList = useCallback(
     (rawData, { scrollbarSize, ref, onScroll }) => {
@@ -214,6 +217,9 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
           rowCount={rawData.length}
           rowHeight={() => 39}
           width={boxWidth}
+          // 优化overscanCount，减少预渲染的行数和列数，平衡滚动流畅度和性能
+          overscanCount={3}
+          overscanColumnCount={3}
           onScroll={({ scrollLeft }) => {
             onScroll({
               scrollLeft,

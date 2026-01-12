@@ -174,13 +174,14 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
   const filteredModel = useMemo(() => {
     if (!model?.columns) return {};
     const filtered: typeof model.columns = {};
-    columnNames.forEach(col => {
-      if (visibleColumns.has(col) && model.columns) {
+    // 优化遍历逻辑，只处理可见列
+    visibleColumns.forEach(col => {
+      if (model.columns && model.columns[col]) {
         filtered[col] = model.columns[col];
       }
     });
     return filtered;
-  }, [model, visibleColumns, columnNames]);
+  }, [model, visibleColumns]);
 
   const isAllChecked = useMemo(() => {
     return columnNames.length > 0 && visibleColumns.size === columnNames.length;
@@ -365,8 +366,11 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
 
   const pagination = useMemo(
     () => ({
-      defaultPageSize: 100,
-      pageSizeOptions: ['100', '200', '500', '1000'],
+      defaultPageSize: 50,
+      pageSizeOptions: ['10', '20', '50', '100', '200', '500'],
+      showSizeChanger: true,
+      showQuickJumper: true,
+      showTotal: (total) => `共 ${total} 条记录`,
     }),
     [],
   );
