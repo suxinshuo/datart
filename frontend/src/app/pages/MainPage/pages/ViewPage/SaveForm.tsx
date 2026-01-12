@@ -32,6 +32,7 @@ import {
 import { ModalForm, ModalFormProps } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { APP_CURRENT_VERSION } from 'app/migration/constants';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { fetchCheckName } from 'app/utils/fetch';
 import debounce from 'debounce-promise';
 import { DEFAULT_DEBOUNCE_WAIT } from 'globalConstants';
@@ -69,6 +70,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
   const [currentParentId, setCurrentParentId] = useState<string>();
   const selectViewFolderTree = useMemo(makeSelectViewFolderTree, []);
   const [expensiveQuery, setExpensiveQuery] = useState(false); // beta.2 add expensiveQuery
+  const isFocusMode = useSelector(selectIsFocusMode);
   const {
     type,
     visible,
@@ -272,7 +274,7 @@ export function SaveForm({ formProps, ...modalProps }: SaveFormProps) {
           style={{ marginBottom: SPACE_MD }}
         />
       )}
-      {!simple && initialValues?.config && (
+      {!simple && initialValues?.config && !isFocusMode && (
         <>
           <AdvancedToggle
             type="link"

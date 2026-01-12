@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons';
 import { PaneWrapper } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import {
   memo,
   useCallback,
@@ -34,6 +35,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
 import { LEVEL_1 } from 'styles/StyleConstants';
 import { EditorContext } from '../../EditorContext';
@@ -54,13 +56,14 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
   const [selectedTab, setSelectedTab] = useState('');
   const { editorInstance } = useContext(EditorContext);
   const t = useI18NPrefix('view.properties');
+  const isFocusMode = useSelector(selectIsFocusMode); // 获取专注模式状态
 
   useEffect(() => {
     editorInstance?.layout();
   }, [editorInstance, selectedTab]);
 
   const tabTitle = useMemo(() => {
-    const tabTitle = [
+    let tabTitle = [
       { name: 'reference', title: t('reference'), icon: <DatabaseOutlined /> },
       { name: 'variable', title: t('variable'), icon: <FunctionOutlined /> },
       { name: 'model', title: t('model'), icon: <ApartmentOutlined /> },
@@ -76,10 +79,18 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
         icon: <RobotOutlined />,
       },
     ];
+
+    // 在专注模式下隐藏"数据模型"和"列权限"标签页
+    if (isFocusMode) {
+      tabTitle = tabTitle.filter(
+        tab => tab.name !== 'model' && tab.name !== 'columnPermissions',
+      );
+    }
+
     return viewType === 'STRUCT'
       ? tabTitle.slice(2, tabTitle.length)
       : tabTitle;
-  }, [t, viewType]);
+  }, [t, viewType, isFocusMode]);
 
   const tabSelect = useCallback(tab => {
     setSelectedTab(tab);
@@ -93,12 +104,17 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
       <PaneWrapper selected={selectedTab === 'reference'}>
         <Resource />
       </PaneWrapper>
-      <PaneWrapper selected={selectedTab === 'model'}>
-        <DataModelTree />
-      </PaneWrapper>
-      <PaneWrapper selected={selectedTab === 'columnPermissions'}>
-        <ColumnPermissions />
-      </PaneWrapper>
+      {/* 在专注模式下隐藏数据模型和列权限组件 */}
+      {!isFocusMode && (
+        <>
+          <PaneWrapper selected={selectedTab === 'model'}>
+            <DataModelTree />
+          </PaneWrapper>
+          <PaneWrapper selected={selectedTab === 'columnPermissions'}>
+            <ColumnPermissions />
+          </PaneWrapper>
+        </>
+      )}
       <PaneWrapper selected={selectedTab === 'history'}>
         <History />
       </PaneWrapper>

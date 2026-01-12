@@ -9,6 +9,7 @@ import { VariableState } from 'app/pages/MainPage/pages/VariablePage/slice/types
 import { ViewState } from 'app/pages/MainPage/pages/ViewPage/slice/types';
 import { VizState } from 'app/pages/MainPage/pages/VizPage/slice/types';
 import { MainState } from 'app/pages/MainPage/slice/types';
+import { FocusModeState } from 'app/pages/MainPage/slice/focusModeSlice';
 import { SharePageState } from 'app/pages/SharePage/slice/types';
 import { StoryBoardState } from 'app/pages/StoryBoardPage/slice/types';
 import { AppState } from 'app/slice/types';
@@ -37,6 +38,7 @@ export interface RootState {
   editBoard?: EditBoardState;
   workbench?: WorkbenchState;
   share?: SharePageState;
+  focusMode?: FocusModeState;
 }
 export interface APIResponse<T> {
   success: boolean;

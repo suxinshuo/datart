@@ -415,6 +415,7 @@
         "open": "开启",
         "close": "关闭",
         "cancel": "取消",
+        "returnToQueryInterface": "返回至查询界面",
         "downloadList": "下载列表",
         "lang": {
           "zh": "中文",
@@ -1228,6 +1229,10 @@
       "empty": "请在左侧列表选择可视化",
       "closeOther": "关闭其他",
       "closeAll": "关闭所有"
+    },
+    "focusMode": {
+      "enter": "已进入专注模式，使用ESC键返回普通模式",
+      "exit": "已进入普通模式，使用Command+B/Control+B键返回专注模式"
     }
   },
   "view": {
@@ -1236,6 +1241,10 @@
     "empty": "请在左侧列表选择数据视图",
     "resultEmpty1": "请点击 ",
     "resultEmpty2": " 按钮执行，运行结果将在此处展示",
+    "columnFilter": "列筛选",
+    "selectAll": "全选",
+    "search": "搜索",
+    "noColumnsFound": "未找到匹配的列",
     "errorTitle": "执行错误",
     "sqlRequired": "SQL 语句不能为空",
     "structQueryRequired": "结构化查询语句不能为空",
@@ -1341,7 +1350,12 @@
       "search": "搜索数据库 / 表 / 字段关键字",
       "sortType": "排序方式",
       "byName": "按名称",
-      "byField": "按字段"
+      "byField": "按字段",
+      "fillMode": "选择填充方式",
+      "dbTable": "库名.表名",
+      "selectStatement": "SELECT语句",
+      "confirm": "确定",
+      "cancel": "取消"
     },
     "variable": {
       "title": "变量配置",

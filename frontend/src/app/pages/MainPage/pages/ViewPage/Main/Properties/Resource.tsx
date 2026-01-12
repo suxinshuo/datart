@@ -30,6 +30,8 @@ import {
   Dropdown,
   Input,
   Menu,
+  Modal,
+  Radio,
   Row,
   Space,
   TreeDataNode,
@@ -213,18 +215,38 @@ export const Resource = memo(() => {
     );
   }, [handleMenuClick, t]);
 
-  const onDragStart = useCallback(info => {
-    const { event, node } = info;
-    event.dataTransfer.setData(
-      'application/sql-drag',
-      JSON.stringify({
+  const onDragStart = useCallback(
+    info => {
+      const { event, node } = info;
+
+      // 获取完整的表信息，包括字段列表
+      let tableInfo = {
         title: node.title,
         value: node.value,
         type: node.type,
-      }),
-    );
-    event.dataTransfer.effectAllowed = 'copy';
-  }, []);
+        columns: [],
+      };
+
+      // 如果是表节点，查找其字段信息
+      if (Array.isArray(node.value) && node.value.length === 2) {
+        const [dbName, tableName] = node.value;
+        const database = databaseSchemas?.find(db => db.dbName === dbName);
+        if (database) {
+          const table = database.tables?.find(t => t.tableName === tableName);
+          if (table) {
+            tableInfo.columns = table.columns?.map(col => col.name[0]) || [];
+          }
+        }
+      }
+
+      event.dataTransfer.setData(
+        'application/sql-drag',
+        JSON.stringify(tableInfo),
+      );
+      event.dataTransfer.effectAllowed = 'copy';
+    },
+    [databaseSchemas],
+  );
 
   useEffect(() => {
     // Add global drag over handler to allow dropping into editor
@@ -237,7 +259,8 @@ export const Resource = memo(() => {
       const dragData = e.dataTransfer.getData('application/sql-drag');
       if (dragData && editorInstance) {
         e.preventDefault();
-        const { title, value } = JSON.parse(dragData);
+        const dragInfo = JSON.parse(dragData);
+        const { title, value, columns } = dragInfo;
         let insertText = title;
 
         // Handle different node types
@@ -245,36 +268,97 @@ export const Resource = memo(() => {
           switch (value.length) {
             case 1: // Database
               insertText = `\`${title}\``;
+              // 直接插入
+              insertIntoEditor(insertText);
               break;
-            case 2: // Table
-              insertText = `\`${title}\``;
+            case 2: // Table - 显示弹窗选择填充方式
+              const [dbName, tableName] = value;
+
+              // 使用ref管理选择值
+              let fillOption = 'tableOnly';
+
+              // 弹出选择窗口
+              Modal.confirm({
+                title: t('fillMode'),
+                content: (
+                  <Radio.Group
+                    defaultValue="tableOnly"
+                    onChange={e => (fillOption = e.target.value)}
+                    buttonStyle="solid"
+                    style={{ width: '100%' }}
+                  >
+                    <Radio.Button
+                      value="tableOnly"
+                      style={{ width: '100%', marginBottom: 10 }}
+                    >
+                      {t('dbTable')}
+                    </Radio.Button>
+                    <Radio.Button value="withSelect" style={{ width: '100%' }}>
+                      {t('selectStatement')}
+                    </Radio.Button>
+                  </Radio.Group>
+                ),
+                onOk: () => {
+                  let sqlText = '';
+
+                  // 根据选择生成SQL文本
+                  if (fillOption === 'tableOnly') {
+                    // 选项一：仅填充表名
+                    sqlText = `\`${dbName}\`.\`${tableName}\``;
+                  } else {
+                    // 选项二：生成SELECT语句
+                    if (columns.length > 15) {
+                      // 字段数量超过15个，使用SELECT *
+                      sqlText = `SELECT *\nFROM \`${dbName}\`.\`${tableName}\``;
+                    } else {
+                      // 生成完整的SELECT字段列表
+                      const columnsList = columns
+                        .map(col => `    \`${col}\``)
+                        .join(',\n');
+                      sqlText = `SELECT\n${columnsList}\nFROM \`${dbName}\`.\`${tableName}\``;
+                    }
+                  }
+
+                  // 插入到编辑器
+                  insertIntoEditor(sqlText);
+                },
+                okText: t('confirm'),
+                cancelText: t('cancel'),
+              });
               break;
             case 3: // Column
               insertText = `\`${title}\``;
+              // 直接插入
+              insertIntoEditor(insertText);
               break;
             default:
               insertText = title;
+              // 直接插入
+              insertIntoEditor(insertText);
           }
         }
 
-        // Get current position and create range
-        const position = editorInstance.getPosition();
-        if (position) {
-          const range = {
-            startLineNumber: position.lineNumber,
-            startColumn: position.column,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column,
-          };
+        // 插入到编辑器的函数
+        function insertIntoEditor(text) {
+          // Get current position and create range
+          const position = editorInstance.getPosition();
+          if (position) {
+            const range = {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            };
 
-          // Insert into editor
-          editorInstance.executeEdits('drag-drop', [
-            {
-              range,
-              text: insertText,
-              forceMoveMarkers: true,
-            },
-          ]);
+            // Insert into editor
+            editorInstance.executeEdits('drag-drop', [
+              {
+                range,
+                text,
+                forceMoveMarkers: true,
+              },
+            ]);
+          }
         }
       }
     };
@@ -286,7 +370,7 @@ export const Resource = memo(() => {
       document.removeEventListener('dragover', handleGlobalDragOver);
       document.removeEventListener('drop', handleGlobalDrop);
     };
-  }, [editorInstance]);
+  }, [editorInstance, t]);
 
   return (
     <Container title="reference">
