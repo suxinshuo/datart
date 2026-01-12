@@ -1270,6 +1270,11 @@
     },
     "sqlExecutionCancelled": "SQL execution cancelled",
     "saveInProgress": "Data view is being saved, query execution is temporarily disabled",
+    "data": {
+      "total": "Total data: {{total}} rows",
+      "displayed": "Currently showing only the first {{displayed}} rows",
+      "download": "Please download for details"
+    },
     "download": {
       "name": "Download",
       "error": {

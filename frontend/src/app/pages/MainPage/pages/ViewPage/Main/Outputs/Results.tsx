@@ -428,7 +428,7 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
         )}
       </SidebarContainer>
       <SchemaTable
-        height={height ? height - 96 : 0}
+        height={height ? height - 90 : 0}
         width={width}
         model={filteredModel}
         hierarchy={model.hierarchy || {}}

@@ -17,11 +17,13 @@
  */
 package datart.server.service.task.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
 import com.github.pagehelper.PageHelper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import datart.core.base.consts.Const;
 import datart.server.base.bo.task.*;
 import datart.core.common.CommonVarUtils;
 import datart.core.entity.enums.SqlTaskExecuteType;
@@ -223,23 +225,41 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         String statusStr = task.getStatus();
         SqlTaskStatus status = SqlTaskStatus.fromCode(statusStr);
 
-        SqlTaskStatusResponse response = new SqlTaskStatusResponse();
-        response.setTaskId(task.getId());
+        SqlTaskStatusResponse response = sqlTaskFactory.getSqlTaskStatusResponse(task);
         response.setStatus(status.getCode());
         response.setStatusDesc(status.getDesc());
-        response.setCreateBy(task.getCreateBy());
-        response.setCreateTime(task.getCreateTime());
-        response.setStartTime(task.getStartTime());
-        response.setEndTime(task.getEndTime());
-        response.setDuration(task.getDuration());
-        response.setProgress(task.getProgress());
 
         // 如果任务执行成功, 返回结果
         if (SqlTaskStatus.SUCCESS.equals(status)) {
             // 从数据库查询结果
             List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
             if (CollUtil.isNotEmpty(sqlTaskResults)) {
-                response.setTaskResult(sqlTaskResults.get(0).getDataframe());
+                Dataframe dataframe = sqlTaskResults.get(0).getDataframe();
+                int columnCount = dataframe.getColumns().size();
+                int rowCount = dataframe.getRows().size();
+                int totalCells = columnCount * rowCount;
+
+                if (totalCells > Const.SQL_RESULT_SHOW_MAX_CELLS) {
+                    // 超过限制, 需要截断
+                    int maxRows = Const.SQL_RESULT_SHOW_MAX_CELLS / columnCount;
+                    List<List<Object>> truncatedRows = dataframe.getRows().subList(0, Math.min(maxRows, rowCount));
+                    
+                    // 创建新的 Dataframe 对象
+                    Dataframe truncatedDataframe = new Dataframe(dataframe.getId());
+                    BeanUtil.copyProperties(dataframe, truncatedDataframe);
+                    truncatedDataframe.setRows(truncatedRows);
+
+                    response.setTaskResult(truncatedDataframe);
+                    response.setOriginalRowCount(rowCount);
+                    response.setDisplayedRowCount(truncatedRows.size());
+                    response.setTruncated(true);
+                } else {
+                    // 未超过限制, 直接返回
+                    response.setTaskResult(dataframe);
+                    response.setOriginalRowCount(rowCount);
+                    response.setDisplayedRowCount(rowCount);
+                    response.setTruncated(false);
+                }
             }
         } else if (SqlTaskStatus.FAILED.equals(status)) {
             // 如果任务执行失败, 返回错误信息

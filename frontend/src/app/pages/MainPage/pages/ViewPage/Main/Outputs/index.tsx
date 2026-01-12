@@ -21,7 +21,8 @@ import React, { memo, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
 import {
-  FONT_SIZE_BASE,
+  FONT_SIZE_BODY,
+  FONT_SIZE_SUBTITLE,
   SPACE_MD,
   SPACE_TIMES,
   SPACE_XS,
@@ -60,6 +61,15 @@ export const Outputs = memo(() => {
   ) as string;
   const isCancelClicked = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'isCancelClicked' }),
+  ) as boolean;
+  const originalRowCount = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'originalRowCount' }),
+  ) as number;
+  const displayedRowCount = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'displayedRowCount' }),
+  ) as number;
+  const truncated = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'truncated' }),
   ) as boolean;
 
   // Download related states
@@ -245,6 +255,7 @@ export const Outputs = memo(() => {
           <Space
             direction="vertical"
             className="task-status"
+            size={0}
             style={{ width: '100%' }}
           >
             <div className="task-info">
@@ -252,6 +263,16 @@ export const Outputs = memo(() => {
                 {t('taskId')}: {currentTaskId}
               </span>
               <div className="task-right">
+                {currentTaskStatus === SqlTaskStatus.SUCCESS && truncated && (
+                  <span className="task-data-info">
+                    {t('data.total', undefined, { total: originalRowCount })},
+                    {t('data.displayed', undefined, {
+                      displayed: displayedRowCount,
+                    })}
+                    ,{t('data.download')}
+                  </span>
+                )}
+
                 {currentTaskStatus === SqlTaskStatus.SUCCESS && (
                   <Dropdown
                     overlay={
@@ -351,13 +372,13 @@ const TaskStatusWrapper = styled.div`
   border-bottom: 1px solid ${p => p.theme.borderColorSplit};
 
   .task-id {
-    font-size: ${FONT_SIZE_BASE * 0.875}px;
+    font-size: ${FONT_SIZE_BODY};
     color: ${p => p.theme.textColorSnd};
   }
 
   .task-status-badge {
     padding: 2px 8px;
-    font-size: ${FONT_SIZE_BASE * 0.8125}px;
+    font-size: ${FONT_SIZE_SUBTITLE};
     font-weight: 500;
     border-radius: 4px;
   }
@@ -370,6 +391,17 @@ const TaskStatusWrapper = styled.div`
 
     .task-id {
       flex-shrink: 0;
+      margin-right: ${SPACE_MD};
+    }
+
+    .task-data-info {
+      flex: 1;
+      margin-right: ${SPACE_MD};
+      overflow: hidden;
+      font-size: ${FONT_SIZE_BODY};
+      color: ${p => p.theme.textColorSnd};
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .task-right {
@@ -379,6 +411,7 @@ const TaskStatusWrapper = styled.div`
 
     .download-button {
       flex-shrink: 0;
+      margin-right: ${SPACE_MD};
     }
 
     .task-status-badge {
@@ -407,7 +440,7 @@ const TaskStatusWrapper = styled.div`
   }
 
   .task-error {
-    font-size: ${FONT_SIZE_BASE * 0.875}px;
+    font-size: ${FONT_SIZE_BODY};
     color: ${p => p.theme.error};
   }
 `;

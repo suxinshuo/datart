@@ -1269,6 +1269,11 @@
     },
     "sqlExecutionCancelled": "SQL 执行已取消",
     "saveInProgress": "正在保存数据视图，暂不允许执行查询",
+    "data": {
+      "total": "数据总量{{total}}行",
+      "displayed": "当前仅展示前{{displayed}}行数据",
+      "download": "详细请下载查看"
+    },
     "download": {
       "name": "下载",
       "error": {

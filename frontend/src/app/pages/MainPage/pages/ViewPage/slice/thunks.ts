@@ -543,6 +543,9 @@ export const getSqlTaskStatus = createAsyncThunk<
               model: diffMergeHierarchyModel(model, currentEditingView.type!),
               previewResults: dataSource,
               warnings: response.data.taskResult.warnings,
+              originalRowCount: response.data.originalRowCount,
+              displayedRowCount: response.data.displayedRowCount,
+              truncated: response.data.truncated,
             }),
           );
         }

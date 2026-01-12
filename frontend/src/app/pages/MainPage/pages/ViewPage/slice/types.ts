@@ -115,6 +115,10 @@ export interface ViewViewModel<T = object>
   enableAsyncExecution?: boolean;
   currentTaskErrorMessage?: string;
   isCancelClicked?: boolean;
+  // Data Truncation Fields
+  originalRowCount?: number;
+  displayedRowCount?: number;
+  truncated?: boolean;
   // Spark Resource Isolation Level
   sparkShareLevel?: 'CONNECTION' | 'USER' | 'SERVER';
   // SQL Browser Cache Fields
@@ -241,6 +245,9 @@ export interface SqlTaskStatusResponse {
   statusDesc: string;
   taskId: string;
   taskResult: QueryResult;
+  originalRowCount: number;
+  displayedRowCount: number;
+  truncated: boolean;
 }
 
 export interface SqlTaskCancelResponse {

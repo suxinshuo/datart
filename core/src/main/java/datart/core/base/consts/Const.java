@@ -108,4 +108,9 @@ public class Const {
 
     public static final String USER_DEFAULT_PSW = "123456";
 
+    /**
+     * sql 运行结果展示的最大单元格数量
+     */
+    public static final Integer SQL_RESULT_SHOW_MAX_CELLS = 20000;
+
 }
