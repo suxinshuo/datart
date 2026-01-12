@@ -370,7 +370,7 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
       pageSizeOptions: ['10', '20', '50', '100', '200', '500'],
       showSizeChanger: true,
       showQuickJumper: true,
-      showTotal: (total) => `共 ${total} 条记录`,
+      showTotal: total => `共 ${total} 条记录`,
     }),
     [],
   );

@@ -187,7 +187,7 @@ export const VirtualTable = memo((props: VirtualTableProps) => {
   // 优化重置逻辑，只有在真正需要时才重置
   useEffect(() => {
     // 只有当列宽或数据发生显著变化时才重置
-    if (columns.length > 0 && dataSource && dataSource.length > 0) {
+    if (columns.length > 0 && dataSource?.length && dataSource.length > 0) {
       resetVirtualGrid();
     }
   }, [boxWidth, columns.length, dataSource?.length, resetVirtualGrid]);
