@@ -62,16 +62,14 @@ export const Main = memo(({ sliderVisible }: { sliderVisible: boolean }) => {
       cachedViews.forEach(cachedView => {
         dispatch(getViewDetail({ viewId: cachedView.viewId }));
       });
-    }
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (viewId) {
-      dispatch(getViewDetail({ viewId }));
     } else if (editingViews.length === 0) {
       // No viewId and no editing views, create a new SQL view automatically
       const newViewId = `${UNPERSISTED_ID_PREFIX}${Date.now()}`;
       dispatch(getViewDetail({ viewId: newViewId }));
+    }
+
+    if (viewId) {
+      dispatch(getViewDetail({ viewId }));
     }
   }, [dispatch, viewId, orgId, editingViews.length]);
 
