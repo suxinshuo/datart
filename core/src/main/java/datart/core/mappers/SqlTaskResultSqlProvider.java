@@ -35,6 +35,10 @@ public class SqlTaskResultSqlProvider {
             sql.VALUES("task_id", "#{taskId,jdbcType=VARCHAR}");
         }
         
+        if (record.getData() != null) {
+            sql.VALUES("`data`", "#{data,jdbcType=VARCHAR}");
+        }
+        
         if (record.getRowCount() != null) {
             sql.VALUES("`row_count`", "#{rowCount,jdbcType=INTEGER}");
         }
@@ -63,36 +67,6 @@ public class SqlTaskResultSqlProvider {
             sql.VALUES("permission", "#{permission,jdbcType=INTEGER}");
         }
         
-        if (record.getData() != null) {
-            sql.VALUES("`data`", "#{data,jdbcType=LONGVARCHAR}");
-        }
-        
-        return sql.toString();
-    }
-
-    public String selectByExampleWithBLOBs(SqlTaskResultExample example) {
-        SQL sql = new SQL();
-        if (example != null && example.isDistinct()) {
-            sql.SELECT_DISTINCT("id");
-        } else {
-            sql.SELECT("id");
-        }
-        sql.SELECT("task_id");
-        sql.SELECT("`row_count`");
-        sql.SELECT("column_count");
-        sql.SELECT("create_by");
-        sql.SELECT("create_time");
-        sql.SELECT("update_by");
-        sql.SELECT("update_time");
-        sql.SELECT("permission");
-        sql.SELECT("`data`");
-        sql.FROM("sql_task_result");
-        applyWhere(sql, example, false);
-        
-        if (example != null && example.getOrderByClause() != null) {
-            sql.ORDER_BY(example.getOrderByClause());
-        }
-        
         return sql.toString();
     }
 
@@ -104,6 +78,7 @@ public class SqlTaskResultSqlProvider {
             sql.SELECT("id");
         }
         sql.SELECT("task_id");
+        sql.SELECT("`data`");
         sql.SELECT("`row_count`");
         sql.SELECT("column_count");
         sql.SELECT("create_by");
@@ -136,6 +111,10 @@ public class SqlTaskResultSqlProvider {
             sql.SET("task_id = #{record.taskId,jdbcType=VARCHAR}");
         }
         
+        if (record.getData() != null) {
+            sql.SET("`data` = #{record.data,jdbcType=VARCHAR}");
+        }
+        
         if (record.getRowCount() != null) {
             sql.SET("`row_count` = #{record.rowCount,jdbcType=INTEGER}");
         }
@@ -164,30 +143,6 @@ public class SqlTaskResultSqlProvider {
             sql.SET("permission = #{record.permission,jdbcType=INTEGER}");
         }
         
-        if (record.getData() != null) {
-            sql.SET("`data` = #{record.data,jdbcType=LONGVARCHAR}");
-        }
-        
-        applyWhere(sql, example, true);
-        return sql.toString();
-    }
-
-    public String updateByExampleWithBLOBs(Map<String, Object> parameter) {
-        SQL sql = new SQL();
-        sql.UPDATE("sql_task_result");
-        
-        sql.SET("id = #{record.id,jdbcType=VARCHAR}");
-        sql.SET("task_id = #{record.taskId,jdbcType=VARCHAR}");
-        sql.SET("`row_count` = #{record.rowCount,jdbcType=INTEGER}");
-        sql.SET("column_count = #{record.columnCount,jdbcType=INTEGER}");
-        sql.SET("create_by = #{record.createBy,jdbcType=VARCHAR}");
-        sql.SET("create_time = #{record.createTime,jdbcType=TIMESTAMP}");
-        sql.SET("update_by = #{record.updateBy,jdbcType=VARCHAR}");
-        sql.SET("update_time = #{record.updateTime,jdbcType=TIMESTAMP}");
-        sql.SET("permission = #{record.permission,jdbcType=INTEGER}");
-        sql.SET("`data` = #{record.data,jdbcType=LONGVARCHAR}");
-        
-        SqlTaskResultExample example = (SqlTaskResultExample) parameter.get("example");
         applyWhere(sql, example, true);
         return sql.toString();
     }
@@ -198,6 +153,7 @@ public class SqlTaskResultSqlProvider {
         
         sql.SET("id = #{record.id,jdbcType=VARCHAR}");
         sql.SET("task_id = #{record.taskId,jdbcType=VARCHAR}");
+        sql.SET("`data` = #{record.data,jdbcType=VARCHAR}");
         sql.SET("`row_count` = #{record.rowCount,jdbcType=INTEGER}");
         sql.SET("column_count = #{record.columnCount,jdbcType=INTEGER}");
         sql.SET("create_by = #{record.createBy,jdbcType=VARCHAR}");
@@ -217,6 +173,10 @@ public class SqlTaskResultSqlProvider {
         
         if (record.getTaskId() != null) {
             sql.SET("task_id = #{taskId,jdbcType=VARCHAR}");
+        }
+        
+        if (record.getData() != null) {
+            sql.SET("`data` = #{data,jdbcType=VARCHAR}");
         }
         
         if (record.getRowCount() != null) {
@@ -245,10 +205,6 @@ public class SqlTaskResultSqlProvider {
         
         if (record.getPermission() != null) {
             sql.SET("permission = #{permission,jdbcType=INTEGER}");
-        }
-        
-        if (record.getData() != null) {
-            sql.SET("`data` = #{data,jdbcType=LONGVARCHAR}");
         }
         
         sql.WHERE("id = #{id,jdbcType=VARCHAR}");

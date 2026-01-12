@@ -18,6 +18,7 @@
 
 package datart.server.controller;
 
+import datart.core.base.consts.AttachmentType;
 import datart.core.common.FileUtils;
 import datart.core.entity.Download;
 import datart.server.base.dto.ResponseData;
@@ -29,6 +30,7 @@ import org.apache.tomcat.util.http.fileupload.util.Streams;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,22 +39,17 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.util.List;
 
-
 @Api
 @RestController
 @RequestMapping(value = "/download")
 public class DownloadController extends BaseController {
 
-    private final DownloadService downloadService;
-
-    public DownloadController(DownloadService downloadService) {
-        this.downloadService = downloadService;
-    }
+    @Resource
+    private DownloadService downloadService;
 
     @ApiOperation(value = "get download tasks")
     @GetMapping(value = "/tasks")
     public ResponseData<List<Download>> listDownloadTasks() {
-        ResponseData.ResponseDataBuilder<List<Download>> builder = ResponseData.builder();
         return ResponseData.success(downloadService.listDownloadTasks());
     }
 
@@ -73,6 +70,12 @@ public class DownloadController extends BaseController {
         try (InputStream inputStream = new FileInputStream(file)) {
             Streams.copy(inputStream, response.getOutputStream(), true);
         }
+    }
+
+    @ApiOperation(value = "sync download file")
+    @GetMapping(value = "/sync/files/{taskId}")
+    public void downloadTaskResultSync(@PathVariable String taskId, @RequestParam AttachmentType downloadType, HttpServletResponse response) {
+        downloadService.downloadTaskResultSync(taskId, downloadType, response);
     }
 
 }

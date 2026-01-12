@@ -115,8 +115,27 @@ export interface ViewViewModel<T = object>
   enableAsyncExecution?: boolean;
   currentTaskErrorMessage?: string;
   isCancelClicked?: boolean;
+  // Data Truncation Fields
+  originalRowCount?: number;
+  displayedRowCount?: number;
+  truncated?: boolean;
   // Spark Resource Isolation Level
   sparkShareLevel?: 'CONNECTION' | 'USER' | 'SERVER';
+  // SQL Browser Cache Fields
+  cacheConflict?: boolean;
+  cacheExpired?: boolean;
+  cacheData?: {
+    script: string;
+    name: string;
+    sourceId: string;
+    updatedAt: number;
+    viewId: string;
+  };
+  // Original server data for conflict resolution
+  originalServerData?: {
+    script: string;
+    sourceId: string;
+  };
 }
 
 export interface QueryResult {
@@ -226,6 +245,9 @@ export interface SqlTaskStatusResponse {
   statusDesc: string;
   taskId: string;
   taskResult: QueryResult;
+  originalRowCount: number;
+  displayedRowCount: number;
+  truncated: boolean;
 }
 
 export interface SqlTaskCancelResponse {

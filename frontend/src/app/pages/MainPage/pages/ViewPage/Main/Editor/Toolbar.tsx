@@ -30,6 +30,7 @@ import { ToolbarButton } from 'app/components';
 import { Chronograph } from 'app/components/Chronograph';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import useResizeObserver from 'app/hooks/useResizeObserver';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { CommonFormTypes } from 'globalConstants';
 import React, {
   memo,
@@ -85,6 +86,7 @@ export const Toolbar = memo(
     const history = useHistory();
     const histState = history.location.state as any;
     const viewsData = useSelector(selectViews);
+    const isFocusMode = useSelector(selectIsFocusMode);
     const t = useI18NPrefix('view.editor');
     const saveAsView = useSaveAsView();
     const startAnalysis = useStartAnalysis();
@@ -124,6 +126,9 @@ export const Toolbar = memo(
     const ViewIndex = useSelector(state =>
       selectCurrentEditingViewAttr(state, { name: 'index' }),
     ) as number;
+    const previewResults = useSelector(state =>
+      selectCurrentEditingViewAttr(state, { name: 'previewResults' }),
+    ) as any[];
     const isArchived = status === ViewStatus.Archived;
     const enableAsyncExecution = useSelector(state =>
       selectCurrentEditingViewAttr(state, { name: 'enableAsyncExecution' }),
@@ -139,7 +144,7 @@ export const Toolbar = memo(
     });
 
     const showSparkShareLevel = useMemo(() => {
-      return width && width > 600;
+      return width && width > 800;
     }, [width]);
 
     // Determine if current data source is Spark
@@ -380,7 +385,8 @@ export const Toolbar = memo(
                 />
               </Tooltip>
             )}
-            {allowManage && (
+            {/* 在专注模式下隐藏详情设置按钮 */}
+            {allowManage && !isFocusMode && (
               <Tooltip title={t('info')} placement="bottom">
                 <ToolbarButton
                   icon={<SettingFilled />}
@@ -406,7 +412,11 @@ export const Toolbar = memo(
             {allowEnableViz && (
               <Tooltip title={t('startAnalysis')} placement="bottom">
                 <ToolbarButton
-                  disabled={isNewView(id)}
+                  disabled={
+                    isNewView(id) ||
+                    (isFocusMode &&
+                      (!previewResults || previewResults.length === 0))
+                  }
                   icon={<MonitorOutlined />}
                   color={INFO}
                   onClick={() => {

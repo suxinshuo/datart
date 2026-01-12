@@ -126,7 +126,7 @@ public class PoiConvertUtils {
             for (int j = tableHeaders.size() - 1; j >= 0; j--) {
                 Column column = tableHeaders.get(j).get(i);
                 if (StringUtils.isNotBlank(column.columnName())) {
-                    column.setName(aliasMap.getOrDefault(column.columnKey(), column.columnName()));
+                    column.setNameExt(aliasMap.getOrDefault(column.columnKey(), column.columnName()));
                     break;
                 }
             }
@@ -246,7 +246,7 @@ public class PoiConvertUtils {
             rowMap.put(key, new ArrayList<>());
         }
         Column column = new Column();
-        column.setName(val.getDisplayName());
+        column.setNameExt(val.getDisplayName());
         column.setType(ValueType.STRING);
         rowMap.get(key).add(column);
         return rowMap.get(key).size() - 1;

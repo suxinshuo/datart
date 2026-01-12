@@ -20,6 +20,7 @@ package datart.server.service.impl;
 import datart.core.base.consts.AttachmentType;
 import datart.core.base.consts.Const;
 import datart.core.base.consts.FileOwner;
+import datart.core.base.exception.BaseException;
 import datart.core.base.exception.Exceptions;
 import datart.core.base.exception.NotAllowedException;
 import datart.core.common.FileUtils;
@@ -27,8 +28,9 @@ import datart.core.common.TaskExecutor;
 import datart.core.common.UUIDGenerator;
 import datart.core.entity.Download;
 import datart.core.mappers.ext.DownloadMapperExt;
+import datart.server.base.bo.download.ExportFile;
 import datart.server.base.params.DownloadCreateParam;
-import datart.server.service.AttachmentService;
+import datart.server.service.download.AttachmentService;
 import datart.server.service.BaseService;
 import datart.server.service.DownloadService;
 import lombok.extern.slf4j.Slf4j;
@@ -37,19 +39,20 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.net.URLEncoder;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
 public class DownloadServiceImpl extends BaseService implements DownloadService {
 
-    private final DownloadMapperExt downloadMapper;
-
-    public DownloadServiceImpl(DownloadMapperExt downloadMapper) {
-        this.downloadMapper = downloadMapper;
-    }
+    @Resource
+    private DownloadMapperExt downloadMapper;
 
     @Override
     public void requirePermission(Download entity, int permission) {
@@ -127,6 +130,32 @@ public class DownloadServiceImpl extends BaseService implements DownloadService 
         download.setStatus((byte) 2);
         downloadMapper.updateByPrimaryKey(download);
         return download;
+    }
+
+    /**
+     * 同步下载任务结果
+     *
+     * @param taskId       SQL 任务 ID
+     * @param downloadType 下载类型
+     * @param response     HttpServletResponse
+     */
+    @Override
+    public void downloadTaskResultSync(String taskId, AttachmentType downloadType, HttpServletResponse response) {
+        log.info("Download task result, taskId: {}, downloadType: {}", taskId, downloadType);
+        AttachmentService attachmentService = AttachmentService.matchAttachmentService(downloadType);
+        ExportFile exportFile = attachmentService.getFile(taskId);
+        if (Objects.isNull(exportFile)) {
+            Exceptions.tr(BaseException.class, "message.system.error");
+        }
+        try {
+            String fileName = exportFile.getFileName();
+            response.setHeader("Content-Type", "application/octet-stream");
+            response.setHeader("Content-Disposition", String.format("attachment;filename=\"%s\"", URLEncoder.encode(fileName, "utf-8")));
+            response.getOutputStream().write(exportFile.getContent());
+        } catch (Exception e) {
+            log.error("Download task result error", e);
+            Exceptions.tr(BaseException.class, "message.system.error");
+        }
     }
 
 }

@@ -63,11 +63,7 @@ public class Column implements Serializable {
         return String.join(".", name);
     }
 
-    public void setName(String name) {
-        this.name = new String[]{name};
-    }
-
-    public void setName(String[] name) {
+    public void setNameExt(String... name) {
         this.name = name;
     }
 

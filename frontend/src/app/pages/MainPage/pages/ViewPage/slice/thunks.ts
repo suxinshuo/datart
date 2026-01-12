@@ -52,7 +52,9 @@ import {
   generateEditingView,
   generateNewEditingViewName,
   getSaveParamsFromViewModel,
+  getSqlFromCache,
   handleObjectScriptToString,
+  isCacheExpired,
   isNewView,
   transformModelToViewModel,
   transformQueryResultToModelAndDataSource,
@@ -119,21 +121,26 @@ export const getViewDetail = createAsyncThunk<
     }
 
     if (isNewView(viewId)) {
-      // Check if there's saved data in local storage for this new view
-      let savedViewData: Partial<ViewViewModel> = {};
-      try {
-        const savedData = localStorage.getItem(`datart_view_${viewId}`);
-        if (savedData) {
-          savedViewData = JSON.parse(savedData);
-        }
-      } catch (error) {
-        console.error('Failed to load view from local storage:', error);
+      // Check SQL cache for this view
+      const cachedSql = getSqlFromCache(viewId);
+      if (cachedSql) {
+        // Use cached name if available, otherwise generate new name
+        const viewName =
+          cachedSql.name || generateNewEditingViewName(editingViews);
+        const newView = generateEditingView({
+          id: viewId,
+          name: viewName,
+          type: 'SQL', // Set type to SQL since it's a SQL view cache
+          script: cachedSql.script,
+          sourceId: cachedSql.sourceId,
+        });
+        dispatch(viewActions.addEditingView(newView));
+        return newView;
       }
 
       const newView = generateEditingView({
         id: viewId,
         name: generateNewEditingViewName(editingViews),
-        ...savedViewData, // Merge saved data if exists
       });
       dispatch(viewActions.addEditingView(newView));
       return newView;
@@ -156,7 +163,72 @@ export const getViewDetail = createAsyncThunk<
     data = migrationViewConfig(data);
     data.config = migrateViewConfig(data.config);
     data.model = beginViewModelMigration(data?.model, data.type);
-    return transformModelToViewModel(data, null, tempViewModel);
+
+    // Check browser cache for SQL content if it's a SQL view
+    let cacheConflict = false;
+    let cacheExpired = false;
+    let cacheData:
+      | {
+          script: string;
+          name: string;
+          sourceId: string;
+          updatedAt: number;
+          viewId: string;
+        }
+      | undefined = undefined;
+
+    if (data.type === 'SQL') {
+      const cachedSql = getSqlFromCache(viewId);
+      if (cachedSql) {
+        // Check if cache content or sourceId is different from backend data (regardless of expiration)
+        const isContentDifferent =
+          cachedSql.script !== data.script ||
+          cachedSql.sourceId !== (data as any).sourceId;
+
+        if (isContentDifferent) {
+          // Compare update times to determine which is newer
+          const date = new Date(
+            (data as any).updateTime.replace(' ', 'T') + '+08:00',
+          );
+          const backendUpdatedAt = date.getTime();
+
+          // Save original server data for conflict resolution
+          const originalServerData = {
+            script: data.script,
+            sourceId: (data as any).sourceId,
+          };
+
+          // Always use local cache for display when there's a conflict
+          (data as any).script = cachedSql.script;
+          (data as any).sourceId = cachedSql.sourceId;
+          (data as any).touched = true;
+
+          if (!(backendUpdatedAt && cachedSql.updatedAt > backendUpdatedAt)) {
+            // Only prompt for conflict if backend data is newer
+            cacheConflict = true;
+            cacheData = cachedSql;
+            (data as any).originalServerData = originalServerData;
+          } else if (isCacheExpired(cachedSql)) {
+            // Only handle expiration if no conflict exists
+            cacheExpired = true;
+            cacheData = cachedSql;
+            // Use cached data for display
+            (data as any).script = cachedSql.script;
+            (data as any).sourceId = cachedSql.sourceId;
+            (data as any).touched = true;
+          }
+        }
+      }
+    }
+
+    const viewModel = transformModelToViewModel(data, null, tempViewModel);
+
+    // Add cache-related fields to the view model
+    viewModel.cacheConflict = cacheConflict;
+    viewModel.cacheExpired = cacheExpired;
+    viewModel.cacheData = cacheData;
+
+    return viewModel;
   },
 );
 
@@ -471,6 +543,9 @@ export const getSqlTaskStatus = createAsyncThunk<
               model: diffMergeHierarchyModel(model, currentEditingView.type!),
               previewResults: dataSource,
               warnings: response.data.taskResult.warnings,
+              originalRowCount: response.data.originalRowCount,
+              displayedRowCount: response.data.displayedRowCount,
+              truncated: response.data.truncated,
             }),
           );
         }

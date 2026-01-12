@@ -180,7 +180,7 @@ public class FileDataProvider extends DefaultDataProvider {
                 ValueType valueType = DataTypeUtils.javaType2DataType(typedValues.get(i));
                 column.setType(valueType);
                 String name = values.get(0).get(i).toString();
-                column.setName(StringUtils.isBlank(values.get(0).get(i).toString()) ? "col" + i : name);
+                column.setNameExt(StringUtils.isBlank(values.get(0).get(i).toString()) ? "col" + i : name);
                 columns.add(column);
             }
             values.remove(0);
@@ -189,7 +189,7 @@ public class FileDataProvider extends DefaultDataProvider {
                 Column column = new Column();
                 ValueType valueType = DataTypeUtils.javaType2DataType(typedValues.get(i));
                 column.setType(valueType);
-                column.setName("column" + i);
+                column.setNameExt("column" + i);
                 columns.add(column);
             }
         }

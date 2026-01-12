@@ -37,11 +37,10 @@ import datart.core.common.RequestContext;
 import datart.core.data.provider.*;
 import datart.core.entity.RelSubjectColumns;
 import datart.core.entity.Source;
-import datart.core.entity.SqlTaskResult;
 import datart.core.entity.View;
 import datart.core.mappers.ext.RelSubjectColumnsMapperExt;
-import datart.core.utils.JsonUtils;
 import datart.security.util.AESUtil;
+import datart.server.base.bo.task.SqlTaskResultBo;
 import datart.server.base.dto.VariableValue;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.base.params.ViewExecuteParam;
@@ -289,11 +288,11 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             if (StringUtils.isBlank(sqlTaskId)) {
                 Exceptions.tr(BaseException.class, "message.source.task.not-found");
             } else {
-                List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(sqlTaskId);
-                if (CollUtil.isEmpty(sqlTaskResults) || StringUtils.isBlank(sqlTaskResults.get(0).getData())) {
+                List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(sqlTaskId);
+                if (CollUtil.isEmpty(sqlTaskResults) || Objects.isNull(sqlTaskResults.get(0).getDataframe())) {
                     Exceptions.tr(BaseException.class, "message.source.task.not-found");
                 }
-                sqlTaskResult = JsonUtils.toBean(sqlTaskResults.get(0).getData(), Dataframe.class);
+                sqlTaskResult = sqlTaskResults.get(0).getDataframe();
             }
         }
 

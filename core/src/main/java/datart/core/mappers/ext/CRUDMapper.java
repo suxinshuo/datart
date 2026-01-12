@@ -43,6 +43,10 @@ public interface CRUDMapper extends BaseMapper {
 
     int updateByPrimaryKeySelective(BaseEntity record);
 
+    default int insertSelective(BaseEntity record) {
+        return insert(record);
+    }
+
     default boolean exists(String id) {
         SQL sql = new SQL();
         sql.SELECT("COUNT(*)").FROM(getTableName()).WHERE("`id` = ?");

@@ -298,6 +298,26 @@ export async function downloadShareDataChartFile(
   dealFileSave(data, headers);
 }
 
+/**
+ * Download task result synchronously
+ * @param taskId Task ID
+ * @param downloadType Download type, can be 'EXCEL' or 'CSV'
+ */
+export async function downloadTaskResultSync(
+  taskId: string,
+  downloadType: 'EXCEL' | 'CSV',
+) {
+  const [data, headers] = (await requestWithHeader({
+    url: `download/sync/files/${taskId}`,
+    method: 'GET',
+    responseType: 'blob',
+    params: {
+      downloadType,
+    },
+  })) as any;
+  dealFileSave(data, headers);
+}
+
 export async function fetchCheckName(url, data: any) {
   return await request2({
     url: `/${url}/check/name`,

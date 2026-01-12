@@ -32,4 +32,9 @@ public class SqlTaskLogServiceImpl extends BaseService implements SqlTaskLogServ
         example.createCriteria().andTaskIdEqualTo(taskId);
         return sqlTaskLogMapper.selectByExampleWithBLOBs(example);
     }
+
+    @Override
+    public void requirePermission(SqlTaskLog entity, int permission) {
+
+    }
 }

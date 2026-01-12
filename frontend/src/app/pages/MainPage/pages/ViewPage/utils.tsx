@@ -26,6 +26,8 @@ import { getDiffParams, getTextWidth } from 'utils/utils';
 import {
   ColumnCategories,
   DEFAULT_PREVIEW_SIZE,
+  SQL_CACHE_EXPIRE_TIME,
+  SQL_CACHE_KEY_PREFIX,
   UNPERSISTED_ID_PREFIX,
   ViewViewModelStages,
 } from './constants';
@@ -262,6 +264,7 @@ export function getSaveParamsFromViewModel(
     columnPermissions,
     index,
     type,
+    currentTaskId,
   } = editingView;
 
   if (isUpdate) {
@@ -354,6 +357,7 @@ export function getSaveParamsFromViewModel(
         ...cp,
         columnPermission: JSON.stringify(cp.columnPermission),
       })),
+      sqlTaskId: currentTaskId,
     };
   }
 }
@@ -504,7 +508,11 @@ export function buildAntdTreeNodeModel<T extends TreeDataNode & { value: any }>(
   const TREE_HIERARCHY_SEPERATOR = String.fromCharCode(0);
   const fullNames = ancestors.concat(nodeName);
   return {
-    key: fullNames.join(TREE_HIERARCHY_SEPERATOR),
+    // 添加后缀随机数, 避免key重复
+    key:
+      fullNames.join(TREE_HIERARCHY_SEPERATOR) +
+      '_' +
+      Math.random().toString(36),
     title: nodeName,
     value: fullNames,
     children,
@@ -641,4 +649,85 @@ export const getTableAllColumns = (
             return v.name[0];
           });
   return column || [];
+};
+
+// SQL Browser Cache Utilities
+interface SqlCacheData {
+  script: string;
+  name: string;
+  sourceId: string;
+  updatedAt: number;
+  viewId: string;
+}
+
+export const saveSqlToCache = (
+  viewId: string,
+  script: string,
+  name?: string,
+  sourceId?: string,
+): void => {
+  try {
+    const cacheData: SqlCacheData = {
+      script,
+      name: name || '',
+      sourceId: sourceId || '',
+      updatedAt: Date.now(),
+      viewId,
+    };
+    localStorage.setItem(
+      `${SQL_CACHE_KEY_PREFIX}${viewId}`,
+      JSON.stringify(cacheData),
+    );
+  } catch (error) {
+    console.error('Failed to save SQL to cache:', error);
+  }
+};
+
+export const getSqlFromCache = (viewId: string): SqlCacheData | null => {
+  try {
+    const cachedData = localStorage.getItem(`${SQL_CACHE_KEY_PREFIX}${viewId}`);
+    if (cachedData) {
+      return JSON.parse(cachedData) as SqlCacheData;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get SQL from cache:', error);
+    return null;
+  }
+};
+
+export const isCacheExpired = (cacheData: SqlCacheData): boolean => {
+  return Date.now() - cacheData.updatedAt > SQL_CACHE_EXPIRE_TIME;
+};
+
+export const deleteSqlFromCache = (viewId: string): void => {
+  try {
+    localStorage.removeItem(`${SQL_CACHE_KEY_PREFIX}${viewId}`);
+  } catch (error) {
+    console.error('Failed to delete SQL from cache:', error);
+  }
+};
+
+export const getAllSqlFromCache = (): SqlCacheData[] => {
+  try {
+    const cachedViews: SqlCacheData[] = [];
+
+    // Iterate through all localStorage keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(SQL_CACHE_KEY_PREFIX)) {
+        // Extract viewId from the key
+        const viewId = key.replace(SQL_CACHE_KEY_PREFIX, '');
+        const cachedData = getSqlFromCache(viewId);
+        if (cachedData) {
+          cachedViews.push(cachedData);
+        }
+      }
+    }
+
+    return cachedViews;
+  } catch (error) {
+    console.error('Failed to get all SQL from cache:', error);
+    return [];
+  }
 };

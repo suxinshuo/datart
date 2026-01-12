@@ -17,15 +17,14 @@
  */
 package datart.server.service.task.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
-import cn.hutool.json.JSON;
+import com.github.pagehelper.PageHelper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import datart.core.bo.task.QueueTaskBo;
-import datart.core.bo.task.RunningTaskBo;
-import datart.core.bo.task.SqlTaskChecker;
-import datart.core.bo.task.SqlTaskConsumerChecker;
+import datart.core.base.consts.Const;
+import datart.server.base.bo.task.*;
 import datart.core.common.CommonVarUtils;
 import datart.core.entity.enums.SqlTaskExecuteType;
 import datart.core.entity.enums.SqlTaskProgress;
@@ -38,6 +37,8 @@ import datart.core.mappers.SqlTaskMapper;
 import datart.core.utils.JsonUtils;
 import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
+import datart.server.base.params.task.SqlTaskResultCreateParam;
+import datart.server.config.SqlTaskConfig;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
 import datart.server.service.task.SqlTaskLogService;
@@ -47,11 +48,11 @@ import datart.server.service.SourceService;
 import datart.server.service.task.factory.SqlTaskFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -92,27 +93,21 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     @Resource
     private SqlTaskFactory sqlTaskFactory;
 
-    @Value("${datart.task.consumer.count:4}")
-    private int consumerCount;
-
     @Resource(name = "sqlTaskExecutor")
     private ThreadPoolTaskExecutor sqlTaskExecutor;
 
-    @Value("${datart.task.queue_capacity:100}")
-    private int queueCapacity;
-
-    @Value("${datart.task.execution.max_time:600000}")
-    private long maxRunningTime;
+    @Resource
+    private SqlTaskConfig sqlTaskConfig;
 
     /**
      * 初始化任务执行器
      */
     @PostConstruct
     public void init() {
-        taskQueue = new PriorityBlockingQueue<>(queueCapacity, (o1, o2) ->
+        taskQueue = new PriorityBlockingQueue<>(sqlTaskConfig.getQueueCapacity(), (o1, o2) ->
                 o2.getSqlTask().getPriority() - o1.getSqlTask().getPriority());
         // 启动任务执行线程
-        for (int i = 0; i < consumerCount; i++) {
+        for (int i = 0; i < sqlTaskConfig.getConsumerCount(); i++) {
             sqlTaskExecutor.execute(this::processTasks);
         }
 
@@ -121,14 +116,14 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 runningTasks,
                 cancelTasks,
                 sqlTaskMapper,
-                maxRunningTime,
+                sqlTaskConfig.getMaxRunningTime(),
                 this::cancelSqlTask
         )).start();
 
         // 启动一个线程, 检查 consumer 数量
         new Thread(new SqlTaskConsumerChecker(
                 sqlTaskExecutor,
-                consumerCount,
+                sqlTaskConfig.getConsumerCount(),
                 this::processTasks
         )).start();
     }
@@ -182,7 +177,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         task.setScriptType(executeParam.getScriptType().name());
         task.setStatus(SqlTaskStatus.QUEUED.getCode());
         task.setPriority(executeParam.getPriority());
-        task.setTimeout((int) maxRunningTime);
+        task.setTimeout((int) sqlTaskConfig.getMaxRunningTime());
         task.setMaxSize(executeParam.getSize());
         task.setOrgId(source.getOrgId());
         task.setExecuteParam(JsonUtils.toJsonStr(executeParam));
@@ -216,7 +211,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     @Override
     public SqlTaskStatusResponse getSqlTaskStatus(String taskId) {
         // 从数据库查询任务信息
-        SqlTaskWithBLOBs task = sqlTaskMapper.selectByPrimaryKey(taskId);
+        SqlTaskWithBLOBs task = retrieveNoExp(taskId, SqlTaskWithBLOBs.class, false);
 
         if (Objects.isNull(task)) {
             SqlTaskStatusResponse response = new SqlTaskStatusResponse();
@@ -230,24 +225,41 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         String statusStr = task.getStatus();
         SqlTaskStatus status = SqlTaskStatus.fromCode(statusStr);
 
-        SqlTaskStatusResponse response = new SqlTaskStatusResponse();
-        response.setTaskId(task.getId());
+        SqlTaskStatusResponse response = sqlTaskFactory.getSqlTaskStatusResponse(task);
         response.setStatus(status.getCode());
         response.setStatusDesc(status.getDesc());
-        response.setCreateBy(task.getCreateBy());
-        response.setCreateTime(task.getCreateTime());
-        response.setStartTime(task.getStartTime());
-        response.setEndTime(task.getEndTime());
-        response.setDuration(task.getDuration());
-        response.setProgress(task.getProgress());
 
         // 如果任务执行成功, 返回结果
         if (SqlTaskStatus.SUCCESS.equals(status)) {
             // 从数据库查询结果
-            List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+            List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
             if (CollUtil.isNotEmpty(sqlTaskResults)) {
-                String resultData = sqlTaskResults.get(0).getData();
-                response.setTaskResult(JsonUtils.toBean(resultData, JSON.class));
+                Dataframe dataframe = sqlTaskResults.get(0).getDataframe();
+                int columnCount = dataframe.getColumns().size();
+                int rowCount = dataframe.getRows().size();
+                int totalCells = columnCount * rowCount;
+
+                if (totalCells > Const.SQL_RESULT_SHOW_MAX_CELLS) {
+                    // 超过限制, 需要截断
+                    int maxRows = Const.SQL_RESULT_SHOW_MAX_CELLS / columnCount;
+                    List<List<Object>> truncatedRows = dataframe.getRows().subList(0, Math.min(maxRows, rowCount));
+                    
+                    // 创建新的 Dataframe 对象
+                    Dataframe truncatedDataframe = new Dataframe(dataframe.getId());
+                    BeanUtil.copyProperties(dataframe, truncatedDataframe);
+                    truncatedDataframe.setRows(truncatedRows);
+
+                    response.setTaskResult(truncatedDataframe);
+                    response.setOriginalRowCount(rowCount);
+                    response.setDisplayedRowCount(truncatedRows.size());
+                    response.setTruncated(true);
+                } else {
+                    // 未超过限制, 直接返回
+                    response.setTaskResult(dataframe);
+                    response.setOriginalRowCount(rowCount);
+                    response.setDisplayedRowCount(rowCount);
+                    response.setTruncated(false);
+                }
             }
         } else if (SqlTaskStatus.FAILED.equals(status)) {
             // 如果任务执行失败, 返回错误信息
@@ -293,6 +305,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 .andExecuteTypeEqualTo(SqlTaskExecuteType.AD_HOC.getCode());
         sqlTaskExample.setOrderByClause("`create_time` DESC");
 
+        PageHelper.startPage(1, 300);
         List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
         if (CollUtil.isEmpty(sqlTasks)) {
             return Lists.newArrayList();
@@ -318,6 +331,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 .andViewIdEqualTo(viewId);
         sqlTaskExample.setOrderByClause("`create_time` DESC");
 
+        PageHelper.startPage(1, 10);
         List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
         if (CollUtil.isEmpty(sqlTasks)) {
             return Lists.newArrayList();
@@ -335,13 +349,12 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
      */
     @Override
     public SqlTaskResultStrResponse getSqlTaskResult(String taskId) {
-        List<SqlTaskResult> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+        List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
         if (CollUtil.isEmpty(sqlTaskResults)) {
             return new SqlTaskResultStrResponse("");
         }
-        String resultData = sqlTaskResults.get(0).getData();
         try {
-            Dataframe dataframe = JsonUtils.toBean(resultData, Dataframe.class);
+            Dataframe dataframe = sqlTaskResults.get(0).getDataframe();
             // dataframe 转 字符串 格式
             StringJoiner columnSj = new StringJoiner(",", "=== 列名(以','分隔) ===\n", "");
             dataframe.getColumns().stream().map(c -> {
@@ -351,7 +364,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 return "";
             }).forEach(columnSj::add);
 
-             StringJoiner rowSj = new StringJoiner("\n", "=== 数据(以'|'分隔列) ===\n", "");
+            StringJoiner rowSj = new StringJoiner("\n", "=== 数据(以'|'分隔列) ===\n", "");
             dataframe.getRows().stream().map(line -> {
                 return line.stream().map(col -> {
                     if (Objects.nonNull(col)) {
@@ -371,7 +384,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     @Override
     public void updateTaskProgress(String taskId, Integer progress) {
         // 查询当前进度
-        SqlTaskWithBLOBs sqlTask = sqlTaskMapper.selectByPrimaryKey(taskId);
+        SqlTaskWithBLOBs sqlTask = retrieveNoExp(taskId, SqlTaskWithBLOBs.class, false);
         Integer oldProgress = sqlTask.getProgress();
         if (progress <= oldProgress) {
             // 要更新的进度 <= 当前进度, 不更新
@@ -390,6 +403,20 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         sqlTaskMapper.updateByExampleSelective(updateSqlTask, example);
     }
 
+    @Override
+    public void safeUpdateViewIdSafe(String taskId, String viewId) {
+        SqlTaskExample whereExample = new SqlTaskExample();
+        whereExample.createCriteria()
+                .andIdEqualTo(taskId)
+                .andViewIdIsNull();
+
+        SqlTaskWithBLOBs updateSqlTask = new SqlTaskWithBLOBs();
+        updateSqlTask.setViewId(viewId);
+        updateSqlTask.setUpdateBy(getCurrentUser().getId());
+        updateSqlTask.setUpdateTime(new Date());
+        sqlTaskMapper.updateByExampleSelective(updateSqlTask, whereExample);
+    }
+
     private void cancelSqlTask(String taskId, SqlTaskFailType failType) {
         cancelSqlTask(taskId, failType, SystemConstant.SYSTEM_USER_ID);
     }
@@ -397,7 +424,11 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     private void cancelSqlTask(String taskId, SqlTaskFailType failType, String operatorUserId) {
         log.info("取消任务执行, taskId: {}, failType: {}", taskId, failType);
         // 从数据库查询任务信息
-        SqlTaskWithBLOBs task = sqlTaskMapper.selectByPrimaryKey(taskId);
+        SqlTaskWithBLOBs task = retrieveNoExp(taskId, SqlTaskWithBLOBs.class, false);
+        if (Objects.isNull(task)) {
+            log.warn("任务({}) 不存在", taskId);
+            return;
+        }
 
         // 更新任务状态为失败
         Date endTime = new Date();
@@ -412,21 +443,8 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         // 更新任务信息到数据库
         sqlTaskMapper.updateByPrimaryKeySelective(task);
 
-        // 尝试中断执行线程
-        if (runningTasks.containsKey(taskId)) {
-            RunningTaskBo runningTask = runningTasks.remove(taskId);
-            cancelTasks.put(taskId, System.currentTimeMillis());
-            Thread runningThread = runningTask.getRunThread();
-            if (Objects.nonNull(runningThread) && runningThread.isAlive()) {
-                try {
-                    runningThread.interrupt();
-                } catch (Exception e) {
-                    log.error("Cancel task error. taskId: {}", taskId, e);
-                }
-            }
-        }
-        // 并且中断线程中对应的 statement 执行
-        AtomicReference<Statement> statementAtomicReference = CommonVarUtils.SQL_STATEMENTS.remove(taskId);
+        // 尝试中断线程中对应的 statement 执行
+        AtomicReference<Statement> statementAtomicReference = CommonVarUtils.removeSqlStatement(taskId);
         if (Objects.isNull(statementAtomicReference)) {
             return;
         }
@@ -439,6 +457,20 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
             log.info("任务({}) Statement 执行已取消", taskId);
         } catch (Exception e) {
             log.error("Cancel task error. taskId: {}", taskId, e);
+        }
+
+        // 尝试中断执行线程
+        if (runningTasks.containsKey(taskId)) {
+            RunningTaskBo runningTask = runningTasks.remove(taskId);
+            cancelTasks.put(taskId, System.currentTimeMillis());
+            Thread runningThread = runningTask.getRunThread();
+            if (Objects.nonNull(runningThread) && runningThread.isAlive()) {
+                try {
+                    runningThread.interrupt();
+                } catch (Exception e) {
+                    log.error("Cancel task error. taskId: {}", taskId, e);
+                }
+            }
         }
     }
 
@@ -479,16 +511,12 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 Date endDate = new Date();
 
                 // 保存执行结果
-                SqlTaskResult result = new SqlTaskResult();
-                result.setId(UUIDGenerator.generate());
-                result.setTaskId(task.getId());
-                // 将 Dataframe 转换为 JSON 字符串
-                result.setData(JsonUtils.toJsonStr(dataframe));
-                result.setRowCount(dataframe.getRows().size());
-                result.setColumnCount(dataframe.getColumns().size());
-                result.setCreateBy(task.getCreateBy());
-                result.setCreateTime(endDate);
-                sqlTaskResultService.insertSelective(result);
+                SqlTaskResultCreateParam createParam = new SqlTaskResultCreateParam();
+                createParam.setTaskId(task.getId());
+                createParam.setDataframe(dataframe);
+                createParam.setRowCount(dataframe.getRows().size());
+                createParam.setColumnCount(dataframe.getColumns().size());
+                sqlTaskResultService.createSelective(createParam);
 
                 // 更新任务状态为成功
                 task.setStatus(SqlTaskStatus.SUCCESS.getCode());
@@ -498,9 +526,12 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 task.setUpdateBy(SystemConstant.SYSTEM_USER_ID);
                 task.setUpdateTime(endDate);
                 sqlTaskMapper.updateByPrimaryKeySelective(task);
-            } catch (Exception e) {
-                if ((e instanceof InterruptedException)
-                        || (Objects.nonNull(task) && cancelTasks.containsKey(task.getId()))) {
+            } catch (Throwable e) {
+                boolean interrupted = Thread.currentThread().isInterrupted()
+                        || isInterruptedException(e)
+                        || (Objects.nonNull(task) && cancelTasks.containsKey(task.getId()));
+
+                if (interrupted) {
                     Thread.currentThread().interrupt();
                     log.info("当前线程被中断/任务被取消, task: {}", task);
                     break;
@@ -512,7 +543,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 }
 
                 // 如果之前已经更新为手动终止, 则不更新状态
-                SqlTaskWithBLOBs nowTask = sqlTaskMapper.selectByPrimaryKey(task.getId());
+                SqlTaskWithBLOBs nowTask = retrieveNoExp(task.getId(), SqlTaskWithBLOBs.class, false);
                 SqlTaskFailType nowSqlTaskFailType = SqlTaskFailType.fromCode(nowTask.getFailType());
                 if (Objects.equals(SqlTaskStatus.FAILED.getCode(), nowTask.getStatus())
                         && SqlTaskFailType.getManualTypes().contains(nowSqlTaskFailType)) {
@@ -541,8 +572,28 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         }
     }
 
+    @Override
+    public void requirePermission(SqlTaskWithBLOBs entity, int permission) {
+
+    }
+
     private String getInstantId() {
         return NetUtil.getLocalHostName();
+    }
+
+    private boolean isInterruptedException(Throwable e) {
+        Throwable cur = e;
+        while (cur != null) {
+            if (cur instanceof InterruptedException) {
+                return true;
+            }
+            // JDBC / Druid 常见特征
+            if (cur instanceof SQLException && cur.getMessage() != null && cur.getMessage().toLowerCase().contains("interrupt")) {
+                return true;
+            }
+            cur = cur.getCause();
+        }
+        return false;
     }
 
 }

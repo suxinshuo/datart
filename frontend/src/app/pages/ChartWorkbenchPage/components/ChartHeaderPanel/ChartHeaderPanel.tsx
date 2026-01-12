@@ -25,9 +25,11 @@ import { DownloadListPopup } from 'app/pages/MainPage/Navbar/DownloadListPopup';
 import { loadTasks } from 'app/pages/MainPage/Navbar/service';
 import { selectHasVizFetched } from 'app/pages/MainPage/pages/VizPage/slice/selectors';
 import { getFolders } from 'app/pages/MainPage/pages/VizPage/slice/thunks';
+import { selectIsFocusMode } from 'app/pages/MainPage/slice/focusModeSelectors';
 import { downloadFile } from 'app/utils/fetch';
-import { FC, memo, useCallback, useEffect, useState } from 'react';
+import { FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router';
 import styled from 'styled-components/macro';
 import {
   FONT_SIZE_ICON_SM,
@@ -67,11 +69,19 @@ const ChartHeaderPanel: FC<{
     const backendChart = useSelector(backendChartSelector);
     const currentDataView = useSelector(currentDataViewSelector);
     const downloadPolling = useSelector(selectChartEditorDownloadPolling);
+    const isFocusMode = useSelector(selectIsFocusMode); // 获取专注模式状态
+    const location = useLocation(); // 获取location对象
     const dispatch = useDispatch();
     const { actions } = useWorkbenchSlice();
 
-    // 静态分析相关状态
-    const [staticAnalysis, setStaticAnalysis] = useState<boolean>(true);
+    // 解析URL参数，判断是否从编辑器跳转过来
+    const isFromEditor = useMemo(() => {
+      const searchParams = new URLSearchParams(location.search);
+      return !!searchParams.get('defaultViewId');
+    }, [location.search]);
+
+    // 静态分析相关状态，从编辑器跳转时默认启用
+    const [staticAnalysis, setStaticAnalysis] = useState<boolean>(isFromEditor);
     const [sqlTaskId, setSqlTaskId] = useState<string>('');
     const [sqlTaskHistory, setSqlTaskHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
@@ -164,87 +174,107 @@ const ChartHeaderPanel: FC<{
       <Wrapper>
         <h1>{chartName}</h1>
         <Space>
-          {/* SQL任务历史下拉菜单 */}
-          {staticAnalysis && (
-            <Select
-              value={sqlTaskId}
-              onChange={handleSqlTaskIdChange}
-              loading={loadingHistory}
-              placeholder={t('selectHistoricalExecutionResult')}
-              style={{ width: 300 }}
-            >
-              {sqlTaskHistory.map(task => (
-                <Select.Option key={task.id} value={task.id}>
-                  {new Date(task.submitTime).toLocaleString()} - {task.status}
-                </Select.Option>
-              ))}
-            </Select>
-          )}
+          {/* 在专注模式下隐藏基于历史执行结果分析相关功能 */}
+          {!isFocusMode && (
+            <>
+              {/* SQL任务历史下拉菜单 */}
+              {staticAnalysis && (
+                <Select
+                  value={sqlTaskId}
+                  onChange={handleSqlTaskIdChange}
+                  loading={loadingHistory}
+                  placeholder={t('selectHistoricalExecutionResult')}
+                  style={{ width: 300 }}
+                >
+                  {sqlTaskHistory.map(task => (
+                    <Select.Option key={task.id} value={task.id}>
+                      {new Date(task.submitTime).toLocaleString()} -
+                      {task.status}
+                    </Select.Option>
+                  ))}
+                </Select>
+              )}
 
-          {/* 基于历史执行结果分析 */}
-          <Space align="center">
-            <Tooltip title={t('analysisBasedStatic')}>
-              <Switch
-                checked={staticAnalysis}
-                onChange={handleStaticAnalysisChange}
-              />
-            </Tooltip>
-            <span>{t('analysisBasedStatic')}</span>
-          </Space>
+              {/* 基于历史执行结果分析 */}
+              <Space align="center">
+                <Tooltip title={t('analysisBasedStatic')}>
+                  <Switch
+                    checked={staticAnalysis}
+                    onChange={handleStaticAnalysisChange}
+                  />
+                </Tooltip>
+                <span>{t('analysisBasedStatic')}</span>
+              </Space>
 
-          <DownloadListPopup
-            polling={downloadPolling}
-            setPolling={onSetPolling}
-            onLoadTasks={loadTasks}
-            onDownloadFile={item => {
-              if (item.id) {
-                downloadFile(item.id).then(() => {
-                  dispatch(actions.setChartEditorDownloadPolling(true));
-                });
-              }
-            }}
-            renderDom={
-              <Button icon={<DownloadOutlined />}>{t('downloadList')}</Button>
-            }
-          />
-          <Button onClick={onGoBack}>{t('cancel')}</Button>
-          <Tooltip
-            title={staticAnalysis ? t('analysisBasedStaticTip') : undefined}
-            placement="bottom"
-          >
-            <Button
-              type="primary"
-              onClick={onSaveChart}
-              disabled={staticAnalysis}
-            >
-              {t('save')}
-            </Button>
-          </Tooltip>
-          {!(container === 'widget') && (
-            <Tooltip
-              title={staticAnalysis ? t('analysisBasedStaticTip') : undefined}
-              placement="bottom"
-            >
-              <Button
-                type="primary"
-                onClick={() => {
-                  setIsModalVisible(true);
+              <DownloadListPopup
+                polling={downloadPolling}
+                setPolling={onSetPolling}
+                onLoadTasks={loadTasks}
+                onDownloadFile={item => {
+                  if (item.id) {
+                    downloadFile(item.id).then(() => {
+                      dispatch(actions.setChartEditorDownloadPolling(true));
+                    });
+                  }
                 }}
-                disabled={staticAnalysis}
-              >
-                {t('saveToDashboard')}
-              </Button>
-            </Tooltip>
+                renderDom={
+                  <Button icon={<DownloadOutlined />}>
+                    {t('downloadList')}
+                  </Button>
+                }
+              />
+            </>
           )}
-          <SaveToDashboard
-            orgId={orgId as string}
-            title={t('saveToDashboard')}
-            isModalVisible={isModalVisible}
-            backendChartId={backendChart?.id}
-            handleOk={handleModalOk}
-            handleCancel={handleModalCancel}
-            handleOpen={handleModalOpen}
-          ></SaveToDashboard>
+
+          {/* 在专注模式下将"取消"重命名为"返回至查询界面" */}
+          <Button onClick={onGoBack}>
+            {isFocusMode ? t('returnToQueryInterface') : t('cancel')}
+          </Button>
+
+          {/* 在专注模式下隐藏保存和保存到仪表板按钮 */}
+          {!isFocusMode && (
+            <>
+              <Tooltip
+                title={staticAnalysis ? t('analysisBasedStaticTip') : undefined}
+                placement="bottom"
+              >
+                <Button
+                  type="primary"
+                  onClick={onSaveChart}
+                  disabled={staticAnalysis}
+                >
+                  {t('save')}
+                </Button>
+              </Tooltip>
+              {!(container === 'widget') && (
+                <Tooltip
+                  title={
+                    staticAnalysis ? t('analysisBasedStaticTip') : undefined
+                  }
+                  placement="bottom"
+                >
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsModalVisible(true);
+                    }}
+                    disabled={staticAnalysis}
+                  >
+                    {t('saveToDashboard')}
+                  </Button>
+                </Tooltip>
+              )}
+              <SaveToDashboard
+                orgId={orgId as string}
+                title={t('saveToDashboard')}
+                isModalVisible={isModalVisible}
+                backendChartId={backendChart?.id}
+                handleOk={handleModalOk}
+                handleCancel={handleModalCancel}
+                handleOpen={handleModalOpen}
+              ></SaveToDashboard>
+            </>
+          )}
         </Space>
       </Wrapper>
     );

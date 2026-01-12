@@ -2,9 +2,9 @@ package datart.server.service.assistant.impl;
 
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
-import datart.core.bo.assistant.DifyLLMAssistantRequestBo;
-import datart.core.bo.assistant.DifyRequestBo;
-import datart.core.bo.assistant.DifyResponseBo;
+import datart.server.base.bo.assistant.DifyLLMAssistantRequestBo;
+import datart.server.base.bo.assistant.DifyRequestBo;
+import datart.server.base.bo.assistant.DifyResponseBo;
 import datart.core.utils.JsonUtils;
 import datart.server.base.params.SqlAssistantChatParam;
 import datart.server.service.BaseService;

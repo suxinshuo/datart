@@ -415,6 +415,7 @@
         "open": "开启",
         "close": "关闭",
         "cancel": "取消",
+        "returnToQueryInterface": "返回至查询界面",
         "downloadList": "下载列表",
         "lang": {
           "zh": "中文",
@@ -1228,6 +1229,10 @@
       "empty": "请在左侧列表选择可视化",
       "closeOther": "关闭其他",
       "closeAll": "关闭所有"
+    },
+    "focusMode": {
+      "enter": "已进入专注模式，使用ESC键返回普通模式",
+      "exit": "已进入普通模式，使用Command+B/Control+B键返回专注模式"
     }
   },
   "view": {
@@ -1236,6 +1241,10 @@
     "empty": "请在左侧列表选择数据视图",
     "resultEmpty1": "请点击 ",
     "resultEmpty2": " 按钮执行，运行结果将在此处展示",
+    "columnFilter": "列筛选",
+    "selectAll": "全选",
+    "search": "搜索",
+    "noColumnsFound": "未找到匹配的列",
     "errorTitle": "执行错误",
     "sqlRequired": "SQL 语句不能为空",
     "structQueryRequired": "结构化查询语句不能为空",
@@ -1260,6 +1269,24 @@
     },
     "sqlExecutionCancelled": "SQL 执行已取消",
     "saveInProgress": "正在保存数据视图，暂不允许执行查询",
+    "data": {
+      "total": "数据总量{{total}}行",
+      "displayed": "当前仅展示前{{displayed}}行数据",
+      "download": "详细请下载查看"
+    },
+    "download": {
+      "name": "下载",
+      "error": {
+        "taskIdMissing": "任务 ID 缺失",
+        "invalidFileType": "无效的文件类型",
+        "failed": "下载失败"
+      },
+      "success": "下载成功",
+      "type": {
+        "excel": "EXCEL",
+        "csv": "CSV"
+      }
+    },
     "tabs": {
       "discard": "放弃",
       "cancel": "取消",
@@ -1291,6 +1318,20 @@
         "USER_DESC": "每个用户独立资源",
         "SERVER_DESC": "所有用户共享资源"
       }
+    },
+    "cacheDialog": {
+      "conflictTitle": "数据冲突",
+      "expiredTitle": "缓存已过期",
+      "conflictDescription": "本地缓存与服务器数据不一致，请选择使用哪个版本：",
+      "expiredDescription": "上次编辑未保存，是否需要保存？",
+      "localCache": "本地缓存",
+      "remoteData": "服务器数据",
+      "useLocalCache": "使用本地缓存",
+      "useRemoteData": "使用服务器数据",
+      "useLocalCacheSuccess": "已使用本地缓存数据",
+      "useRemoteDataSuccess": "已使用服务器数据",
+      "save": "保存",
+      "cancel": "取消"
     },
     "properties": {
       "reference": "数据源信息",
@@ -1341,7 +1382,12 @@
       "search": "搜索数据库 / 表 / 字段关键字",
       "sortType": "排序方式",
       "byName": "按名称",
-      "byField": "按字段"
+      "byField": "按字段",
+      "fillMode": "选择填充方式",
+      "dbTable": "库名.表名",
+      "selectStatement": "SELECT语句",
+      "confirm": "确定",
+      "cancel": "取消"
     },
     "variable": {
       "title": "变量配置",

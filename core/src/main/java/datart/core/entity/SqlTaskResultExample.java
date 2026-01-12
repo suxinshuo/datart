@@ -245,6 +245,76 @@ public class SqlTaskResultExample {
             return (Criteria) this;
         }
 
+        public Criteria andDataIsNull() {
+            addCriterion("`data` is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataIsNotNull() {
+            addCriterion("`data` is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataEqualTo(String value) {
+            addCriterion("`data` =", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataNotEqualTo(String value) {
+            addCriterion("`data` <>", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataGreaterThan(String value) {
+            addCriterion("`data` >", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataGreaterThanOrEqualTo(String value) {
+            addCriterion("`data` >=", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataLessThan(String value) {
+            addCriterion("`data` <", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataLessThanOrEqualTo(String value) {
+            addCriterion("`data` <=", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataLike(String value) {
+            addCriterion("`data` like", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataNotLike(String value) {
+            addCriterion("`data` not like", value, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataIn(List<String> values) {
+            addCriterion("`data` in", values, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataNotIn(List<String> values) {
+            addCriterion("`data` not in", values, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataBetween(String value1, String value2) {
+            addCriterion("`data` between", value1, value2, "data");
+            return (Criteria) this;
+        }
+
+        public Criteria andDataNotBetween(String value1, String value2) {
+            addCriterion("`data` not between", value1, value2, "data");
+            return (Criteria) this;
+        }
+
         public Criteria andRowCountIsNull() {
             addCriterion("`row_count` is null");
             return (Criteria) this;

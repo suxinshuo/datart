@@ -1,4 +1,4 @@
-package datart.core.bo.task;
+package datart.server.base.bo.task;
 
 import cn.hutool.core.collection.CollUtil;
 import datart.core.entity.enums.SqlTaskFailType;

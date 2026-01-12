@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import datart.core.entity.SqlTaskWithBLOBs;
 import datart.core.entity.enums.SqlTaskFailType;
 import datart.server.base.dto.task.SqlTaskHistoryResponse;
+import datart.server.base.dto.task.SqlTaskStatusResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -29,6 +30,18 @@ public class SqlTaskFactory {
         }
 
         return sqlTaskHistoryResponse;
+    }
+
+    public SqlTaskStatusResponse getSqlTaskStatusResponse(SqlTaskWithBLOBs task) {
+        SqlTaskStatusResponse response = new SqlTaskStatusResponse();
+        response.setTaskId(task.getId());
+        response.setCreateBy(task.getCreateBy());
+        response.setCreateTime(task.getCreateTime());
+        response.setStartTime(task.getStartTime());
+        response.setEndTime(task.getEndTime());
+        response.setDuration(task.getDuration());
+        response.setProgress(task.getProgress());
+        return response;
     }
 
 }

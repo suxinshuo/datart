@@ -417,6 +417,7 @@
         "open": "Open",
         "close": "Close",
         "cancel": "Cancel",
+        "returnToQueryInterface": "Return to query interface",
         "downloadList": "Download list",
         "lang": {
           "zh": "zh",
@@ -1229,6 +1230,10 @@
       "empty": "Select vizs in the sidebar",
       "closeOther": "Close Other Tabs",
       "closeAll": "Close All Tabs"
+    },
+    "focusMode": {
+      "enter": "Entered focus mode, use ESC key to return to normal mode",
+      "exit": "Entered normal mode, use Command+B/Control+B key to return to focus mode"
     }
   },
   "view": {
@@ -1237,6 +1242,10 @@
     "empty": "Select views in the sidebar",
     "resultEmpty1": "Click ",
     "resultEmpty2": " button to execute, the results will be displayed here",
+    "columnFilter": "Column Filter",
+    "selectAll": "Select All",
+    "search": "Search",
+    "noColumnsFound": "No columns found",
     "errorTitle": "Error occurred",
     "sqlRequired": "SQL statement cannot be empty",
     "structQueryRequired": "Structured query statement cannot be empty",
@@ -1261,6 +1270,24 @@
     },
     "sqlExecutionCancelled": "SQL execution cancelled",
     "saveInProgress": "Data view is being saved, query execution is temporarily disabled",
+    "data": {
+      "total": "Total data: {{total}} rows",
+      "displayed": "Currently showing only the first {{displayed}} rows",
+      "download": "Please download for details"
+    },
+    "download": {
+      "name": "Download",
+      "error": {
+        "taskIdMissing": "Task ID is missing",
+        "invalidFileType": "Invalid file type",
+        "failed": "Download failed"
+      },
+      "success": "Download successful",
+      "type": {
+        "excel": "EXCEL",
+        "csv": "CSV"
+      }
+    },
     "tabs": {
       "discard": "Discard",
       "cancel": "Cancel",
@@ -1292,6 +1319,20 @@
         "USER_DESC": "Each user independent resource",
         "SERVER_DESC": "All users share resource"
       }
+    },
+    "cacheDialog": {
+      "conflictTitle": "Data Conflict",
+      "expiredTitle": "Cache Expired",
+      "conflictDescription": "Local cache and server data are inconsistent, please choose which version to use:",
+      "expiredDescription": "Previous edit was not saved, do you want to save?",
+      "localCache": "Local Cache",
+      "remoteData": "Server Data",
+      "useLocalCache": "Use Local Cache",
+      "useRemoteData": "Use Server Data",
+      "useLocalCacheSuccess": "Using local cache data",
+      "useRemoteDataSuccess": "Using server data",
+      "save": "Save",
+      "cancel": "Cancel"
     },
     "properties": {
       "reference": "Source Reference",
@@ -1342,7 +1383,12 @@
       "search": "Search database / table / column",
       "sortType": "Sort",
       "byName": "By Name",
-      "byField": "By Field"
+      "byField": "By Field",
+      "fillMode": "Fill Mode",
+      "dbTable": "Database.Table",
+      "selectStatement": "SELECT Statement",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
     },
     "variable": {
       "title": "Variables",

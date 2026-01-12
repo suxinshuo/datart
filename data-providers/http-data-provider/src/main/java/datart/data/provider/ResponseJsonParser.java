@@ -95,7 +95,7 @@ public class ResponseJsonParser implements HttpResponseParser {
         ArrayList<Column> columns = new ArrayList<>();
         for (String key : jsonObject.keySet()) {
             Column column = new Column();
-            column.setName(key);
+            column.setNameExt(key);
             Object val = jsonObject.get(key);
             if (val != null) {
                 if (val instanceof JSONObject || val instanceof JSONArray) {

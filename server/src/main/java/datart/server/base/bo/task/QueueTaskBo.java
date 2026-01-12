@@ -1,4 +1,4 @@
-package datart.core.bo.task;
+package datart.server.base.bo.task;
 
 import datart.core.entity.SqlTaskWithBLOBs;
 import lombok.AllArgsConstructor;

@@ -1,7 +1,7 @@
 package datart.server.service.doris;
 
-import datart.core.bo.doris.DorisCreateUserBo;
-import datart.core.bo.doris.DorisExecSourceParamBo;
+import datart.server.base.bo.doris.DorisCreateUserBo;
+import datart.server.base.bo.doris.DorisExecSourceParamBo;
 
 import java.util.List;
 

@@ -17,4 +17,7 @@ logs/**
 *.zip
 
 bin/h2/*.db
-files/h2/*.db
+files/h2/**/*.db
+
+.metals
+.metals/**

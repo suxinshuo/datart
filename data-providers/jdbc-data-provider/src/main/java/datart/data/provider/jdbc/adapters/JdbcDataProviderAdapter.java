@@ -342,7 +342,7 @@ public class JdbcDataProviderAdapter implements Closeable {
 
     protected Column readTableColumn(ResultSet columnMetadata) throws SQLException {
         Column column = new Column();
-        column.setName(columnMetadata.getString(4));
+        column.setNameExt(columnMetadata.getString(4));
         column.setType(DataTypeUtils.jdbcType2DataType(columnMetadata.getInt(5)));
         return column;
     }
@@ -395,7 +395,7 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected void executeCompleteHook(String taskId, Statement statement) {
-        if (StringUtils.isNotBlank(taskId)) {
+        if (StringUtils.isNotBlank(taskId) && !Thread.currentThread().isInterrupted()) {
             providerContext.updateTaskProgress(taskId, SqlTaskProgress.RUNNING_COMPLETE.getProgress());
         }
     }
@@ -416,7 +416,7 @@ public class JdbcDataProviderAdapter implements Closeable {
         try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
             try (Statement statement = conn.createStatement()) {
                 stmtRef.set(statement);
-                CommonVarUtils.SQL_STATEMENTS.put(taskId, stmtRef);
+                CommonVarUtils.putSqlStatement(taskId, stmtRef);
 
                 if (CollUtil.isNotEmpty(preSqls)) {
                     for (String preSql : preSqls) {
@@ -442,7 +442,7 @@ public class JdbcDataProviderAdapter implements Closeable {
             }
         } finally {
             stmtRef.set(null);
-            CommonVarUtils.SQL_STATEMENTS.remove(taskId);
+            CommonVarUtils.removeSqlStatement(taskId);
         }
     }
 
@@ -463,7 +463,7 @@ public class JdbcDataProviderAdapter implements Closeable {
         try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
             try (Statement statement = conn.createStatement()) {
                 stmtRef.set(statement);
-                CommonVarUtils.SQL_STATEMENTS.put(taskId, stmtRef);
+                CommonVarUtils.putSqlStatement(taskId, stmtRef);
 
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
                 // 执行 set 语句
@@ -499,7 +499,7 @@ public class JdbcDataProviderAdapter implements Closeable {
             }
         } finally {
             stmtRef.set(null);
-            CommonVarUtils.SQL_STATEMENTS.remove(taskId);
+            CommonVarUtils.removeSqlStatement(taskId);
         }
     }
 
@@ -520,14 +520,14 @@ public class JdbcDataProviderAdapter implements Closeable {
             PreparedStatement preparedStatement = connection.prepareStatement(countSql);
 
             stmtRef.set(preparedStatement);
-            CommonVarUtils.SQL_STATEMENTS.put(taskId, stmtRef);
+            CommonVarUtils.putSqlStatement(taskId, stmtRef);
 
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
             return resultSet.getInt(1);
         } finally {
             stmtRef.set(null);
-            CommonVarUtils.SQL_STATEMENTS.remove(taskId);
+            CommonVarUtils.removeSqlStatement(taskId);
         }
     }
 
