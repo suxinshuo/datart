@@ -1237,6 +1237,10 @@
     "empty": "Select views in the sidebar",
     "resultEmpty1": "Click ",
     "resultEmpty2": " button to execute, the results will be displayed here",
+    "columnFilter": "Column Filter",
+    "selectAll": "Select All",
+    "search": "Search",
+    "noColumnsFound": "No columns found",
     "errorTitle": "Error occurred",
     "sqlRequired": "SQL statement cannot be empty",
     "structQueryRequired": "Structured query statement cannot be empty",
@@ -1342,7 +1346,12 @@
       "search": "Search database / table / column",
       "sortType": "Sort",
       "byName": "By Name",
-      "byField": "By Field"
+      "byField": "By Field",
+      "fillMode": "Fill Mode",
+      "dbTable": "Database.Table",
+      "selectStatement": "SELECT Statement",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
     },
     "variable": {
       "title": "Variables",

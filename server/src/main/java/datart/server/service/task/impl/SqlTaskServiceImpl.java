@@ -20,6 +20,7 @@ package datart.server.service.task.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.json.JSON;
+import com.github.pagehelper.PageHelper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import datart.core.bo.task.QueueTaskBo;
@@ -293,6 +294,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 .andExecuteTypeEqualTo(SqlTaskExecuteType.AD_HOC.getCode());
         sqlTaskExample.setOrderByClause("`create_time` DESC");
 
+        PageHelper.startPage(1, 300);
         List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
         if (CollUtil.isEmpty(sqlTasks)) {
             return Lists.newArrayList();
@@ -318,6 +320,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 .andViewIdEqualTo(viewId);
         sqlTaskExample.setOrderByClause("`create_time` DESC");
 
+        PageHelper.startPage(1, 10);
         List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
         if (CollUtil.isEmpty(sqlTasks)) {
             return Lists.newArrayList();
@@ -351,7 +354,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                 return "";
             }).forEach(columnSj::add);
 
-             StringJoiner rowSj = new StringJoiner("\n", "=== 数据(以'|'分隔列) ===\n", "");
+            StringJoiner rowSj = new StringJoiner("\n", "=== 数据(以'|'分隔列) ===\n", "");
             dataframe.getRows().stream().map(line -> {
                 return line.stream().map(col -> {
                     if (Objects.nonNull(col)) {

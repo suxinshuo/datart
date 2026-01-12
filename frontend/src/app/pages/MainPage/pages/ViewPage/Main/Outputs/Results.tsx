@@ -20,17 +20,27 @@ import {
   CaretRightOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
-import { Spin, Tooltip } from 'antd';
+import { Checkbox, Input, Spin, Tooltip } from 'antd';
 import { Popup, ToolbarButton, Tree } from 'app/components';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import { APP_CURRENT_VERSION } from 'app/migration/constants';
 import classnames from 'classnames';
 import { transparentize } from 'polished';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components/macro';
-import { FONT_FAMILY, FONT_SIZE_BASE } from 'styles/StyleConstants';
+import {
+  FONT_FAMILY,
+  FONT_SIZE_BASE,
+  FONT_SIZE_BODY,
+  FONT_WEIGHT_MEDIUM,
+  SPACE,
+  SPACE_MD,
+  SPACE_TIMES,
+  SPACE_XS,
+} from 'styles/StyleConstants';
 import { CloneValueDeep, isEmptyArray } from 'utils/object';
 import { uuidv4 } from 'utils/utils';
 import { selectRoles } from '../../../MemberPage/slice/selectors';
@@ -74,6 +84,111 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
 
   const roles = useSelector(selectRoles);
   const t = useI18NPrefix('view');
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+    if (model?.columns) {
+      return new Set(Object.keys(model.columns));
+    }
+    return new Set<string>();
+  });
+
+  // 侧边面板的DOM引用，用于检测外部点击
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  // 搜索关键词状态
+  const [searchKeyword, setSearchKeyword] = useState('');
+
+  const columnNames = useMemo(() => {
+    return model?.columns ? Object.keys(model.columns) : [];
+  }, [model]);
+
+  // 过滤后的列名列表
+  const filteredColumnNames = useMemo(() => {
+    if (!searchKeyword.trim()) {
+      return columnNames;
+    }
+    const keyword = searchKeyword.toLowerCase();
+    return columnNames.filter(columnName =>
+      columnName.toLowerCase().includes(keyword),
+    );
+  }, [columnNames, searchKeyword]);
+
+  // 当model.columns变化时，自动更新为全选状态
+  useEffect(() => {
+    if (model?.columns) {
+      setVisibleColumns(new Set(Object.keys(model.columns)));
+    }
+  }, [model?.columns]);
+
+  // 点击外部区域关闭侧边面板
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sidebarRef.current &&
+        !isSidebarCollapsed &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+
+    // 添加全局点击事件监听器
+    document.addEventListener('mousedown', handleClickOutside);
+
+    // 清理事件监听器
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSidebarCollapsed]);
+
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed(prev => !prev);
+  }, []);
+
+  const handleColumnChange = useCallback(
+    (columnName: string, checked: boolean) => {
+      setVisibleColumns(prev => {
+        const newSet = new Set(prev);
+        if (checked) {
+          newSet.add(columnName);
+        } else {
+          newSet.delete(columnName);
+        }
+        return newSet;
+      });
+    },
+    [],
+  );
+
+  const handleCheckAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        setVisibleColumns(new Set(columnNames));
+      } else {
+        setVisibleColumns(new Set());
+      }
+    },
+    [columnNames],
+  );
+
+  const filteredModel = useMemo(() => {
+    if (!model?.columns) return {};
+    const filtered: typeof model.columns = {};
+    columnNames.forEach(col => {
+      if (visibleColumns.has(col) && model.columns) {
+        filtered[col] = model.columns[col];
+      }
+    });
+    return filtered;
+  }, [model, visibleColumns, columnNames]);
+
+  const isAllChecked = useMemo(() => {
+    return columnNames.length > 0 && visibleColumns.size === columnNames.length;
+  }, [columnNames, visibleColumns]);
+
+  const isIndeterminate = useMemo(() => {
+    return visibleColumns.size > 0 && visibleColumns.size < columnNames.length;
+  }, [columnNames, visibleColumns]);
 
   const dataSource = useMemo(
     () =>
@@ -258,10 +373,60 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
 
   return stage > ViewViewModelStages.Fresh ? (
     <TableWrapper>
+      <SidebarContainer
+        ref={sidebarRef}
+        className={isSidebarCollapsed ? 'collapsed' : 'expanded'}
+      >
+        <SidebarToggle onClick={handleToggleSidebar}>
+          <FilterOutlined />
+          {!isSidebarCollapsed && (
+            <span className="label">{t('columnFilter')}</span>
+          )}
+        </SidebarToggle>
+        {!isSidebarCollapsed && (
+          <ColumnList>
+            <ColumnListHeader>
+              <Checkbox
+                checked={isAllChecked}
+                indeterminate={isIndeterminate}
+                onChange={e => handleCheckAll(e.target.checked)}
+              >
+                {t('selectAll')}
+              </Checkbox>
+              <SearchContainer>
+                <Input
+                  placeholder={t('search')}
+                  value={searchKeyword}
+                  onChange={e => setSearchKeyword(e.target.value)}
+                  allowClear
+                />
+              </SearchContainer>
+            </ColumnListHeader>
+            <ColumnListBody>
+              {filteredColumnNames.length > 0 ? (
+                filteredColumnNames.map(columnName => (
+                  <ColumnListItem key={columnName}>
+                    <Checkbox
+                      checked={visibleColumns.has(columnName)}
+                      onChange={e =>
+                        handleColumnChange(columnName, e.target.checked)
+                      }
+                    >
+                      {columnName}
+                    </Checkbox>
+                  </ColumnListItem>
+                ))
+              ) : (
+                <EmptyColumnList>{t('noColumnsFound')}</EmptyColumnList>
+              )}
+            </ColumnListBody>
+          </ColumnList>
+        )}
+      </SidebarContainer>
       <SchemaTable
         height={height ? height - 96 : 0}
         width={width}
-        model={model.columns || {}}
+        model={filteredModel}
         hierarchy={model.hierarchy || {}}
         dataSource={dataSource}
         pagination={pagination}
@@ -316,4 +481,120 @@ const LoadingMask = styled.div`
   align-items: center;
   justify-content: center;
   background-color: ${p => transparentize(0.5, p.theme.componentBackground)};
+`;
+
+const SidebarContainer = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: ${p => p.theme.componentBackground};
+  border-right: 1px solid ${p => p.theme.borderColorSplit};
+  transition: width 0.3s ease;
+
+  &.collapsed {
+    width: ${SPACE_TIMES(12)};
+  }
+
+  &.expanded {
+    width: ${SPACE_TIMES(50)};
+  }
+`;
+
+const SidebarToggle = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: ${SPACE_TIMES(10)};
+  padding: ${SPACE_XS} ${SPACE};
+  cursor: pointer;
+  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: ${p => p.theme.emphasisBackground};
+  }
+
+  .anticon {
+    font-size: ${FONT_SIZE_BODY};
+    color: ${p => p.theme.primary};
+  }
+
+  .label {
+    margin-left: ${SPACE_XS};
+    font-size: ${FONT_SIZE_BODY};
+    font-weight: ${FONT_WEIGHT_MEDIUM};
+    color: ${p => p.theme.textColor};
+    white-space: nowrap;
+  }
+`;
+
+const ColumnList = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+`;
+
+const ColumnListHeader = styled.div`
+  display: flex;
+  gap: ${SPACE};
+  align-items: center;
+  justify-content: space-between;
+  height: ${SPACE_TIMES(10)};
+  padding: ${SPACE_XS} ${SPACE};
+  background-color: ${p => p.theme.componentBackground};
+  border-bottom: 1px solid ${p => p.theme.borderColorSplit};
+
+  .ant-checkbox-wrapper {
+    font-size: ${FONT_SIZE_BODY};
+    font-weight: ${FONT_WEIGHT_MEDIUM};
+  }
+`;
+
+const ColumnListBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+`;
+
+const ColumnListItem = styled.div`
+  display: flex;
+  align-items: center;
+  height: ${SPACE_TIMES(8)};
+  padding: ${SPACE_XS} ${SPACE};
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: ${p => p.theme.emphasisBackground};
+  }
+
+  .ant-checkbox-wrapper {
+    width: 100%;
+    font-size: ${FONT_SIZE_BODY};
+    color: ${p => p.theme.textColor};
+  }
+`;
+
+const SearchContainer = styled.div`
+  display: flex;
+  flex: 1;
+  align-items: center;
+  background-color: ${p => p.theme.componentBackground};
+
+  .ant-input {
+    font-size: ${FONT_SIZE_BODY};
+    line-height: ${SPACE_MD};
+  }
+`;
+
+const EmptyColumnList = styled.div`
+  padding: ${SPACE_MD};
+  font-size: ${FONT_SIZE_BODY};
+  color: ${p => p.theme.textColorLight};
+  text-align: center;
 `;
