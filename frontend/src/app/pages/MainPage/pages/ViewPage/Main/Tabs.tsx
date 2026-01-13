@@ -30,7 +30,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import styled, { css } from 'styled-components/macro';
 import { LEVEL_1, ORANGE } from 'styles/StyleConstants';
-import { ViewViewModelStages } from '../constants';
+import { uuidv4 } from 'utils/utils';
+import { UNPERSISTED_ID_PREFIX, ViewViewModelStages } from '../constants';
 import { EditorContext } from '../EditorContext';
 import {
   selectCurrentEditingViewAttr,
@@ -89,6 +90,10 @@ export const Tabs = memo(() => {
       const view = editingViews.find(v => v.id === targetKey);
 
       switch (action) {
+        case 'add':
+          const newViewId = `${UNPERSISTED_ID_PREFIX}${uuidv4()}`;
+          history.push(`/organizations/${orgId}/views/${newViewId}`);
+          break;
         case 'remove':
           if (view!.touched === false) {
             dispatch(removeEditingView({ id: targetKey, resolve: redirect }));
@@ -101,7 +106,7 @@ export const Tabs = memo(() => {
           break;
       }
     },
-    [dispatch, editingViews, redirect],
+    [dispatch, editingViews, history, orgId, redirect],
   );
 
   const hideConfirm = useCallback(() => {
@@ -152,7 +157,6 @@ export const Tabs = memo(() => {
   return (
     <Wrapper>
       <TabsComponent
-        hideAdd
         type="editable-card"
         activeKey={id}
         onChange={tabChange}
