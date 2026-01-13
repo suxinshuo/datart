@@ -241,20 +241,44 @@ function CloseIcon({ touched, stage, error }: CloseIconProps) {
 const Wrapper = styled.div`
   z-index: ${LEVEL_1};
   flex-shrink: 0;
+
+  .ant-tabs-nav {
+    height: auto;
+  }
+
+  .ant-tabs-tab {
+    padding: 6px 12px;
+    margin: 0;
+  }
+
+  .ant-tabs-tab-btn {
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    border-color: #f0f0f0;
+  }
+
+  .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+    border-bottom-color: #fff;
+  }
 `;
 
 const CloseIconWrapper = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
 `;
 
 const Editing = styled.span`
   display: block;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
+  margin-left: 4px;
   background-color: ${p => p.theme.textColorLight};
   border-radius: 50%;
 `;
