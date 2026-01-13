@@ -4,6 +4,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.ser.*;
 import com.google.common.collect.Lists;
 import datart.core.common.DateUtils;
 import datart.core.data.provider.Dataframe;
@@ -29,8 +32,11 @@ import javax.annotation.Resource;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +51,35 @@ public class SqlTaskResultServiceImpl extends BaseService implements SqlTaskResu
      * 单例 ObjectMapper（线程安全）
      */
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    static {
+        // 统一的时间格式
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
+        JavaTimeModule timeModule = new JavaTimeModule();
+
+        // java.time.*
+        timeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(formatter));
+        timeModule.addSerializer(LocalDate.class, new LocalDateSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        timeModule.addSerializer(
+                ZonedDateTime.class,
+                com.fasterxml.jackson.databind.ser.std.ToStringSerializer.instance
+        );
+        timeModule.addSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer(formatter));
+
+        MAPPER.registerModule(timeModule);
+
+        // 禁止时间戳（long）
+        MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // java.util.Date / java.sql.Timestamp
+        MAPPER.setDateFormat(
+                new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+        );
+
+        // 统一时区
+        MAPPER.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
+    }
 
     /**
      * HDFS 输出缓冲区大小
