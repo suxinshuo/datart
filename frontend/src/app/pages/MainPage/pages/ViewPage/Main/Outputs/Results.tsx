@@ -81,6 +81,12 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
   const previewResults = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'previewResults' }),
   ) as ViewViewModel['previewResults'];
+  const error = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'error' }),
+  ) as string;
+  const isCancelClicked = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'isCancelClicked' }),
+  ) as boolean;
 
   const roles = useSelector(selectRoles);
   const t = useI18NPrefix('view');
@@ -375,7 +381,11 @@ export const Results = memo(({ height = 0, width = 0 }: ResultsProps) => {
     [],
   );
 
-  return stage > ViewViewModelStages.Fresh ? (
+  // 确定是否显示结果表格和列筛选项
+  const shouldShowResults =
+    stage > ViewViewModelStages.Fresh && !error && !isCancelClicked;
+
+  return shouldShowResults ? (
     <TableWrapper>
       <SidebarContainer
         ref={sidebarRef}
