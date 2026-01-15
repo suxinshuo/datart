@@ -117,161 +117,64 @@ export const SQLEditor = memo(() => {
     end: number;
   }
 
-  // 智能执行功能：使用行级分析识别SQL片段并记录位置
+  // 智能执行功能：使用分号分割SQL片段并记录位置
   const getSqlFragments = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor): SqlFragment[] => {
       const model = editor.getModel();
       if (!model) return [];
 
-      const SQL_START_KEYWORDS = [
-        'select',
-        'insert',
-        'update',
-        'delete',
-        'show',
-        'describe',
-        'desc',
-        'explain',
-        'with',
-        'create',
-        'alter',
-        'drop',
-        'truncate',
-      ];
-
-      // 判断是否为SQL起始行
-      const isSqlStart = (line: string): boolean => {
-        const trimmed = line.trim().toLowerCase();
-        if (!trimmed) return false;
-        if (trimmed.startsWith('--') || trimmed.startsWith('#')) return false;
-        return SQL_START_KEYWORDS.some(
-          kw => trimmed.startsWith(kw + ' ') || trimmed === kw,
-        );
-      };
-
       const fullSql = model.getValue();
-      const linesCount = model.getLineCount();
-      let bufferLines: string[] = [];
-      let bufferStartOffset: number = 0;
-      let parenDepth = 0;
-      let cteMode = false;
       const fragments: SqlFragment[] = [];
+      let currentStart = 0;
+      let inString = false;
+      let stringChar = '';
+      let escapeNext = false;
 
-      for (let lineNum = 1; lineNum <= linesCount; lineNum++) {
-        const lineContent = model.getLineContent(lineNum);
-        const trimmed = lineContent.trim();
-        const lowerTrimmed = trimmed.toLowerCase();
+      // 遍历SQL字符串，按分号分割，忽略字符串内的分号
+      for (let i = 0; i < fullSql.length; i++) {
+        const char = fullSql[i];
 
-        // 计算当前行在完整SQL中的起始位置
-        const lineStartOffset = model.getOffsetAt({
-          lineNumber: lineNum,
-          column: 1,
-        });
-        const lineEndOffset = model.getOffsetAt({
-          lineNumber: lineNum,
-          column: lineContent.length + 1,
-        });
-
-        // 如果缓冲区为空，记录当前行作为缓冲区的起始位置
-        if (bufferLines.length === 0) {
-          bufferStartOffset = lineStartOffset;
+        // 处理转义字符
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
         }
 
-        // 检查当前行是否为新SQL片段的开始
-        const isNewStatementStart = isSqlStart(lineContent);
-
-        // 特殊处理WITH语句：如果WITH语句不是当前buffer的一部分，应该作为新片段的开始
-        const isWithStatement = lowerTrimmed.startsWith('with');
-
-        // 检查缓冲区中是否已包含WITH关键字
-        const bufferContainsWith = bufferLines.some(line =>
-          line.toLowerCase().trim().startsWith('with'),
-        );
-
-        // 计算当前行的括号变化
-        let currentLineParenChange = 0;
-        for (let i = 0; i < lineContent.length; i++) {
-          const ch = lineContent[i];
-          if (ch === '(') currentLineParenChange++;
-          else if (ch === ')') currentLineParenChange--;
+        // 处理字符串开始/结束
+        if ((char === '"' || char === "'") && !inString) {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar && inString) {
+          inString = false;
         }
 
-        // 更新括号深度（在处理拆分逻辑之前）
-        const updatedParenDepth = parenDepth + currentLineParenChange;
-        const finalParenDepth = Math.max(0, updatedParenDepth); // 确保不会为负数
+        // 处理转义字符标记
+        if (char === '\\' && inString) {
+          escapeNext = true;
+        }
 
-        // 判断是否需要拆分：遇到SQL起始关键字且括号深度为0（基于前序行的括号深度）
-        // 并且缓冲区中不包含WITH关键字，或者当前行是新的WITH语句
-        if (
-          isNewStatementStart &&
-          bufferLines.length > 0 &&
-          parenDepth === 0 &&
-          !bufferContainsWith &&
-          (!cteMode || isWithStatement)
-        ) {
-          // 保存当前片段
-          const fragmentSql = bufferLines.join('\n').trim();
-          const fragmentStart = bufferStartOffset;
-          // 计算片段结束位置：当前行的起始位置
-          const fragmentEnd = lineStartOffset;
-
+        // 遇到分号且不在字符串内，分割SQL片段
+        if (char === ';' && !inString) {
+          const fragmentSql = fullSql.substring(currentStart, i + 1).trim();
           if (fragmentSql) {
             fragments.push({
               sql: fragmentSql,
-              start: fragmentStart,
-              end: fragmentEnd,
+              start: currentStart,
+              end: i + 1,
             });
           }
-          // 重置缓冲区和状态
-          bufferLines = [lineContent];
-          bufferStartOffset = lineStartOffset;
-          cteMode = isWithStatement;
+          currentStart = i + 1;
         }
-        // 分号结束SQL片段（基于前序行的括号深度）
-        else if (trimmed.endsWith(';') && parenDepth === 0) {
-          // 保存当前片段
-          bufferLines.push(lineContent);
-          const fragmentSql = bufferLines.join('\n').trim();
-          const fragmentStart = bufferStartOffset;
-          // 计算片段结束位置：当前行的结束位置
-          const fragmentEnd = lineEndOffset;
-
-          if (fragmentSql) {
-            fragments.push({
-              sql: fragmentSql,
-              start: fragmentStart,
-              end: fragmentEnd,
-            });
-          }
-          // 重置缓冲区和状态
-          bufferLines = [];
-          bufferStartOffset = 0;
-          cteMode = false;
-        } else {
-          // 添加当前行到缓冲区
-          bufferLines.push(lineContent);
-
-          // WITH + CTE 处理
-          if (isWithStatement && bufferLines.length === 1) {
-            cteMode = true;
-          }
-        }
-
-        // 更新括号深度
-        parenDepth = finalParenDepth;
       }
 
-      // 处理最后一个片段
-      if (bufferLines.length > 0) {
-        const fragmentSql = bufferLines.join('\n').trim();
+      // 处理最后一个片段（如果有）
+      if (currentStart < fullSql.length) {
+        const fragmentSql = fullSql.substring(currentStart).trim();
         if (fragmentSql) {
-          const fragmentStart = bufferStartOffset;
-          // 最后一个片段的结束位置是完整SQL的长度
-          const fragmentEnd = fullSql.length;
           fragments.push({
             sql: fragmentSql,
-            start: fragmentStart,
-            end: fragmentEnd,
+            start: currentStart,
+            end: fullSql.length,
           });
         }
       }
