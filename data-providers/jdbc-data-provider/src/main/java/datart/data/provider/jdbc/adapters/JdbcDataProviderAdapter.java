@@ -811,7 +811,8 @@ public class JdbcDataProviderAdapter implements Closeable {
                 , jdbcProperties.isEnableSpecialSql()
                 , driverInfo.getQuoteIdentifiers());
 
-        if (supportPaging()) {
+        // ad hoc 查询直接使用手动的分页逻辑
+        if (supportPaging() && BooleanUtils.isNotTrue(executeParam.getAdHocFlag())) {
             sql = render.render(true, true, false);
             log.info("taskId: {}, sql: {}", taskId, sql);
             dataframe = execute(
