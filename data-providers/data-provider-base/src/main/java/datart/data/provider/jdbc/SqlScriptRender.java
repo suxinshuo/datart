@@ -84,7 +84,13 @@ public class SqlScriptRender extends ScriptRender {
         if (Objects.nonNull(executeParam)
                 && BooleanUtils.isTrue(executeParam.getAdHocFlag())
                 && Objects.equals(queryScript.getScriptType(), ScriptType.SQL)) {
-            return getScriptProcessor().processSqls(queryScript);
+
+            String execSql = getScriptProcessor().processSqls(queryScript);
+            execSql = replaceVariables(execSql);
+
+            RequestContext.setSql(execSql);
+
+            return execSql;
         }
 
         String selectSql;
