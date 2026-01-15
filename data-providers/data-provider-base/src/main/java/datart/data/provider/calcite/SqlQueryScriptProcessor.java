@@ -52,6 +52,34 @@ public class SqlQueryScriptProcessor implements QueryScriptProcessor {
     }
 
     @Override
+    public String processSqls(QueryScript queryScript) {
+        //用freemarker处理脚本中的条件表达式
+        Map<String, ?> dataMap = queryScript.getVariables()
+                .stream()
+                .collect(Collectors.toMap(ScriptVariable::getName,
+                        variable -> {
+                            if (CollectionUtils.isEmpty(variable.getValues())) {
+                                return "";
+                            } else if (variable.getValues().size() == 1) {
+                                return variable.getValues().iterator().next();
+                            } else {
+                                return variable.getValues();
+                            }
+                        }));
+
+        String script = FreemarkerContext.process(queryScript.getScript(), dataMap);
+
+        script = SqlStringUtils.cleanupSqlComments(script, sqlDialect);
+
+        script = SqlStringUtils.replaceFragmentVariables(script, queryScript.getVariables());
+
+        script = StringUtils.appendIfMissing(script, " ", " ");
+        script = StringUtils.prependIfMissing(script, " ", " ");
+
+        return script;
+    }
+
+    @Override
     public QueryScriptProcessResult process(QueryScript queryScript) {
 
         String script;

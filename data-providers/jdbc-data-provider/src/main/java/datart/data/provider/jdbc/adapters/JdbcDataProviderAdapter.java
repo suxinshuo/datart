@@ -19,6 +19,7 @@
 package datart.data.provider.jdbc.adapters;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.Tuple;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import datart.core.base.PageInfo;
@@ -33,10 +34,7 @@ import datart.data.provider.base.IProviderContext;
 import datart.data.provider.base.entity.ExecuteSqlParam;
 import datart.data.provider.calcite.dialect.CustomSqlDialect;
 import datart.data.provider.calcite.dialect.FetchAndOffsetSupport;
-import datart.data.provider.jdbc.DataTypeUtils;
-import datart.data.provider.jdbc.JdbcDriverInfo;
-import datart.data.provider.jdbc.JdbcProperties;
-import datart.data.provider.jdbc.SqlScriptRender;
+import datart.data.provider.jdbc.*;
 import datart.data.provider.local.LocalDB;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -48,6 +46,7 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -366,21 +365,6 @@ public class JdbcDataProviderAdapter implements Closeable {
         return keyMap;
     }
 
-    private Dataframe checkAndRunNotSelect(Statement statement, String sql) {
-        Boolean sqlSelectTypeFlag = RequestContext.getSqlSelectTypeFlag();
-        if (Objects.nonNull(sqlSelectTypeFlag) && !sqlSelectTypeFlag) {
-            // 非 select 类型 sql
-            try {
-                statement.execute(sql);
-                return Dataframe.execSuccess();
-            } catch (Exception e) {
-                log.error("非 select 类型 sql 执行异常. selectSql: {}", sql, e);
-                return Dataframe.execFail(e.getMessage());
-            }
-        }
-        return null;
-    }
-
     /**
      * 所有 pre sql 执行完成的回调函数
      *
@@ -409,8 +393,10 @@ public class JdbcDataProviderAdapter implements Closeable {
      */
     protected Dataframe execute(ExecuteSqlParam param) throws SQLException {
         String taskId = param.getTaskId();
-        List<String> preSqls = param.getPreSqls();
-        String sql = param.getSql();
+
+        Tuple extractSqls = extractSqls(param);
+        List<String> preSqls = extractSqls.get(0);
+        String execSql = extractSqls.get(1);
 
         AtomicReference<Statement> stmtRef = new AtomicReference<>();
         try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
@@ -425,14 +411,14 @@ public class JdbcDataProviderAdapter implements Closeable {
                 }
                 executeAllPreSqlHook(taskId, statement);
                 try {
-                    sql = getTaskSql(taskId, sql);
+                    execSql = getTaskSql(taskId, execSql);
 
-                    Dataframe checkDf = checkAndRunNotSelect(statement, sql);
-                    if (Objects.nonNull(checkDf)) {
-                        return checkDf;
+                    boolean hasResultSet = statement.execute(execSql);
+                    if (!hasResultSet) {
+                        return Dataframe.execSuccess();
                     }
 
-                    try (ResultSet rs = statement.executeQuery(sql)) {
+                    try (ResultSet rs = statement.getResultSet()) {
                         return parseResultSet(rs);
                     }
                 } finally {
@@ -440,6 +426,9 @@ public class JdbcDataProviderAdapter implements Closeable {
                     executeCompleteHook(taskId, statement);
                 }
             }
+        } catch (Exception e) {
+            log.error("sql 执行异常. param: {}", param, e);
+            return Dataframe.execFail(e.getMessage());
         } finally {
             stmtRef.set(null);
             CommonVarUtils.removeSqlStatement(taskId);
@@ -456,8 +445,10 @@ public class JdbcDataProviderAdapter implements Closeable {
      */
     protected Dataframe execute(ExecuteSqlParam param, PageInfo pageInfo) throws SQLException {
         String taskId = param.getTaskId();
-        List<String> preSqls = param.getPreSqls();
-        String selectSql = param.getSql();
+
+        Tuple extractSqls = extractSqls(param);
+        List<String> preSqls = extractSqls.get(0);
+        String execSql = extractSqls.get(1);
 
         AtomicReference<Statement> stmtRef = new AtomicReference<>();
         try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
@@ -474,14 +465,14 @@ public class JdbcDataProviderAdapter implements Closeable {
                 }
                 executeAllPreSqlHook(taskId, statement);
                 try {
-                    selectSql = getTaskSql(taskId, selectSql);
+                    execSql = getTaskSql(taskId, execSql);
 
-                    Dataframe checkDf = checkAndRunNotSelect(statement, selectSql);
-                    if (Objects.nonNull(checkDf)) {
-                        return checkDf;
+                    boolean hasResultSet = statement.execute(execSql);
+                    if (!hasResultSet) {
+                        return Dataframe.execSuccess();
                     }
 
-                    try (ResultSet resultSet = statement.executeQuery(selectSql)) {
+                    try (ResultSet resultSet = statement.getResultSet()) {
                         try {
                             resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));
                         } catch (Exception e) {
@@ -497,6 +488,9 @@ public class JdbcDataProviderAdapter implements Closeable {
                     executeCompleteHook(taskId, statement);
                 }
             }
+        } catch (Exception e) {
+            log.error("sql 执行异常. param: {}, pageInfo: {}", param, pageInfo, e);
+            return Dataframe.execFail(e.getMessage());
         } finally {
             stmtRef.set(null);
             CommonVarUtils.removeSqlStatement(taskId);
@@ -718,8 +712,6 @@ public class JdbcDataProviderAdapter implements Closeable {
                     .concurrencyOptimize(executeParam.isConcurrencyOptimize())
                     .build();
 
-            List<String> preSqls = extractPreSqls(script.getScript());
-
             SqlScriptRender render = new SqlScriptRender(script
                     , tempExecuteParam
                     , getSqlDialect()
@@ -729,8 +721,8 @@ public class JdbcDataProviderAdapter implements Closeable {
             data = execute(
                     ExecuteSqlParam.builder()
                             .taskId(executeParam.getSqlTaskId())
-                            .preSqls(preSqls)
                             .sql(sql)
+                            .adHocFlag(executeParam.getAdHocFlag())
                             .build()
             );
         }
@@ -746,16 +738,27 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     /**
-     * 前面所有 功能型 的 sql
+     * 解析抽取 sql
      */
-    protected List<String> extractPreSqls(String scriptSql) {
-        List<String> setSqls = Lists.newArrayList();
-        String[] sqls = StringUtils.split(scriptSql, "\n");
-        if (Objects.isNull(sqls) || sqls.length == 0) {
-            return Lists.newArrayList();
+    protected Tuple extractSqls(ExecuteSqlParam param) {
+        List<String> preSqls = Lists.newArrayList();
+        String execSql = "";
+
+        String scriptSql = param.getSql();
+
+        if (BooleanUtils.isNotTrue(param.getAdHocFlag())) {
+            return new Tuple(preSqls, scriptSql);
         }
-        for (String lineSql : sqls) {
-            lineSql = StringUtils.trim(lineSql);
+
+        List<String> sqls = SqlSplitter.splitEscaped(scriptSql, SqlSplitter.DEFAULT_DELIMITER);
+
+        if (CollUtil.isEmpty(sqls)) {
+            return new Tuple(preSqls, execSql);
+        }
+
+        int i = 0;
+        for (;  i < sqls.size(); i++) {
+            String lineSql = StringUtils.trim(sqls.get(i));
             if (StringUtils.isBlank(lineSql)) {
                 continue;
             }
@@ -766,24 +769,40 @@ public class JdbcDataProviderAdapter implements Closeable {
                     || StringUtils.startsWithIgnoreCase(lineSql, "create ")
                     || StringUtils.startsWithIgnoreCase(lineSql, "use ")
                     || StringUtils.startsWithIgnoreCase(lineSql, "switch ")) {
-                setSqls.add(lineSql);
+                preSqls.add(lineSql);
                 continue;
             }
             break;
         }
-        return setSqls;
+
+        for (;  i < sqls.size(); i++) {
+            String lineSql = StringUtils.trim(sqls.get(i));
+            if (StringUtils.isBlank(lineSql)) {
+                continue;
+            }
+            if (StringUtils.startsWith(lineSql, "-- ")) {
+                continue;
+            }
+            execSql = lineSql;
+        }
+
+        if (StringUtils.isBlank(execSql) && CollUtil.isNotEmpty(preSqls)) {
+            execSql = preSqls.remove(preSqls.size() - 1);
+        }
+
+        log.info("preSqls: {}", preSqls);
+        log.info("execSql: {}", execSql);
+
+        return new Tuple(preSqls, execSql);
     }
 
     /**
      * 在数据源执行, 组装完整SQL, 提交至数据源执行
      */
     public Dataframe executeOnSource(QueryScript script, ExecuteParam executeParam) throws Exception {
-
         Dataframe dataframe;
         String sql;
 
-        // 把 pre sql 剥离出来
-        List<String> preSqls = extractPreSqls(script.getScript());
         String taskId = executeParam.getSqlTaskId();
 
         SqlScriptRender render = new SqlScriptRender(script
@@ -794,24 +813,24 @@ public class JdbcDataProviderAdapter implements Closeable {
 
         if (supportPaging()) {
             sql = render.render(true, true, false);
-            log.info("taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
+            log.info("taskId: {}, sql: {}", taskId, sql);
             dataframe = execute(
                     ExecuteSqlParam.builder()
                             .taskId(taskId)
-                            .preSqls(preSqls)
                             .sql(sql)
                             .sparkShareLevel(executeParam.getSparkShareLevel())
+                            .adHocFlag(executeParam.getAdHocFlag())
                             .build()
             );
         } else {
             sql = render.render(true, false, false);
-            log.info("page taskId: {}, preSqls: {}, sql: {}", taskId, preSqls, sql);
+            log.info("page taskId: {}, sql: {}", taskId, sql);
             dataframe = execute(
                     ExecuteSqlParam.builder()
                             .taskId(taskId)
-                            .preSqls(preSqls)
                             .sql(sql)
                             .sparkShareLevel(executeParam.getSparkShareLevel())
+                            .adHocFlag(executeParam.getAdHocFlag())
                             .build(),
                     executeParam.getPageInfo()
             );
@@ -824,6 +843,7 @@ public class JdbcDataProviderAdapter implements Closeable {
                             .taskId(taskId)
                             .sql(countSql)
                             .sparkShareLevel(executeParam.getSparkShareLevel())
+                            .adHocFlag(executeParam.getAdHocFlag())
                             .build()
             );
             executeParam.getPageInfo().setTotal(total);

@@ -78,10 +78,6 @@ public class OracleDataProviderAdapter extends JdbcDataProviderAdapter {
 
     @Override
     public Dataframe executeOnSource(QueryScript script, ExecuteParam executeParam) throws Exception {
-
-        // 把 pre sql 剥离出来
-        List<String> preSqls = extractPreSqls(script.getScript());
-
         SqlScriptRender render = new SqlScriptRender(script
                 , executeParam
                 , getSqlDialect());
@@ -96,7 +92,6 @@ public class OracleDataProviderAdapter extends JdbcDataProviderAdapter {
         Dataframe dataframe = execute(
                 ExecuteSqlParam.builder()
                         .taskId(taskId)
-                        .preSqls(preSqls)
                         .sql(wrappedSql)
                         .build()
         );

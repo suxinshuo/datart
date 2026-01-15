@@ -27,7 +27,6 @@ import datart.core.data.provider.QueryScript;
 import datart.core.data.provider.ScriptType;
 import datart.core.data.provider.ScriptVariable;
 import datart.data.provider.calcite.*;
-import datart.data.provider.entity.SqlTypeEnum;
 import datart.data.provider.script.ReplacementPair;
 import datart.data.provider.script.ScriptRender;
 import datart.data.provider.script.SqlStringUtils;
@@ -38,12 +37,10 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static datart.core.base.consts.Const.VARIABLE_PATTERN;
@@ -82,21 +79,18 @@ public class SqlScriptRender extends ScriptRender {
     public String render(boolean withExecuteParam, boolean withPage, boolean onlySelectStatement) throws SqlParseException {
         // get the original value before processing the script
         QueryScriptProcessResult result = getScriptProcessor().process(queryScript);
-        String originSql = result.getOriginSql();
-        SqlTypeEnum sqlTypeEnum = SqlValidateUtils.getSqlType(originSql);
-        log.debug("SQL 类型: {}", sqlTypeEnum);
+
+        // 如果是页面来的 Ad-Hoc 查询, 并且是 SQL 查询, 直接返回原 SQL
+        if (Objects.nonNull(executeParam)
+                && BooleanUtils.isTrue(executeParam.getAdHocFlag())
+                && Objects.equals(queryScript.getScriptType(), ScriptType.SQL)) {
+            return getScriptProcessor().processSqls(queryScript);
+        }
+
         String selectSql;
 
-        // 默认为 select 类型 sql
-        RequestContext.setSqlSelectTypeFlag(true);
-
         // build with execute params
-        if (Objects.equals(queryScript.getScriptType(), ScriptType.SQL)
-                && !Objects.equals(sqlTypeEnum, SqlTypeEnum.QUERY)) {
-            log.info("非 QUERY SQL, 直接执行原始 SQL: {}", originSql);
-            selectSql = originSql;
-            RequestContext.setSqlSelectTypeFlag(Objects.equals(sqlTypeEnum, SqlTypeEnum.DDL_QUERY));
-        } else if (withExecuteParam) {
+        if (withExecuteParam) {
             selectSql = SqlBuilder.builder()
                     .withExecuteParam(executeParam)
                     .withDialect(sqlDialect)

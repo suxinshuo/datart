@@ -223,6 +223,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .cacheEnable(false)
                 .sqlTaskId(testExecuteParam.getSqlTaskId())
                 .sparkShareLevel(testExecuteParam.getSparkShareLevel())
+                .adHocFlag(true)
                 .build();
         return dataProviderManager.execute(providerSource, queryScript, executeParam);
     }

@@ -71,6 +71,11 @@ public class ExecuteParam implements Serializable {
 
     private String sparkShareLevel;
 
+    /**
+     * 是否来自页面的 Ad-Hoc 查询
+     */
+    private Boolean adHocFlag = false;
+
     @Override
     public String toString() {
         return JSON.toJSONString(JSON.toJSONString(this));

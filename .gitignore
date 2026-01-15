@@ -21,3 +21,5 @@ files/h2/**/*.db
 
 .metals
 .metals/**
+
+.bloop

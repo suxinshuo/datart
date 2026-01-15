@@ -29,8 +29,6 @@ public class RequestContext {
 
     private static final InheritableThreadLocal<Boolean> scriptPermission = new InheritableThreadLocal<>();
 
-    private static final InheritableThreadLocal<Boolean> SQL_SELECT_TYPE_FLAG = new InheritableThreadLocal<>();
-
     public static void putWarning(String name, Exception exception) {
         Map<String, Exception> exceptionMap = exceptions.get();
         if (exceptionMap == null) {
@@ -46,9 +44,8 @@ public class RequestContext {
 
     public static void clean() {
         exceptions.remove();
-        sql.set(null);
-        scriptPermission.set(null);
-        SQL_SELECT_TYPE_FLAG.remove();
+        sql.remove();
+        scriptPermission.remove();
     }
 
     public static void setSql(String sqlStr) {
@@ -67,14 +64,6 @@ public class RequestContext {
 
     public static Boolean getScriptPermission() {
         return scriptPermission.get();
-    }
-
-    public static void setSqlSelectTypeFlag(boolean flag) {
-        SQL_SELECT_TYPE_FLAG.set(flag);
-    }
-
-    public static Boolean getSqlSelectTypeFlag() {
-        return SQL_SELECT_TYPE_FLAG.get();
     }
 
 }

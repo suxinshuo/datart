@@ -18,9 +18,14 @@
 package datart.data.provider.calcite;
 
 import datart.core.data.provider.QueryScript;
+import org.apache.commons.lang3.StringUtils;
 
 public interface QueryScriptProcessor {
 
     QueryScriptProcessResult process(QueryScript queryScript);
+
+    default String processSqls(QueryScript queryScript) {
+        return StringUtils.EMPTY;
+    }
 
 }
