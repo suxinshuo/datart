@@ -29,9 +29,11 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SqlTaskCreateResponse {
-    
+
     private String taskId;
-    
+
     private Date createTime;
-    
+
+    private Boolean hasLimit;
+
 }

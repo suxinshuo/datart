@@ -414,6 +414,13 @@ export const runSqlAsync = async (requestData: any, dispatch: any) => {
     // Store task information in state
     updateTaskStatus(dispatch, response.data.taskId, SqlTaskStatus.QUEUED, 0);
 
+    // Store hasLimit status from backend
+    dispatch(
+      viewActions.changeCurrentEditingView({
+        hasLimit: response.data.hasLimit,
+      }),
+    );
+
     return response.data;
   } catch (error) {
     const errorMsg = getErrorMessage(error);
@@ -546,6 +553,7 @@ export const getSqlTaskStatus = createAsyncThunk<
               originalRowCount: response.data.originalRowCount,
               displayedRowCount: response.data.displayedRowCount,
               truncated: response.data.truncated,
+              hasLimit: undefined,
             }),
           );
         }
@@ -592,6 +600,7 @@ export const getSqlTaskStatus = createAsyncThunk<
             stage: ViewViewModelStages.Initialized,
             error:
               response.data.errorMessage || i18n.t('view.sqlExecutionFailed'),
+            hasLimit: undefined,
           }),
         );
 

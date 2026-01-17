@@ -473,6 +473,7 @@ const InitialDesc = styled.div`
   flex: 1;
   align-items: center;
   justify-content: center;
+  background-color: ${p => p.theme.componentBackground};
 
   p {
     color: ${p => p.theme.textColorLight};

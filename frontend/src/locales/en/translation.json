@@ -1270,6 +1270,7 @@
     },
     "sqlExecutionCancelled": "SQL execution cancelled",
     "saveInProgress": "Data view is being saved, query execution is temporarily disabled",
+    "sqlLimitWarning": "It is recommended to add LIMIT to limit the number of query results within 10,000, otherwise it may cause slow query and page lag.",
     "data": {
       "total": "Total data: {{total}} rows",
       "displayed": "Currently showing only the first {{displayed}} rows",

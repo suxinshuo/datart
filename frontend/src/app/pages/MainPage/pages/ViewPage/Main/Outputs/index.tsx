@@ -71,6 +71,9 @@ export const Outputs = memo(() => {
   const truncated = useSelector(state =>
     selectCurrentEditingViewAttr(state, { name: 'truncated' }),
   ) as boolean;
+  const hasLimit = useSelector(state =>
+    selectCurrentEditingViewAttr(state, { name: 'hasLimit' }),
+  ) as boolean;
 
   // Download related states
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -261,6 +264,15 @@ export const Outputs = memo(() => {
             <div className="task-info">
               <span className="task-id">
                 {t('taskId')}: {currentTaskId}
+                {hasLimit === false &&
+                  (currentTaskStatus === SqlTaskStatus.QUEUED ||
+                    currentTaskStatus === SqlTaskStatus.RUNNING) && (
+                    <Popover content={t('sqlLimitWarning')} placement="top">
+                      <LimitWarningInline>
+                        {t('sqlLimitWarning')}
+                      </LimitWarningInline>
+                    </Popover>
+                  )}
               </span>
               <div className="task-right">
                 {currentTaskStatus === SqlTaskStatus.SUCCESS && truncated && (
@@ -443,4 +455,21 @@ const TaskStatusWrapper = styled.div`
     font-size: ${FONT_SIZE_BODY};
     color: ${p => p.theme.error};
   }
+`;
+
+const LimitWarningInline = styled.span`
+  display: inline-flex;
+  align-items: center;
+  max-width: 600px;
+  padding: 2px 8px;
+  margin-left: ${SPACE_MD};
+  overflow: hidden;
+  font-size: ${FONT_SIZE_BODY};
+  font-weight: 600;
+  color: ${p => p.theme.textColor};
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+  background-color: ${p => p.theme.warning};
+  border-radius: 4px;
 `;

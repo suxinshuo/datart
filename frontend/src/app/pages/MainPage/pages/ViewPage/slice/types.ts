@@ -115,6 +115,7 @@ export interface ViewViewModel<T = object>
   enableAsyncExecution?: boolean;
   currentTaskErrorMessage?: string;
   isCancelClicked?: boolean;
+  hasLimit?: boolean;
   // Data Truncation Fields
   originalRowCount?: number;
   displayedRowCount?: number;
@@ -229,6 +230,7 @@ export interface SaveViewParams {
 export interface SqlTaskCreateResponse {
   taskId: string;
   createTime: string;
+  hasLimit?: boolean;
 }
 
 export interface SqlTaskStatusResponse {

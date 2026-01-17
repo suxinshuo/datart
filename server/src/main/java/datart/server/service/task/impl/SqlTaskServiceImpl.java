@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import datart.core.base.consts.Const;
 import datart.core.mappers.ext.SqlTaskMapperExt;
+import datart.core.utils.SqlLimitUtils;
 import datart.server.base.bo.task.*;
 import datart.core.common.CommonVarUtils;
 import datart.core.entity.enums.SqlTaskExecuteType;
@@ -166,6 +167,9 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         String taskId = UUIDGenerator.generate();
         executeParam.setSqlTaskId(taskId);
 
+        // 检测 SQL 是否包含 LIMIT 子句
+        Boolean hasLimit = SqlLimitUtils.hasLimit(executeParam.getScript());
+
         // 创建任务实体
         SqlTaskWithBLOBs task = new SqlTaskWithBLOBs();
         task.setId(taskId);
@@ -205,6 +209,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
         return SqlTaskCreateResponse.builder()
                 .taskId(taskId)
                 .createTime(task.getCreateTime())
+                .hasLimit(hasLimit)
                 .build();
     }
 

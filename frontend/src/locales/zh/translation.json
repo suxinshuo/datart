@@ -1269,6 +1269,7 @@
     },
     "sqlExecutionCancelled": "SQL 执行已取消",
     "saveInProgress": "正在保存数据视图，暂不允许执行查询",
+    "sqlLimitWarning": "查询语句建议增加LIMIT限制查询条数在1w以内，否则可能导致查询慢、页面卡顿等问题。",
     "data": {
       "total": "数据总量{{total}}行",
       "displayed": "当前仅展示前{{displayed}}行数据",
