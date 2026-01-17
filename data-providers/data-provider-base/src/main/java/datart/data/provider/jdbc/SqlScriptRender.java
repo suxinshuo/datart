@@ -77,9 +77,6 @@ public class SqlScriptRender extends ScriptRender {
     }
 
     public String render(boolean withExecuteParam, boolean withPage, boolean onlySelectStatement) throws SqlParseException {
-        // get the original value before processing the script
-        QueryScriptProcessResult result = getScriptProcessor().process(queryScript);
-
         // 如果是页面来的 Ad-Hoc 查询, 并且是 SQL 查询, 直接返回原 SQL
         if (Objects.nonNull(executeParam)
                 && BooleanUtils.isTrue(executeParam.getAdHocFlag())
@@ -92,6 +89,9 @@ public class SqlScriptRender extends ScriptRender {
 
             return execSql;
         }
+
+        // get the original value before processing the script
+        QueryScriptProcessResult result = getScriptProcessor().process(queryScript);
 
         String selectSql;
 

@@ -35,7 +35,7 @@
         where create_by = #{createUser,jdbcType=VARCHAR}
         and execute_type = #{executeType,jdbcType=VARCHAR}
         <if test="searchKeyword != null and searchKeyword != ''">
-            and name like CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%')
+            and script like CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%')
         </if>
         order by create_time desc
     </select>
