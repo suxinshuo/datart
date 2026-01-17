@@ -1359,6 +1359,10 @@
       "copyFailed": "复制失败",
       "copyFailedMessage": "复制查询语句失败",
       "close": "关闭",
+      "searchPlaceholder": "搜索查询历史...",
+      "search": "搜索",
+      "clearSearch": "清除搜索",
+      "emptySearchResults": "未找到匹配的记录",
       "status": {
         "success": "成功",
         "failed": "失败",

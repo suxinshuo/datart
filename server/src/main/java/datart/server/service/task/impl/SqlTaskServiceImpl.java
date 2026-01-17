@@ -243,7 +243,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
                     // 超过限制, 需要截断
                     int maxRows = Const.SQL_RESULT_SHOW_MAX_CELLS / columnCount;
                     List<List<Object>> truncatedRows = dataframe.getRows().subList(0, Math.min(maxRows, rowCount));
-                    
+
                     // 创建新的 Dataframe 对象
                     Dataframe truncatedDataframe = new Dataframe(dataframe.getId());
                     BeanUtil.copyProperties(dataframe, truncatedDataframe);
@@ -295,13 +295,15 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
      * 获取当前用户 SQL 任务执行历史
      *
      * @param searchKeyword 搜索关键词
+     * @param page          分页页码
+     * @param size          分页大小
      * @return 任务执行历史响应
      */
     @Override
-    public List<SqlTaskHistoryResponse> getSqlTaskHistory(String searchKeyword) {
+    public List<SqlTaskHistoryResponse> getSqlTaskHistory(String searchKeyword, Integer page, Integer size) {
         String currentUserId = getCurrentUser().getId();
 
-        PageHelper.startPage(1, 300);
+        PageHelper.startPage(page, size);
         List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectBySearchPage(
                 currentUserId, SqlTaskExecuteType.AD_HOC.getCode(), searchKeyword
         );

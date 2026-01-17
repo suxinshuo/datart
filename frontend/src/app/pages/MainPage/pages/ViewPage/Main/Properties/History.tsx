@@ -22,10 +22,19 @@ import {
   LoadingOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Button, List, Modal, Spin, Tag, Tooltip, Typography } from 'antd';
+import {
+  Button,
+  Input,
+  List,
+  Modal,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import useI18NPrefix from 'app/hooks/useI18NPrefix';
 import copy from 'copy-to-clipboard';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components/macro';
 import {
   ERROR,
@@ -54,29 +63,49 @@ interface TaskHistory {
   errorMessage: string;
 }
 
-export const History = memo(() => {
+interface HistoryProps {
+  isVisible?: boolean;
+}
+
+export const History = memo(({ isVisible = false }: HistoryProps) => {
   const [tasks, setTasks] = useState<TaskHistory[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [detailTask, setDetailTask] = useState<TaskHistory | null>(null);
+
+  // Search state variables
+  const [searchKeyword, setSearchKeyword] = useState('');
+
   const t = useI18NPrefix('view.history');
+
+  // Track previous visibility state to detect changes
+  const prevVisibleRef = useRef(isVisible);
 
   // 获取查询历史数据
   const fetchHistory = useCallback(
-    async (currentPage = 1) => {
+    async (currentPage = 1, keyword = searchKeyword) => {
       if (!hasMore && currentPage > 1) return;
 
       setLoading(true);
       try {
+        const params: {
+          page: number;
+          size: number;
+          searchKeyword?: string;
+        } = {
+          page: currentPage,
+          size: 20,
+        };
+
+        // Only include searchKeyword if it's not empty and trimmed
+        if (keyword && keyword.trim() !== '') {
+          params.searchKeyword = keyword.trim();
+        }
+
         const response = await request2<TaskHistory[]>(
           '/execute/tasks/history',
-          {
-            params: {
-              page: currentPage,
-              size: 20,
-            },
-          },
+          { params },
         );
 
         const newTasks = response.data || [];
@@ -91,26 +120,42 @@ export const History = memo(() => {
         setLoading(false);
       }
     },
-    [hasMore],
+    [hasMore, searchKeyword],
   );
 
-  // 初始加载
+  // Visibility detection effect - auto-refresh when panel becomes visible
   useEffect(() => {
-    fetchHistory(1);
-  }, [fetchHistory]);
+    // Only trigger refresh when transitioning from hidden to visible
+    if (isVisible && !prevVisibleRef.current) {
+      setHasMore(true);
+      fetchHistory(1, '');
+    }
+    prevVisibleRef.current = isVisible;
+  }, [isVisible, fetchHistory]);
 
   // 加载更多
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
-      fetchHistory(page + 1);
+      fetchHistory(page + 1, searchKeyword);
     }
-  }, [loading, hasMore, page, fetchHistory]);
+  }, [loading, hasMore, page, searchKeyword, fetchHistory]);
 
   // 刷新历史记录
   const handleRefresh = useCallback(() => {
     setHasMore(true);
-    fetchHistory(1);
-  }, [fetchHistory]);
+    fetchHistory(1, searchKeyword);
+  }, [fetchHistory, searchKeyword]);
+
+  // 处理搜索
+  const handleSearch = useCallback(
+    (value: string) => {
+      const keyword = value.trim();
+      setSearchKeyword(keyword);
+      setHasMore(true);
+      fetchHistory(1, keyword);
+    },
+    [fetchHistory],
+  );
 
   // 查看详情
   const handleViewDetail = useCallback((task: TaskHistory) => {
@@ -292,7 +337,6 @@ export const History = memo(() => {
   return (
     <Container
       title="history"
-      loading={loading}
       add={{
         icon: <ReloadOutlined />,
         items: [
@@ -306,6 +350,16 @@ export const History = memo(() => {
         },
       }}
     >
+      <SearchWrapper>
+        <Input.Search
+          placeholder={t('searchPlaceholder')}
+          onSearch={handleSearch}
+          enterButton={t('search')}
+          allowClear
+          loading={loading}
+          style={{ marginBottom: '12px' }}
+        />
+      </SearchWrapper>
       <ListWrapper>
         <List
           dataSource={tasks}
@@ -431,6 +485,10 @@ const TaskItemWrapper = styled.div`
   border: 1px solid ${p => p.theme.borderColorSplit};
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+`;
+
+const SearchWrapper = styled.div`
+  padding: ${SPACE_XS} ${SPACE_MD} 0;
 `;
 
 const HistoryMeta = styled.div`

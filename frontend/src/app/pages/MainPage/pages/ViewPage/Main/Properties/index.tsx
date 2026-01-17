@@ -116,7 +116,7 @@ export const Properties = memo(({ allowManage, viewType }: PropertiesProps) => {
         </>
       )}
       <PaneWrapper selected={selectedTab === 'history'}>
-        <History />
+        <History isVisible={selectedTab === 'history'} />
       </PaneWrapper>
       <PaneWrapper selected={selectedTab === 'sqlAssistant'}>
         <SQLAssistant />

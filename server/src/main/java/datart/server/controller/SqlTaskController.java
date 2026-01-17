@@ -56,8 +56,12 @@ public class SqlTaskController extends BaseController {
 
     @ApiOperation(value = "获取当前用户 SQL 任务执行历史")
     @GetMapping(value = "/tasks/history")
-    public ResponseData<?> getSqlTaskHistory(@RequestParam(required = false) String searchKeyword) throws Exception {
-        return ResponseData.success(sqlTaskService.getSqlTaskHistory(searchKeyword));
+    public ResponseData<?> getSqlTaskHistory(
+            @RequestParam(required = false) String searchKeyword,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) throws Exception {
+        return ResponseData.success(sqlTaskService.getSqlTaskHistory(searchKeyword, page, size));
     }
 
     @ApiOperation(value = "获取当前用户指定 View 的 SQL 任务执行历史")

@@ -55,9 +55,11 @@ public interface SqlTaskService extends BaseCRUDService<SqlTaskWithBLOBs, SqlTas
      * 获取当前用户 SQL 任务执行历史
      *
      * @param searchKeyword 搜索关键词
+     * @param page          分页页码
+     * @param size          分页大小
      * @return 任务执行历史响应
      */
-    List<SqlTaskHistoryResponse> getSqlTaskHistory(String searchKeyword);
+    List<SqlTaskHistoryResponse> getSqlTaskHistory(String searchKeyword, Integer page, Integer size);
 
     /**
      * 获取当前用户 SQL 任务执行历史

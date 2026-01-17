@@ -1360,6 +1360,10 @@
       "copyFailed": "Copy Failed",
       "copyFailedMessage": "Failed to copy query",
       "close": "Close",
+      "searchPlaceholder": "Search query history...",
+      "search": "Search",
+      "clearSearch": "Clear search",
+      "emptySearchResults": "No matching records found",
       "status": {
         "success": "Success",
         "failed": "Failed",
