@@ -101,10 +101,51 @@ datart:
         size: 20
         queue_capacity: 100
     execution:
-      max_time: 1800000 # 30分钟
+      max_time: 10800000 # 3小时
     result:
       retention_days: 30
       retention_check_interval_min: 180 # 检查任务结果保留时间的间隔, 单位分钟
+
+  spark:
+    static-properties:
+      - spark.app.name
+      - spark.driver.cores
+      - spark.driver.maxResultSize
+      - spark.driver.memory
+      - spark.driver.memoryOverhead
+      - spark.driver.minMemoryOverhead
+      - spark.driver.memoryOverheadFactor
+      - spark.driver.resource
+      - spark.driver.supervise
+      - spark.driver.timeout
+      - spark.driver.log.localDir
+      - spark.driver.log.dfsDir
+      - spark.driver.log.persistToDfs.enabled
+      - spark.driver.log.layout
+      - spark.driver.log.allowErasureCoding
+      - spark.driver.log.redirectConsoleOutputs
+      - spark.resources.discoveryPlugin
+      - spark.executor.instances
+      - spark.executor.memory
+      - spark.executor.pyspark.memory
+      - spark.executor.memoryOverhead
+      - spark.executor.minMemoryOverhead
+      - spark.executor.memoryOverheadFactor
+      - spark.executor.resource
+      - spark.executor.decommission.killInterval
+      - spark.executor.decommission.forceKillTimeout
+      - spark.executor.decommission.signal
+      - spark.executor.maxNumFailures
+      - spark.executor.failuresValidityInterval
+      - spark.extraListeners
+      - spark.local.dir
+      - spark.logConf
+      - spark.master
+      - spark.submit.deployMode
+      - spark.log.callerContext
+      - spark.log.level
+      - spark.decommission.enabled
+
 
 server:
   port: 8080

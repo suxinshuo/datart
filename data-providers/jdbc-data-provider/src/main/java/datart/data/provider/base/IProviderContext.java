@@ -43,4 +43,12 @@ public interface IProviderContext {
      */
     void updateTaskProgress(String taskId, Integer progress);
 
+    /**
+     * 判断SQL语句是否为Spark静态属性配置
+     *
+     * @param sql SQL语句
+     * @return true表示是Spark静态属性配置，false表示不是
+     */
+    boolean isSparkStaticProperty(String sql);
+
 }

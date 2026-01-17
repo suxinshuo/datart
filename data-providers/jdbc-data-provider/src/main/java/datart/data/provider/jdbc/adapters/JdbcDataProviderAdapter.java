@@ -399,21 +399,26 @@ public class JdbcDataProviderAdapter implements Closeable {
         String execSql = extractSqls.get(1);
 
         AtomicReference<Statement> stmtRef = new AtomicReference<>();
-        try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
+        try (Connection conn = getConn(taskId, param.getSparkShareLevel(), preSqls)) {
             try (Statement statement = conn.createStatement()) {
                 stmtRef.set(statement);
                 CommonVarUtils.putSqlStatement(taskId, stmtRef);
 
+                preSqls = filterPreSqls(preSqls);
+
+                boolean hasResultSet = false;
                 if (CollUtil.isNotEmpty(preSqls)) {
                     for (String preSql : preSqls) {
-                        statement.execute(preSql);
+                        hasResultSet = statement.execute(preSql);
                     }
                 }
                 executeAllPreSqlHook(taskId, statement);
                 try {
-                    execSql = getTaskSql(taskId, execSql);
+                    if (StringUtils.isNotBlank(execSql)) {
+                        execSql = getTaskSql(taskId, execSql);
+                        hasResultSet = statement.execute(execSql);
+                    }
 
-                    boolean hasResultSet = statement.execute(execSql);
                     if (!hasResultSet) {
                         return Dataframe.execSuccess();
                     }
@@ -451,23 +456,28 @@ public class JdbcDataProviderAdapter implements Closeable {
         String execSql = extractSqls.get(1);
 
         AtomicReference<Statement> stmtRef = new AtomicReference<>();
-        try (Connection conn = getConn(taskId, param.getSparkShareLevel())) {
+        try (Connection conn = getConn(taskId, param.getSparkShareLevel(), preSqls)) {
             try (Statement statement = conn.createStatement()) {
                 stmtRef.set(statement);
                 CommonVarUtils.putSqlStatement(taskId, stmtRef);
 
+                preSqls = filterPreSqls(preSqls);
+
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
                 // 执行 set 语句
+                boolean hasResultSet = false;
                 if (CollUtil.isNotEmpty(preSqls)) {
                     for (String preSql : preSqls) {
-                        statement.execute(preSql);
+                        hasResultSet = statement.execute(preSql);
                     }
                 }
                 executeAllPreSqlHook(taskId, statement);
                 try {
-                    execSql = getTaskSql(taskId, execSql);
+                    if (StringUtils.isNotBlank(execSql)) {
+                        execSql = getTaskSql(taskId, execSql);
+                        hasResultSet = statement.execute(execSql);
+                    }
 
-                    boolean hasResultSet = statement.execute(execSql);
                     if (!hasResultSet) {
                         return Dataframe.execSuccess();
                     }
@@ -508,7 +518,7 @@ public class JdbcDataProviderAdapter implements Closeable {
         String sql = param.getSql();
 
         AtomicReference<Statement> stmtRef = new AtomicReference<>();
-        try (Connection connection = getConn(taskId, param.getSparkShareLevel())) {
+        try (Connection connection = getConn(taskId, param.getSparkShareLevel(), null)) {
             String countSql = String.format(COUNT_SQL, sql);
             countSql = getTaskSql(taskId, countSql);
             PreparedStatement preparedStatement = connection.prepareStatement(countSql);
@@ -523,6 +533,10 @@ public class JdbcDataProviderAdapter implements Closeable {
             stmtRef.set(null);
             CommonVarUtils.removeSqlStatement(taskId);
         }
+    }
+
+    protected List<String> filterPreSqls(List<String> preSqls) {
+        return preSqls;
     }
 
     protected String getTaskSql(String taskId, String sql) {
@@ -545,10 +559,10 @@ public class JdbcDataProviderAdapter implements Closeable {
     }
 
     protected Connection getConn(String taskId) throws SQLException {
-        return getConn(taskId, null);
+        return getConn(taskId, null, null);
     }
 
-    protected Connection getConn(String taskId, String sparkShareLevel) throws SQLException {
+    protected Connection getConn(String taskId, String sparkShareLevel, List<String> preSqls) throws SQLException {
         return dataSource.getConnection();
     }
 
@@ -784,10 +798,6 @@ public class JdbcDataProviderAdapter implements Closeable {
                 continue;
             }
             execSql = lineSql;
-        }
-
-        if (StringUtils.isBlank(execSql) && CollUtil.isNotEmpty(preSqls)) {
-            execSql = preSqls.remove(preSqls.size() - 1);
         }
 
         log.info("preSqls: {}", preSqls);

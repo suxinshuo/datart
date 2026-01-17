@@ -3,15 +3,20 @@ package datart.server.service.data_provider;
 import datart.core.entity.DorisUserMapping;
 import datart.core.entity.User;
 import datart.server.base.bo.doris.DorisUserMappingQueryConditionBo;
+import datart.server.config.SparkConfig;
 import datart.data.provider.base.IProviderContext;
 import datart.security.manager.DatartSecurityManager;
 import datart.security.util.AESUtil;
 import datart.server.service.doris.DorisUserMappingService;
 import datart.server.service.task.SqlTaskService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 提供数据访问上下文, 如果要使用 jdbc provider, 就要实现这个接口
@@ -31,6 +36,9 @@ public class ProviderContext implements IProviderContext {
 
     @Resource
     private SqlTaskService sqlTaskService;
+
+    @Resource
+    private SparkConfig sparkConfig;
 
     /**
      * 获取当前登录用户
@@ -89,6 +97,42 @@ public class ProviderContext implements IProviderContext {
     @Override
     public void updateTaskProgress(String taskId, Integer progress) {
         sqlTaskService.updateTaskProgress(taskId, progress);
+    }
+
+    /**
+     * 判断SQL语句是否为Spark静态属性配置
+     *
+     * @param sql SQL语句
+     * @return true表示是Spark静态属性配置，false表示不是
+     */
+    @Override
+    public boolean isSparkStaticProperty(String sql) {
+        if (StringUtils.isBlank(sql)) {
+            return false;
+        }
+
+        String trimmedSql = sql.trim();
+
+        if (StringUtils.startsWith(trimmedSql, "--")) {
+            return false;
+        }
+
+        Pattern setPattern = Pattern.compile("(?i)^\\s*SET\\s+([a-zA-Z_][a-zA-Z0-9_.]*)\\s*=\\s*(.+)$");
+        Matcher matcher = setPattern.matcher(trimmedSql);
+
+        if (!matcher.matches()) {
+            return false;
+        }
+
+        String configKey = matcher.group(1);
+
+        Set<String> staticProperties = sparkConfig.getStaticProperties();
+        if (staticProperties == null || staticProperties.isEmpty()) {
+            return false;
+        }
+
+        return staticProperties.stream()
+                .anyMatch(prop -> StringUtils.startsWithIgnoreCase(configKey, prop));
     }
 
 }

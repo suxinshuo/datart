@@ -49,32 +49,53 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
 
-    private List<Tuple> parserConf(String confStr) {
-        String confStrTrim = StringUtils.trim(confStr);
-        String[] confArray = StringUtils.split(confStrTrim, ";");
-        if (Objects.isNull(confArray)) {
-            return Lists.newArrayList();
+    @Override
+    protected List<String> filterPreSqls(List<String> preSqls) {
+        if (CollUtil.isEmpty(preSqls)) {
+            return preSqls;
         }
-        return Arrays.stream(confArray).map(confOne -> {
-            String[] pair = StringUtils.split(StringUtils.trim(confOne), "=");
-            if (Objects.isNull(pair) || pair.length != 2) {
-                return null;
-            }
-            return new Tuple(StringUtils.trim(pair[0]), StringUtils.trim(pair[1]));
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        return preSqls.stream()
+                .filter(s -> !this.providerContext.isSparkStaticProperty(s))
+                .collect(Collectors.toList());
     }
 
     @Override
-    protected Connection getConn(String taskId, String sparkShareLevel) throws SQLException {
+    protected Connection getConn(String taskId, String sparkShareLevel, List<String> preSqls) throws SQLException {
         String url = this.getJdbcProperties().getUrl();
         SparkUrl sparkUrl = parserUrl(url);
+
+        // 判断前面的 set sql 是否有设置 spark 静态属性, 如果有, 需要移动到 url 中
+        List<Tuple> staticProperties = Lists.newArrayList();
+        for (String preSql : Optional.ofNullable(preSqls).orElse(Lists.newArrayList())) {
+            boolean sparkStaticProperty = this.providerContext.isSparkStaticProperty(preSql);
+            if (!sparkStaticProperty) {
+                continue;
+            }
+            String processedSql = preSql.replaceFirst("(?i)^\\s*SET\\s+", "");
+            List<Tuple> confs = parserConf(processedSql);
+            staticProperties.addAll(confs);
+        }
+        // 合并到 SparkUrl
+        if (CollUtil.isNotEmpty(staticProperties)) {
+            List<Tuple> sparkConf = sparkUrl.getSparkConf();
+            if (Objects.isNull(sparkConf)) {
+                sparkConf = Lists.newArrayList();
+            }
+            sparkConf.addAll(staticProperties);
+            sparkUrl.setSparkConf(sparkConf);
+        }
 
         // 如果是查询 Schema 信息, 强制设置 share level = connection
         if (StringUtils.startsWith(taskId, SourceConstants.SPARK_SCHEMA_TASK)) {
             sparkUrl.setShareLevel(EngineShareLevel.CONNECTION);
         } else {
             // 根据用户传过来的 sparkShareLevel 来设置
-            sparkUrl.setShareLevel(EngineShareLevel.of(sparkShareLevel));
+            if (CollUtil.isNotEmpty(staticProperties)) {
+                log.info("自动切换到 CONNECTION 模式运行, Spark 静态属性 SQL 列表: {}", staticProperties);
+                sparkUrl.setShareLevel(EngineShareLevel.CONNECTION);
+            } else {
+                sparkUrl.setShareLevel(EngineShareLevel.of(sparkShareLevel));
+            }
         }
 
         final Props prop = new Props();
@@ -293,6 +314,21 @@ public class SparkDataProviderAdapter extends JdbcDataProviderAdapter {
                 return null;
             }
             return new YarnRmNode(ss[0], Long.parseLong(ss[1]));
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private List<Tuple> parserConf(String confStr) {
+        String confStrTrim = StringUtils.trim(confStr);
+        String[] confArray = StringUtils.split(confStrTrim, ";");
+        if (Objects.isNull(confArray)) {
+            return Lists.newArrayList();
+        }
+        return Arrays.stream(confArray).map(confOne -> {
+            String[] pair = StringUtils.split(StringUtils.trim(confOne), "=");
+            if (Objects.isNull(pair) || pair.length != 2) {
+                return null;
+            }
+            return new Tuple(StringUtils.trim(pair[0]), StringUtils.trim(pair[1]));
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
