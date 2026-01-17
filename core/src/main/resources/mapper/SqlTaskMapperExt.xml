@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="datart.core.mappers.ext.SqlTaskMapperExt">
+    <!-- BaseResultMap 定义，对应 SqlTaskWithBLOBs 实体类 -->
+    <resultMap id="BaseResultMap" type="datart.core.entity.SqlTaskWithBLOBs">
+        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <result column="source_id" property="sourceId" jdbcType="VARCHAR"/>
+        <result column="view_id" property="viewId" jdbcType="VARCHAR"/>
+        <result column="script_type" property="scriptType" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="priority" property="priority" jdbcType="INTEGER"/>
+        <result column="timeout" property="timeout" jdbcType="INTEGER"/>
+        <result column="max_size" property="maxSize" jdbcType="INTEGER"/>
+        <result column="start_time" property="startTime" jdbcType="TIMESTAMP"/>
+        <result column="end_time" property="endTime" jdbcType="TIMESTAMP"/>
+        <result column="duration" property="duration" jdbcType="BIGINT"/>
+        <result column="fail_type" property="failType" jdbcType="VARCHAR"/>
+        <result column="exec_instance_id" property="execInstanceId" jdbcType="VARCHAR"/>
+        <result column="progress" property="progress" jdbcType="INTEGER"/>
+        <result column="org_id" property="orgId" jdbcType="VARCHAR"/>
+        <result column="execute_type" property="executeType" jdbcType="VARCHAR"/>
+        <result column="create_by" property="createBy" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_by" property="updateBy" jdbcType="VARCHAR"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="permission" property="permission" jdbcType="INTEGER"/>
+        <result column="script" property="script" jdbcType="LONGVARCHAR"/>
+        <result column="error_message" property="errorMessage" jdbcType="LONGVARCHAR"/>
+        <result column="execute_param" property="executeParam" jdbcType="LONGVARCHAR"/>
+    </resultMap>
+
+    <!-- 根据搜索条件分页查询SqlTask -->
+    <select id="selectBySearchPage" resultMap="BaseResultMap">
+        select * from sql_task
+        where create_by = #{createUser,jdbcType=VARCHAR}
+        and execute_type = #{executeType,jdbcType=VARCHAR}
+        <if test="searchKeyword != null and searchKeyword != ''">
+            and name like CONCAT('%', #{searchKeyword,jdbcType=VARCHAR}, '%')
+        </if>
+        order by create_time desc
+    </select>
+</mapper>
+
+

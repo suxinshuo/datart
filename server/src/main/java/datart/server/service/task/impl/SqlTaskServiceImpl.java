@@ -24,6 +24,7 @@ import com.github.pagehelper.PageHelper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import datart.core.base.consts.Const;
+import datart.core.mappers.ext.SqlTaskMapperExt;
 import datart.server.base.bo.task.*;
 import datart.core.common.CommonVarUtils;
 import datart.core.entity.enums.SqlTaskExecuteType;
@@ -33,7 +34,6 @@ import datart.core.entity.enums.SqlTaskFailType;
 import datart.core.common.UUIDGenerator;
 import datart.core.entity.*;
 import datart.core.data.provider.Dataframe;
-import datart.core.mappers.SqlTaskMapper;
 import datart.core.utils.JsonUtils;
 import datart.server.base.dto.task.*;
 import datart.server.base.params.TestExecuteParam;
@@ -76,7 +76,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     private final Map<String, Long> cancelTasks = Maps.newConcurrentMap();
 
     @Resource
-    private SqlTaskMapper sqlTaskMapper;
+    private SqlTaskMapperExt sqlTaskMapper;
 
     @Resource
     private SqlTaskResultService sqlTaskResultService;
@@ -294,22 +294,22 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
     /**
      * 获取当前用户 SQL 任务执行历史
      *
+     * @param searchKeyword 搜索关键词
      * @return 任务执行历史响应
      */
     @Override
-    public List<SqlTaskHistoryResponse> getSqlTaskHistory() {
+    public List<SqlTaskHistoryResponse> getSqlTaskHistory(String searchKeyword) {
         String currentUserId = getCurrentUser().getId();
-        SqlTaskExample sqlTaskExample = new SqlTaskExample();
-        SqlTaskExample.Criteria criteria = sqlTaskExample.createCriteria();
-        criteria.andCreateByEqualTo(currentUserId)
-                .andExecuteTypeEqualTo(SqlTaskExecuteType.AD_HOC.getCode());
-        sqlTaskExample.setOrderByClause("`create_time` DESC");
 
         PageHelper.startPage(1, 300);
-        List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectByExampleWithBLOBs(sqlTaskExample);
+        List<SqlTaskWithBLOBs> sqlTasks = sqlTaskMapper.selectBySearchPage(
+                currentUserId, SqlTaskExecuteType.AD_HOC.getCode(), searchKeyword
+        );
+
         if (CollUtil.isEmpty(sqlTasks)) {
             return Lists.newArrayList();
         }
+
         return sqlTasks.stream()
                 .map(sqlTaskFactory::getSqlTaskHistoryResponse)
                 .collect(Collectors.toList());
@@ -322,7 +322,7 @@ public class SqlTaskServiceImpl extends BaseService implements SqlTaskService {
      * @return 任务执行历史响应
      */
     @Override
-    public List<SqlTaskHistoryResponse> getSqlTaskHistory(String viewId) {
+    public List<SqlTaskHistoryResponse> getSqlTaskHistoryByViewId(String viewId) {
         String currentUserId = getCurrentUser().getId();
         SqlTaskExample sqlTaskExample = new SqlTaskExample();
         SqlTaskExample.Criteria criteria = sqlTaskExample.createCriteria();

@@ -54,9 +54,10 @@ public interface SqlTaskService extends BaseCRUDService<SqlTaskWithBLOBs, SqlTas
     /**
      * 获取当前用户 SQL 任务执行历史
      *
+     * @param searchKeyword 搜索关键词
      * @return 任务执行历史响应
      */
-    List<SqlTaskHistoryResponse> getSqlTaskHistory();
+    List<SqlTaskHistoryResponse> getSqlTaskHistory(String searchKeyword);
 
     /**
      * 获取当前用户 SQL 任务执行历史
@@ -64,7 +65,7 @@ public interface SqlTaskService extends BaseCRUDService<SqlTaskWithBLOBs, SqlTas
      * @param viewId View ID
      * @return 任务执行历史响应
      */
-    List<SqlTaskHistoryResponse> getSqlTaskHistory(String viewId);
+    List<SqlTaskHistoryResponse> getSqlTaskHistoryByViewId(String viewId);
 
     /**
      * 获取任务执行结果
