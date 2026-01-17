@@ -44,9 +44,17 @@ public class Dataframe implements Serializable {
 
     private List<List<Object>> rows;
 
+    private Integer rowCount;
+
     private PageInfo pageInfo;
 
     private String script;
+
+    private String hdfsPath;
+
+    private Boolean truncated = false;
+
+    private Boolean failedFlag = false;
 
     public Dataframe() {
         this.id = "DF" + UUIDGenerator.generate();
@@ -75,6 +83,18 @@ public class Dataframe implements Serializable {
         return dataframe;
     }
 
+    public static Dataframe execSuccess(String hdfsPath) {
+        Dataframe dataframe = new Dataframe();
+        dataframe.setHdfsPath(hdfsPath);
+        dataframe.setColumns(
+                Lists.newArrayList(Column.of(ValueType.STRING, "status"))
+        );
+        List<List<Object>> rows = Lists.newArrayList();
+        rows.add(Lists.newArrayList("success"));
+        dataframe.setRows(rows);
+        return dataframe;
+    }
+
     public static Dataframe execFail(String message) {
         Dataframe dataframe = new Dataframe();
         dataframe.setColumns(
@@ -83,6 +103,20 @@ public class Dataframe implements Serializable {
         List<List<Object>> rows = Lists.newArrayList();
         rows.add(Lists.newArrayList("fail: " + message));
         dataframe.setRows(rows);
+        dataframe.setFailedFlag(true);
+        return dataframe;
+    }
+
+    public static Dataframe execFail(String message, String hdfsPath) {
+        Dataframe dataframe = new Dataframe();
+        dataframe.setHdfsPath(hdfsPath);
+        dataframe.setColumns(
+                Lists.newArrayList(Column.of(ValueType.STRING, "status"))
+        );
+        List<List<Object>> rows = Lists.newArrayList();
+        rows.add(Lists.newArrayList("fail: " + message));
+        dataframe.setRows(rows);
+        dataframe.setFailedFlag(true);
         return dataframe;
     }
 

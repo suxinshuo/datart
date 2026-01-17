@@ -51,8 +51,6 @@ public class SqlTaskStatusResponse {
 
     private String errorMessage;
 
-    private Integer originalRowCount;
-
     private Integer displayedRowCount;
 
     private Boolean truncated;

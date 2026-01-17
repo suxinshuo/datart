@@ -1,5 +1,7 @@
 package datart.server.service.data_provider;
 
+import datart.core.data.provider.Column;
+import datart.core.data.provider.Dataframe;
 import datart.core.entity.DorisUserMapping;
 import datart.core.entity.User;
 import datart.server.base.bo.doris.DorisUserMappingQueryConditionBo;
@@ -8,12 +10,14 @@ import datart.data.provider.base.IProviderContext;
 import datart.security.manager.DatartSecurityManager;
 import datart.security.util.AESUtil;
 import datart.server.service.doris.DorisUserMappingService;
+import datart.server.service.task.SqlTaskResultService;
 import datart.server.service.task.SqlTaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.sql.ResultSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +43,9 @@ public class ProviderContext implements IProviderContext {
 
     @Resource
     private SparkConfig sparkConfig;
+
+    @Resource
+    private SqlTaskResultService sqlTaskResultService;
 
     /**
      * 获取当前登录用户
@@ -135,4 +142,22 @@ public class ProviderContext implements IProviderContext {
                 .anyMatch(prop -> StringUtils.startsWithIgnoreCase(configKey, prop));
     }
 
+    /**
+     * 流式保存结果到 HDFS
+     *
+     * @param taskId   任务 ID
+     * @param rs       ResultSet
+     * @param columns  列定义
+     * @param hdfsPath HDFS 保存路径
+     * @return 保存的记录行数
+     */
+    @Override
+    public int saveResultToHdfs(String taskId, ResultSet rs, java.util.List<Column> columns, String hdfsPath) {
+        return sqlTaskResultService.writeDataframeStream(taskId, rs, columns, hdfsPath);
+    }
+
+    @Override
+    public void saveDataframeToHdfs(String hdfsPath, Dataframe dataframe) {
+        sqlTaskResultService.writeDataframe(hdfsPath, dataframe);
+    }
 }

@@ -1,6 +1,7 @@
 package datart.server.config;
 
 import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Slf4j
 @Getter
+@ToString
 @Configuration
 public class SqlTaskConfig {
 
@@ -34,5 +36,8 @@ public class SqlTaskConfig {
      */
     @Value("${datart.task.result.retention_check_interval_min:180}")
     private int retentionCheckIntervalMin;
+
+    @Value("${hadoop.task-result-dir}")
+    private String taskResultDir;
 
 }

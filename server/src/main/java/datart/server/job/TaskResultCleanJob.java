@@ -1,16 +1,21 @@
 package datart.server.job;
 
 import datart.core.common.Application;
-import datart.core.entity.SqlTaskResult;
 import datart.server.config.SqlTaskConfig;
-import datart.server.service.task.SqlTaskResultService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,24 +35,64 @@ public class TaskResultCleanJob implements Job, Closeable {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         SqlTaskConfig sqlTaskConfig = Application.getBean(SqlTaskConfig.class);
+        log.info("Start task result clean job sqlTaskConfig: {}", sqlTaskConfig);
+
         int retentionDays = sqlTaskConfig.getRetentionDays();
-        log.info("Start task result clean job retention days:{}", retentionDays);
+        String taskResultDir = sqlTaskConfig.getTaskResultDir();
+        FileSystem fileSystem = Application.getBean("hdfsFileSystem", FileSystem.class);
 
-        // 1. 从数据库中查询过期的任务结果
-        SqlTaskResultService sqlTaskResultService = Application.getBean(SqlTaskResultService.class);
-        List<SqlTaskResult> daysBeforeResults = sqlTaskResultService.getDaysBeforeResults(retentionDays);
-        log.info("Task result clean job found {} results to clean", daysBeforeResults.size());
-
-        // 2. 删除过期的任务结果
-        for (SqlTaskResult daysBeforeResult : daysBeforeResults) {
-            String resultId = daysBeforeResult.getId();
-            boolean delete = sqlTaskResultService.delete(resultId);
-            if (!delete) {
-                log.error("Delete task result failed. resultId: {}", resultId);
+        try {
+            Path dirPath = new Path(taskResultDir);
+            if (!fileSystem.exists(dirPath)) {
+                log.warn("Task result directory does not exist: {}", taskResultDir);
+                return;
             }
-        }
 
-        log.info("Task result clean job finished");
+            FileStatus[] fileStatuses = fileSystem.listStatus(dirPath);
+            if (fileStatuses == null || fileStatuses.length == 0) {
+                log.info("No directories found in task result directory: {}", taskResultDir);
+                return;
+            }
+
+            LocalDate cutoffDate = LocalDate.now().minusDays(retentionDays);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+            List<Path> dirsToDelete = new ArrayList<>();
+
+            for (FileStatus fileStatus : fileStatuses) {
+                if (!fileStatus.isDirectory()) {
+                    continue;
+                }
+
+                String dirName = fileStatus.getPath().getName();
+                try {
+                    LocalDate dirDate = LocalDate.parse(dirName, formatter);
+                    if (dirDate.isBefore(cutoffDate)) {
+                        dirsToDelete.add(fileStatus.getPath());
+                        log.info("Found directory to delete: {}, date: {}", dirName, dirDate);
+                    }
+                } catch (DateTimeParseException e) {
+                    log.debug("Directory name does not match date format yyyyMMdd: {}", dirName);
+                }
+            }
+
+            for (Path dirToDelete : dirsToDelete) {
+                try {
+                    boolean deleted = fileSystem.delete(dirToDelete, true);
+                    if (deleted) {
+                        log.info("Successfully deleted directory: {}", dirToDelete);
+                    } else {
+                        log.warn("Failed to delete directory: {}", dirToDelete);
+                    }
+                } catch (IOException e) {
+                    log.error("Error deleting directory: {}", dirToDelete, e);
+                }
+            }
+
+            log.info("Task result clean job finished, deleted {} directories", dirsToDelete.size());
+        } catch (IOException e) {
+            log.error("Error during task result clean job", e);
+            throw new JobExecutionException("Failed to clean task results", e);
+        }
     }
 
 }

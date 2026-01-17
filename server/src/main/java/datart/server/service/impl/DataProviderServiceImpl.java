@@ -44,6 +44,7 @@ import datart.server.base.bo.task.SqlTaskResultBo;
 import datart.server.base.dto.VariableValue;
 import datart.server.base.params.TestExecuteParam;
 import datart.server.base.params.ViewExecuteParam;
+import datart.server.config.SqlTaskConfig;
 import datart.server.service.BaseService;
 import datart.server.service.DataProviderService;
 import datart.server.service.VariableService;
@@ -58,6 +59,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -77,6 +80,9 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
     private static final String SERVER_AGGREGATE = "serverAggregate";
 
     private ObjectMapper objectMapper;
+
+    @Resource
+    private SqlTaskConfig sqlTaskConfig;
 
     @Resource
     private DataProviderManager dataProviderManager;
@@ -214,7 +220,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .build();
         DataProviderSource providerSource = parseDataProviderConfig(source);
 
-        ExecuteParam executeParam = ExecuteParam
+        ExecuteParam.ExecuteParamBuilder builder = ExecuteParam
                 .builder()
                 .pageInfo(PageInfo.builder().pageNo(1).pageSize(testExecuteParam.getSize()).countTotal(false).build())
                 .includeColumns(Collections.singleton(SelectColumn.of(null, "*")))
@@ -223,9 +229,22 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
                 .cacheEnable(false)
                 .sqlTaskId(testExecuteParam.getSqlTaskId())
                 .sparkShareLevel(testExecuteParam.getSparkShareLevel())
-                .adHocFlag(true)
-                .build();
+                .adHocFlag(true);
+
+        if (testExecuteParam.isAsyncEnabled()) {
+            String hdfsPath = getHdfsPath(testExecuteParam.getSqlTaskId());
+            builder.asyncExecute(true)
+                   .hdfsSavePath(hdfsPath);
+        }
+
+        ExecuteParam executeParam = builder.build();
         return dataProviderManager.execute(providerSource, queryScript, executeParam);
+    }
+
+    private String getHdfsPath(String taskId) {
+        // 按照日期分文件夹
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return sqlTaskConfig.getTaskResultDir() + date + "/" + taskId + ".json";
     }
 
     @Override
@@ -289,7 +308,7 @@ public class DataProviderServiceImpl extends BaseService implements DataProvider
             if (StringUtils.isBlank(sqlTaskId)) {
                 Exceptions.tr(BaseException.class, "message.source.task.not-found");
             } else {
-                List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(sqlTaskId);
+                List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(sqlTaskId, false);
                 if (CollUtil.isEmpty(sqlTaskResults) || Objects.isNull(sqlTaskResults.get(0).getDataframe())) {
                     Exceptions.tr(BaseException.class, "message.source.task.not-found");
                 }

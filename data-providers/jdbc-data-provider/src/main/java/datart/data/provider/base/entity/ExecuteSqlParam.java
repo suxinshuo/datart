@@ -24,4 +24,10 @@ public class ExecuteSqlParam {
     @Builder.Default
     private Boolean adHocFlag = false;
 
+    private Boolean asyncExecute;
+
+    private String hdfsSavePath;
+
+    private Integer maxShowCells;
+
 }

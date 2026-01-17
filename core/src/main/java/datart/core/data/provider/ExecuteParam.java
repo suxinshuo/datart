@@ -76,6 +76,10 @@ public class ExecuteParam implements Serializable {
      */
     private Boolean adHocFlag = false;
 
+    private Boolean asyncExecute;
+
+    private String hdfsSavePath;
+
     @Override
     public String toString() {
         return JSON.toJSONString(JSON.toJSONString(this));

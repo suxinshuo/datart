@@ -24,6 +24,8 @@ public class SqlTaskResultBo {
 
     private String taskId;
 
+    private String data;
+
     private Dataframe dataframe;
 
     private Integer rowCount;

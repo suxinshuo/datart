@@ -38,7 +38,7 @@ public class AttachmentCsvServiceImpl implements AttachmentService {
 
     @Override
     public ExportFile getFile(String taskId) {
-        List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId);
+        List<SqlTaskResultBo> sqlTaskResults = sqlTaskResultService.getByTaskId(taskId, false);
         if (CollUtil.isEmpty(sqlTaskResults)) {
             return ExportFile.empty(taskId, getAttachmentType());
         }

@@ -420,11 +420,24 @@ public class JdbcDataProviderAdapter implements Closeable {
                     }
 
                     if (!hasResultSet) {
-                        return Dataframe.execSuccess();
+                        Dataframe dataframe = Dataframe.execSuccess(param.getHdfsSavePath());
+                        providerContext.saveDataframeToHdfs(param.getHdfsSavePath(), dataframe);
+                        return dataframe;
                     }
 
                     try (ResultSet rs = statement.getResultSet()) {
-                        return parseResultSet(rs);
+                        if (Boolean.TRUE.equals(param.getAsyncExecute()) && StringUtils.isNotBlank(param.getHdfsSavePath())) {
+                            List<Column> columns = getColumns(rs);
+                            int rowCount = providerContext.saveResultToHdfs(taskId, rs, columns, param.getHdfsSavePath());
+                            Dataframe dataframe = new Dataframe();
+                            dataframe.setColumns(columns);
+                            dataframe.setRows(Collections.emptyList());
+                            dataframe.setRowCount(rowCount);
+                            dataframe.setHdfsPath(param.getHdfsSavePath());
+                            return dataframe;
+                        } else {
+                            return parseResultSet(rs);
+                        }
                     }
                 } finally {
                     // 执行完成的回调函数
@@ -433,7 +446,9 @@ public class JdbcDataProviderAdapter implements Closeable {
             }
         } catch (Exception e) {
             log.error("sql 执行异常. param: {}", param, e);
-            return Dataframe.execFail(e.getMessage());
+            Dataframe dataframe = Dataframe.execFail(e.getMessage(), param.getHdfsSavePath());
+            providerContext.saveDataframeToHdfs(param.getHdfsSavePath(), dataframe);
+            return dataframe;
         } finally {
             stmtRef.set(null);
             CommonVarUtils.removeSqlStatement(taskId);
@@ -464,7 +479,6 @@ public class JdbcDataProviderAdapter implements Closeable {
                 preSqls = filterPreSqls(preSqls);
 
                 statement.setFetchSize((int) Math.min(pageInfo.getPageSize(), 10_000));
-                // 执行 set 语句
                 boolean hasResultSet = false;
                 if (CollUtil.isNotEmpty(preSqls)) {
                     for (String preSql : preSqls) {
@@ -479,28 +493,42 @@ public class JdbcDataProviderAdapter implements Closeable {
                     }
 
                     if (!hasResultSet) {
-                        return Dataframe.execSuccess();
+                        Dataframe dataframe = Dataframe.execSuccess(param.getHdfsSavePath());
+                        providerContext.saveDataframeToHdfs(param.getHdfsSavePath(), dataframe);
+                        return dataframe;
                     }
 
                     try (ResultSet resultSet = statement.getResultSet()) {
-                        try {
-                            resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));
-                        } catch (Exception e) {
-                            int count = 0;
-                            while (count < (pageInfo.getPageNo() - 1) * pageInfo.getPageSize() && resultSet.next()) {
-                                count++;
+                        if (Boolean.TRUE.equals(param.getAsyncExecute()) && StringUtils.isNotBlank(param.getHdfsSavePath())) {
+                            List<Column> columns = getColumns(resultSet);
+                            int rowCount = providerContext.saveResultToHdfs(taskId, resultSet, columns, param.getHdfsSavePath());
+                            Dataframe dataframe = new Dataframe();
+                            dataframe.setColumns(columns);
+                            dataframe.setRows(Collections.emptyList());
+                            dataframe.setRowCount(rowCount);
+                            dataframe.setHdfsPath(param.getHdfsSavePath());
+                            return dataframe;
+                        } else {
+                            try {
+                                resultSet.absolute((int) Math.min(pageInfo.getTotal(), (pageInfo.getPageNo() - 1) * pageInfo.getPageSize()));
+                            } catch (Exception e) {
+                                int count = 0;
+                                while (count < (pageInfo.getPageNo() - 1) * pageInfo.getPageSize() && resultSet.next()) {
+                                    count++;
+                                }
                             }
+                            return parseResultSet(resultSet, pageInfo.getPageSize());
                         }
-                        return parseResultSet(resultSet, pageInfo.getPageSize());
                     }
                 } finally {
-                    // 执行完成的回调函数
                     executeCompleteHook(taskId, statement);
                 }
             }
         } catch (Exception e) {
             log.error("sql 执行异常. param: {}, pageInfo: {}", param, pageInfo, e);
-            return Dataframe.execFail(e.getMessage());
+            Dataframe dataframe = Dataframe.execFail(e.getMessage(), param.getHdfsSavePath());
+            providerContext.saveDataframeToHdfs(param.getHdfsSavePath(), dataframe);
+            return dataframe;
         } finally {
             stmtRef.set(null);
             CommonVarUtils.removeSqlStatement(taskId);
@@ -776,7 +804,10 @@ public class JdbcDataProviderAdapter implements Closeable {
             if (StringUtils.isBlank(lineSql)) {
                 continue;
             }
-            if (StringUtils.startsWith(lineSql, "-- ")) {
+            // 注释 SQL 直接跳过
+            boolean commentSql = Arrays.stream(StringUtils.split(lineSql, "\n"))
+                    .allMatch(line -> StringUtils.startsWith(line, "-- "));
+            if (commentSql) {
                 continue;
             }
             if (StringUtils.startsWithIgnoreCase(lineSql, "set ")
@@ -794,7 +825,10 @@ public class JdbcDataProviderAdapter implements Closeable {
             if (StringUtils.isBlank(lineSql)) {
                 continue;
             }
-            if (StringUtils.startsWith(lineSql, "-- ")) {
+            // 注释 SQL 直接跳过
+            boolean commentSql = Arrays.stream(StringUtils.split(lineSql, "\n"))
+                    .allMatch(line -> StringUtils.startsWith(line, "-- "));
+            if (commentSql) {
                 continue;
             }
             execSql = lineSql;
@@ -831,6 +865,8 @@ public class JdbcDataProviderAdapter implements Closeable {
                             .sql(sql)
                             .sparkShareLevel(executeParam.getSparkShareLevel())
                             .adHocFlag(executeParam.getAdHocFlag())
+                            .asyncExecute(executeParam.getAsyncExecute())
+                            .hdfsSavePath(executeParam.getHdfsSavePath())
                             .build()
             );
         } else {
@@ -842,6 +878,8 @@ public class JdbcDataProviderAdapter implements Closeable {
                             .sql(sql)
                             .sparkShareLevel(executeParam.getSparkShareLevel())
                             .adHocFlag(executeParam.getAdHocFlag())
+                            .asyncExecute(executeParam.getAsyncExecute())
+                            .hdfsSavePath(executeParam.getHdfsSavePath())
                             .build(),
                     executeParam.getPageInfo()
             );

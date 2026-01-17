@@ -103,7 +103,7 @@ datart:
     execution:
       max_time: 10800000 # 3小时
     result:
-      retention_days: 30
+      retention_days: 7
       retention_check_interval_min: 180 # 检查任务结果保留时间的间隔, 单位分钟
 
   spark:
